@@ -19,12 +19,27 @@ function unifiedDiff(before, after) {
 }
 
 function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, createAgentTools, runAgent, saveAction, apiKey, model, port }) {
-  return async function handle(data) {
+  const executeAgent = runAgent;
+  return async function handle(data, transport = {}) {
+    const runAgent = options => executeAgent({ ...options, ...transport });
     const game = String(data.game || ''), version = String(data.version || ''), root = projectRoot(game, version);
-    let message = String(data.message || '').trim(), history = await agentMemory.read(game, version);
-    if (!message) throw new Error('پیام خالی است');
+    const sessionId = data.sessionId || 'default';
+    let message = String(data.message || '').trim(), history = await agentMemory.read(game, version, sessionId);
     if (!apiKey) throw new Error('کلید OpenRouter در حافظهٔ سرور شناسایی نشد.');
-    await agentMemory.append(game, version, { role: 'user', content: message });
+    if (data.regenerateOf) {
+      const index = history.findIndex(item => item.id === data.regenerateOf && item.role === 'assistant');
+      const user = history.slice(0, index).reverse().find(item => item.role === 'user');
+      if (index < 0 || !user) throw new Error('Message not found');
+      message = user.content;
+      await agentMemory.editAndTrim(game, version, user.id, message, sessionId);
+      history = (await agentMemory.read(game, version, sessionId)).slice(0, -1);
+    } else if (data.replaceMessageId) {
+      const edited = await agentMemory.editAndTrim(game, version, data.replaceMessageId, message, sessionId);
+      if (!edited) throw new Error('Message not found');
+      history = edited.slice(0, -1);
+    }
+    if (!message) throw new Error('پیام خالی است');
+    if (!data.regenerateOf && !data.replaceMessageId) await agentMemory.append(game, version, { role: 'user', content: message }, sessionId);
     const context = await buildAgentContext(root, { maximumFileBytes: 50000, maximumTotalBytes: 100000 });
     const tools = createAgentTools({ root }), pendingActions = [];
     const propose = (type, payload) => {
@@ -32,6 +47,7 @@ function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, creat
       if (type === 'write' || type === 'delete') {
         const target = path.resolve(root, String(action.path || ''));
         if (!target.startsWith(path.resolve(root) + path.sep)) throw new Error('مسیر فایل خارج از پروژه است');
+        if (path.basename(target).toLowerCase().startsWith('.env')) throw new Error('Protected file');
         let before = '';
         try { before = fs.readFileSync(target, 'utf8'); } catch { /* new file */ }
         action.diff = unifiedDiff(before, type === 'delete' ? '' : action.content);
@@ -45,8 +61,8 @@ function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, creat
       : `${message}${attachmentText ? `\n\n[پیوست ${data.attachmentName || 'file'}]\n${attachmentText}` : ''}`;
     const system = `تو Agent پروژه هستی. Skill فعال=${data.skill || 'general'} و حالت تأیید=${data.approvalMode || 'manual'}. ابتدا برای بررسی از ابزارهای خواندنی استفاده کن. برای هر تغییر فایل یا Command فقط ابزار propose را فراخوانی کن؛ خودت هیچ تغییر اثرگذاری اعمال نکن. پس از پیشنهاد ابزار، هرگز شناسه، pending_confirmation، JSON خام یا محتوای کامل فایل را در پاسخ چاپ نکن؛ فقط یک جملهٔ طبیعی فارسی مانند «ویرایش ${'${'}path} آمادهٔ بررسی است.» بنویس. پاسخ نهایی را مختصر و شفاف بنویس.`;
     const result = await runAgent({ endpoint: 'https://openrouter.ai/api/v1/chat/completions', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': `http://localhost:${port}`, 'X-Title': 'Game Vault Studio Agent' }, model: data.model || model || 'openrouter/free', messages: [{ role: 'system', content: system }, ...history.slice(-16).map(item => ({ role: item.role, content: item.content })), { role: 'system', content: `PROJECT CONTEXT: ${JSON.stringify(context.files)}` }, { role: 'user', content: userContent }], tools: { list_files: () => tools.listFiles(), read_file: args => tools.readFile(args.path), search_text: args => tools.searchText(args.query), propose_file_change: args => propose(args.operation === 'delete' ? 'delete' : 'write', { path: String(args.path || ''), content: String(args.content || '') }), propose_terminal_command: args => propose('command', { command: String(args.command || '') }) } });
-    await agentMemory.append(game, version, { role: 'assistant', content: result.reply });
-    return { message: result.reply, events: result.events, pendingActions, messages: await agentMemory.read(game, version), context: { files: context.paths.length }, model: data.model || model || 'openrouter/free' };
+    await agentMemory.append(game, version, { role: 'assistant', content: result.reply }, sessionId);
+    return { message: result.reply, events: result.events, pendingActions, messages: await agentMemory.read(game, version, sessionId), context: { files: context.paths.length }, model: data.model || model || 'openrouter/free' };
   };
 }
 module.exports = { createAgentHandler };

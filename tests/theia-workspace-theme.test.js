@@ -6,8 +6,10 @@ const pages = ['index.html', 'manage.html', 'profile.html'];
 
 assert.match(server, /gvGame=\$\{encodeURIComponent\(data\.game\)\}/, 'Theia must receive the game identity in its URL');
 assert.match(server, /gvVersion=\$\{encodeURIComponent\(data\.version\)\}/, 'Theia must receive the version identity in its URL');
-assert.match(server, /workspace=\$\{encodeURIComponent\(workspace\)\}/, 'Theia must receive its isolated version as a native workspace URI');
-assert.match(server, /workspace\s*=\s*`file:\/\/\//, 'workspace must be expressed as a file URI');
+assert.match(server, /#\$\{workspaceFragment\(root\)\}/, 'Theia must receive its isolated version through the native workspace fragment');
+const { workspaceFragment } = require('../backend/projects/workspace-url');
+assert.equal(decodeURI(workspaceFragment('C:\\Projects\\بازی\\versions\\v2')), '/C:/Projects/بازی/versions/v2');
+assert.equal(decodeURI(workspaceFragment('/srv/workspaces/demo/versions/v3')), '/srv/workspaces/demo/versions/v3');
 for (const page of pages) {
   const html = fs.readFileSync(`frontend/pages/${page}`, 'utf8');
   assert.match(html, /theme-sync\.js/, `${page} must load the shared theme synchronizer`);

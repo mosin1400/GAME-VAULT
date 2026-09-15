@@ -12,13 +12,30 @@ function eventFor(name, args) {
   return { type: name, detail: '' };
 }
 
-async function runAgent({ fetchImpl = fetch, endpoint, headers, model, messages, tools }) {
+const { readEventStream } = require('./event-stream');
+
+async function runAgent({ fetchImpl = fetch, endpoint, headers, model, messages, tools, onToken, onEvent, signal }) {
   const conversation = [...messages], events = [];
   for (let turn = 0; turn < 5; turn += 1) {
-    const response = await fetchImpl(endpoint, { method: 'POST', headers, body: JSON.stringify({ model, messages: conversation, tools: toolDefinitions, tool_choice: 'auto', temperature: 0.2 }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'OpenRouter پاسخ ناموفق داد');
-    const message = data.choices?.[0]?.message;
+    const response = await fetchImpl(endpoint, { method: 'POST', headers, signal, body: JSON.stringify({ model, messages: conversation, tools: toolDefinitions, tool_choice: 'auto', temperature: 0.2, ...(onToken ? { stream: true } : {}) }) });
+    if (!response.ok) { const data = await response.json(); throw new Error(data.error?.message || 'OpenRouter پاسخ ناموفق داد'); }
+    let message;
+    if (onToken) {
+      message = { role: 'assistant', content: '', tool_calls: [] };
+      await readEventStream(response.body, data => {
+        if (data.error) throw new Error(data.error.message || 'Model stream failed');
+        const delta = data.choices?.[0]?.delta;
+        if (!delta) return;
+        if (delta.content) { message.content += delta.content; onToken(delta.content); }
+        for (const part of delta.tool_calls || []) {
+          const call = message.tool_calls[part.index] ||= { id: '', type: 'function', function: { name: '', arguments: '' } };
+          if (part.id) call.id = part.id;
+          call.function.name += part.function?.name || '';
+          call.function.arguments += part.function?.arguments || '';
+        }
+      });
+      message.tool_calls = message.tool_calls.filter(Boolean);
+    } else { const data = await response.json(); message = data.choices?.[0]?.message; }
     if (!message) throw new Error('پاسخی از مدل دریافت نشد');
     const calls = message.tool_calls || [];
     if (!calls.length) return { reply: message.content || 'پاسخی دریافت نشد.', events };
@@ -26,7 +43,9 @@ async function runAgent({ fetchImpl = fetch, endpoint, headers, model, messages,
     for (const call of calls) {
       let args = {}; try { args = JSON.parse(call.function?.arguments || '{}'); } catch { args = {}; }
       const name = call.function?.name, handler = tools[name];
-      events.push(eventFor(name, args));
+      const event = eventFor(name, args);
+      events.push(event);
+      onEvent?.(event);
       let result;
       try { result = handler ? await handler(args) : { error: 'ابزار ناشناخته است' }; } catch (error) { result = { error: error.message }; }
       conversation.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });

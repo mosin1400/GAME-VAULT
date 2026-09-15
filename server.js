@@ -107,6 +107,7 @@ function projectRoot(game, version) {
     throw new Error("مسیر پروژه معتبر نیست");
   return path.join(GAMES, game, "versions", version);
 }
+const { workspaceFragment } = require('./backend/projects/workspace-url');
 function safeFile(root, rel) {
   return projectUtils.safeFile(root, rel);
 }
@@ -512,12 +513,11 @@ async function api(req, res, url) {
   if (req.method === "POST" && url.pathname === "/api/theia/open") {
     const data = await body(req),
       root = projectRoot(data.game, data.version),
-      workspace = `file:///${root.replaceAll("\\", "/")}`,
       gvToken = studioAccess.issue(sessionUser(req));
     await startTheia();
     return send(res, 200, {
       ok: true,
-      url: `http://${theiaHost(req)}:${THEIA_PORT}/?workspace=${encodeURIComponent(workspace)}&gvGame=${encodeURIComponent(data.game)}&gvVersion=${encodeURIComponent(data.version)}&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}`,
+      url: `http://${theiaHost(req)}:${THEIA_PORT}/?gvGame=${encodeURIComponent(data.game)}&gvVersion=${encodeURIComponent(data.version)}&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}#${workspaceFragment(root)}`,
     });
   }
   if (req.method === "POST" && url.pathname === "/api/theia/free") {
@@ -809,7 +809,7 @@ async function api(req, res, url) {
     if (!item?.before)
       return send(res, 400, { error: "Snapshot قابل بازگشت نیست" });
     const before = await projectSnapshot(root);
-    await fsp.rm(root, { recursive: true, force: true });
+    await fsp.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     await fsp.mkdir(root, { recursive: true });
     for (const [relative, content] of Object.entries(item.before)) {
       const target = safeFile(root, relative);
@@ -1041,7 +1041,7 @@ async function api(req, res, url) {
   if (req.method === "DELETE" && url.pathname === "/api/version") {
     const data = await body(req);
     const root = projectRoot(data.game, data.version);
-    await fsp.rm(root, { recursive: true, force: true });
+    await fsp.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     return send(res, 200, { ok: true });
   }
   if (req.method === "POST" && url.pathname === "/api/upload") {
@@ -1206,22 +1206,33 @@ async function api(req, res, url) {
     await fsp.rm(proposalKey(item.id), { force: true });
     return send(res, 200, { ok: true, files: Object.keys(item.files) });
   }
+  if (url.pathname === '/api/agent/sessions') {
+    const data = req.method === 'GET' ? Object.fromEntries(url.searchParams) : await body(req);
+    projectRoot(data.game, data.version);
+    if (req.method === 'GET') return send(res, 200, { sessions: await agentMemory.listSessions(data.game, data.version) });
+    if (req.method === 'POST') return send(res, 201, await agentMemory.createSession(data.game, data.version));
+    if (req.method === 'DELETE') {
+      await agentMemory.clear(data.game, data.version, data.sessionId);
+      return send(res, 200, { ok: true });
+    }
+    return send(res, 405, { error: 'Method not allowed' });
+  }
   if (req.method === "GET" && url.pathname === "/api/agent/conversation") {
     const game = String(url.searchParams.get("game") || ""),
       version = String(url.searchParams.get("version") || "");
     projectRoot(game, version);
-    return send(res, 200, { messages: await agentMemory.read(game, version) });
+    return send(res, 200, { messages: await agentMemory.read(game, version, url.searchParams.get('sessionId') || 'default') });
   }
   if (req.method === "DELETE" && url.pathname === "/api/agent/conversation") {
     const data = await body(req);
     projectRoot(data.game, data.version);
-    await agentMemory.clear(data.game, data.version);
+    await agentMemory.clear(data.game, data.version, data.sessionId);
     return send(res, 200, { ok: true });
   }
   if (req.method === "DELETE" && url.pathname === "/api/agent/message") {
     const data = await body(req);
     projectRoot(data.game, data.version);
-    const messages = await agentMemory.remove(data.game, data.version, data.id);
+    const messages = await agentMemory.remove(data.game, data.version, data.id, data.sessionId);
     if (!messages) return send(res, 404, { error: "پیام پیدا نشد" });
     return send(res, 200, { ok: true, messages });
   }
@@ -1281,117 +1292,25 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true });
   }
   if (req.method === "POST" && url.pathname === "/api/agent/message") {
+    const data = await body(req);
+    if (data.stream) {
+      const controller = new AbortController();
+      res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
+      res.flushHeaders();
+      const emit = (event, value) => { if (!res.destroyed) res.write(`event: ${event}\ndata: ${JSON.stringify(value)}\n\n`); };
+      res.on('close', () => { if (!res.writableEnded) controller.abort(); });
+      const heartbeat = setInterval(() => { if (!res.destroyed) res.write(': keepalive\n\n'); }, 15000);
+      try {
+        const result = await handleAgentMessage(data, { onToken: token => emit('token', { token }), onEvent: event => emit('activity', event), signal: controller.signal });
+        emit('result', result);
+      } catch (error) { emit('error', { error: error.message }); }
+      finally { clearInterval(heartbeat); res.end(); }
+      return;
+    }
     try {
-      return send(res, 200, await handleAgentMessage(await body(req)));
+      return send(res, 200, await handleAgentMessage(data));
     } catch (error) {
       return send(res, 502, { error: error.message });
-    }
-  }
-  if (req.method === "POST" && url.pathname === "/api/agent/message") {
-    const data = await body(req),
-      game = String(data.game || ""),
-      version = String(data.version || ""),
-      root = projectRoot(game, version);
-    let message = String(data.message || "").trim(),
-      history = await agentMemory.read(game, version);
-    if (data.regenerateOf) {
-      const index = history.findIndex(
-          (item) => item.id === data.regenerateOf && item.role === "assistant",
-        ),
-        user = [...history.slice(0, index)]
-          .reverse()
-          .find((item) => item.role === "user");
-      if (index < 0 || !user)
-        return send(res, 404, { error: "پیام قابل بازتولید پیدا نشد" });
-      message = user.content;
-      history = await agentMemory.remove(game, version, data.regenerateOf);
-    } else if (data.replaceMessageId) {
-      history = await agentMemory.editAndTrim(
-        game,
-        version,
-        data.replaceMessageId,
-        message,
-      );
-      if (!history)
-        return send(res, 404, { error: "پیام کاربر برای ویرایش پیدا نشد" });
-    } else {
-      if (!message) return send(res, 400, { error: "پیام خالی است" });
-      await agentMemory.append(game, version, {
-        role: "user",
-        content: message,
-      });
-    }
-    if (!process.env.OPENROUTER_API_KEY)
-      return send(res, 400, {
-        error:
-          "کلید OpenRouter در حافظهٔ سرور شناسایی نشد؛ سرور را پس از تنظیم .env دوباره اجرا کنید.",
-      });
-    const userContent = data.attachmentData
-        ? [
-            {
-              type: "text",
-              text: message || `فایل ${data.attachmentName || ""} را بررسی کن`,
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${data.attachmentType || "application/octet-stream"};base64,${data.attachmentData}`,
-              },
-            },
-          ]
-        : message,
-      context = await buildAgentContext(root, {
-        activeFile: data.file,
-        maximumFileBytes: 50000,
-        maximumTotalBytes: 100000,
-      }),
-      tools = createAgentTools({ root }),
-      system = `تو Agent پروژه در Game Vault Studio هستی. برای بازی ${game} و نسخه ${version} کار می‌کنی. Skill فعال=${data.skill || "general"} و حالت تأیید=${data.approvalMode || "manual"}. پیش از ادعای بررسی فایل، از ابزارهای list_files، read_file یا search_text استفاده کن. ابزارها فقط خواندنی هستند؛ برای تغییر فایل باید Diff پیشنهاد بدهی و تأیید کاربر را بگیری. هرگز ادعا نکن ابزاری در دسترس نیست؛ اگر ابزار مناسب وجود ندارد، محدودیت را شفاف بگو.`;
-    try {
-      const result = await runAgent({
-        endpoint: "https://openrouter.ai/api/v1/chat/completions",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:" + PORT,
-          "X-Title": "Game Vault Studio Agent",
-        },
-        model: data.model || process.env.OPENROUTER_MODEL || "openrouter/free",
-        messages: [
-          { role: "system", content: system },
-          ...history
-            .slice(-16)
-            .map((item) => ({ role: item.role, content: item.content })),
-          {
-            role: "system",
-            content: `PROJECT CONTEXT (read-only): ${JSON.stringify({ paths: context.paths, activeFile: context.activeFile, files: context.files })}`,
-          },
-          { role: "user", content: userContent },
-        ],
-        tools: {
-          list_files: () => tools.listFiles(),
-          read_file: (args) => tools.readFile(args.path),
-          search_text: (args) => tools.searchText(args.query),
-        },
-      });
-      await agentMemory.append(game, version, {
-        role: "assistant",
-        content: result.reply,
-      });
-      return send(res, 200, {
-        message: result.reply,
-        events: result.events,
-        messages: await agentMemory.read(game, version),
-        context: {
-          files: context.paths.length,
-          activeFile: context.activeFile?.path || "",
-        },
-        model: data.model || process.env.OPENROUTER_MODEL || "openrouter/free",
-      });
-    } catch (error) {
-      return send(res, 502, {
-        error: "اتصال Agent برقرار نشد: " + error.message,
-      });
     }
   }
   if (req.method === "POST" && url.pathname === "/api/chat") {

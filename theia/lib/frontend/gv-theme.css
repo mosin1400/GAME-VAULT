@@ -16,3 +16,24 @@ html[data-gv-theme-light="true"] .gv-native-agent{color:#17243a;background:#f8fa
 html[data-gv-theme-light="true"] .gv-native-agent .gv-action-card{background:#fff;color:#17243a;border-color:#c7d3e0;box-shadow:none}
 html[data-gv-theme-light="true"] .gv-native-agent .gv-task{color:#475569}
 html[data-gv-theme-light="true"] .gv-native-agent pre{background:#eef2f6;color:#17243a}
+.gv-native-agent.lm-mod-hidden,.gv-native-agent.p-mod-hidden,.gv-project-tools.lm-mod-hidden,.gv-project-tools.p-mod-hidden{display:none!important}
+.gv-native-agent{min-height:0;min-width:0!important;overflow:hidden;box-sizing:border-box}
+.gv-native-agent .gv-log{min-height:0;overflow-y:auto;overflow-wrap:anywhere}
+.gv-native-agent .gv-head,.gv-native-agent .gv-compose{flex-shrink:0}
+.gv-project-tools{height:100%;overflow:auto;box-sizing:border-box;min-width:0!important}
+#gv-studio-toolbar .gv-control-group{display:flex;align-items:center;gap:2px;padding:0 7px;border-left:1px solid var(--theia-panel-border);flex-shrink:0}
+#gv-studio-toolbar button,#gv-studio-toolbar select{height:30px;min-width:30px;line-height:18px;padding:4px 8px;box-sizing:border-box;border-color:transparent;background:transparent;color:var(--theia-foreground)}
+#gv-studio-toolbar button:hover{background:var(--theia-toolbar-hoverBackground,#ffffff18)}
+#gv-studio-toolbar select{border:1px solid var(--theia-panel-border);background:var(--theia-input-background);min-width:100px;max-width:170px}
+#gv-studio-toolbar button:disabled{opacity:.45;cursor:wait}
+#gv-toolbar-status{font-size:11px;color:var(--theia-errorForeground,#c53030);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gv-session-controls{display:flex;gap:5px;padding:8px 12px;border-bottom:1px solid var(--theia-panel-border);flex-shrink:0}
+.gv-session-controls select{min-width:0;flex:1}
+.gv-session-controls select,.gv-session-controls button{background:var(--theia-input-background);color:var(--theia-input-foreground);border:1px solid var(--theia-panel-border);border-radius:5px;padding:5px;font:inherit}
+html[data-gv-theme-light="true"]{--theia-foreground:#17243a;--theia-descriptionForeground:#475569;--theia-input-foreground:#17243a;--theia-input-background:#fff;--theia-input-border:#b8c7d9;--theia-panel-border:#c7d3e0}
+html[data-gv-theme-light="true"] #gv-studio-toolbar{background:#edf2f8;color:#17243a}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-icon,html[data-gv-theme-light="true"] .gv-native-agent .gv-file,html[data-gv-theme-light="true"] .gv-native-agent .gv-message-actions button{color:#475569}
+html[data-gv-theme-light="true"] .gv-project-tools{background:#f8fafc;color:#17243a}
+html[data-gv-theme-light="true"] .gv-native-agent textarea,html[data-gv-theme-light="true"] .gv-native-agent select{background:#fff;color:#17243a;border-color:#b8c7d9}
+html[data-gv-theme-light="true"] .gv-native-agent textarea::placeholder{color:#61738a;opacity:1}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-action-delta{color:#18703e}

@@ -12,7 +12,7 @@ assert(frontend.includes("require('../../gv-extension/studio-module')"), 'native
 assert(frontend.includes("require('../../gv-extension/language-module')"), 'Studio language registration must be loaded by Theia');
 assert(!html.includes('gv-agent-panel'), 'legacy overlay agent must not be shipped');
 assert(!html.includes('gv-agent-toggle'), 'legacy overlay agent toggle must not be shipped');
-const studio = fs.readFileSync(path.join(root, 'theia', 'gv-extension', 'studio-module.js'), 'utf8');
+const studio = ['studio-module.js', 'studio-toolbar.js', 'agent-chat.js'].map(file => fs.readFileSync(path.join(root, 'theia', 'gv-extension', file), 'utf8')).join('\n');
 assert.match(studio, /credentials:\s*['"]include['"]/, 'native Agent must send the authenticated manager session');
 assert.doesNotMatch(studio, /GameVaultMetadataWidget/, 'game.json must use the native Theia text editor, not a graphical metadata form');
 assert.doesNotMatch(studio, /GameVaultReadmeWidget/, 'README.md must use the native Theia text editor, not a graphical README view');
@@ -26,8 +26,8 @@ assert.match(studio, /gv-attach/, 'native Agent must provide an attachment actio
 assert.match(studio, /\/api\/skills/, 'native Agent must load available skills');
 assert.match(studio, /attachmentData/, 'native Agent must send an attached file to the Agent API');
 assert.match(studio, /approvalMode/, 'native Agent must expose approval mode with each request');
-assert.match(studio, /apiFetch\(`\$\{API\}\/api\/theia\/open`/, 'switching versions must ask the server for a fresh workspace URL');
-assert.match(studio, /window\.location\.assign\(data\.url\)/, 'switching versions must replace both version identity and workspace together');
+assert.match(studio, /request\('\/api\/theia\/open'/, 'switching versions must ask the server for a fresh workspace URL');
+assert.match(studio, /window\.location\.assign\(url\.href\)/, 'switching versions must replace both version identity and workspace together');
 assert.doesNotMatch(studio, /باید با حالت مدیر وارد شوید/, 'Studio must not show an irrelevant manager-mode message');
 assert.doesNotMatch(studio, /gv-studio-metadata/, 'the obsolete graphical metadata toolbar button must not remain');
 const languages = fs.readFileSync(path.join(root, 'theia', 'gv-extension', 'language-module.js'), 'utf8');

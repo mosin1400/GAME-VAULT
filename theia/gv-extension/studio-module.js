@@ -4,6 +4,8 @@ const { ApplicationShell } = require('@theia/core/lib/browser/shell/application-
 const { Widget } = require('@theia/core/shared/@lumino/widgets');
 const { renderMarkdown } = require('./markdown-renderer');
 const { describeAgentActivity } = require('./codex-activity');
+const { mountStudioToolbar } = require('./studio-toolbar');
+const { installAgentChat } = require('./agent-chat');
 const studioUrl = new URL(window.location.href);
 const API=`${window.location.protocol}//${window.location.hostname}:${studioUrl.searchParams.get('gvApiPort') || '8080'}`;
 const models=[['openrouter/free','مدل رایگان'],['inclusionai/ling-3.0-flash-vl:free','Ling 3.0'],['nvidia/nemotron-3-ultra-550b-a55b:free','Nemotron'],['thinkingmachines/inkling-small:free','Inkling Small'],['thinkingmachines/inkling:free','Inkling'],['poolside/laguna-s-2.1:free','Laguna S 2.1']];
@@ -15,12 +17,7 @@ class GameVaultAgentWidget extends Widget{
  async loadSkills(){try{const d=await(await apiFetch(`${API}/api/skills`)).json();for(const s of d.skills||[]){const o=document.createElement('option');o.value=s.id;o.textContent=`Skill: ${s.name||s.id}`;this.skill.appendChild(o)}}catch{}}
  add(item,type='ai'){const m=typeof item==='string'?{content:item}:item,e=document.createElement('article');e.className=type==='user'?'gv-user':type==='task'?'gv-task':'gv-ai';const body=document.createElement('div');if(type==='ai')body.innerHTML=renderMarkdown(m.content);else body.textContent=m.content;e.appendChild(body);if(m.id&&type!=='task'){const a=document.createElement('div');a.className='gv-message-actions';for(const [i,t,fn] of [['⧉','کپی',()=>navigator.clipboard?.writeText(m.content)],...(type==='user'?[['✎','ویرایش',()=>{this.input.value=m.content;this.editing=m.id;this.input.focus()}]]:[]),...(type==='ai'?[['↻','باز‌تولید',()=>this.send({regenerateOf:m.id})]]:[]),['🗑','حذف',()=>this.remove(m.id)]]){const b=document.createElement('button');b.title=t;b.textContent=i;b.onclick=fn;a.appendChild(b)}e.appendChild(a)}this.log.appendChild(e);this.log.scrollTop=this.log.scrollHeight}
  show(ms){this.log.replaceChildren();for(const m of ms||[])this.add(m,m.role==='user'?'user':'ai')}
- actionCard(action){const e=document.createElement('article'),b=document.createElement('button'),title=document.createElement('div'),name=document.createElement('span'),delta=document.createElement('span'),diff=String(action.diff||'');e.className='gv-action-card';title.className='gv-action-title';name.textContent=action.type==='command'?'دستور پیشنهادی':action.type==='delete'?'حذف فایل پیشنهادی':'ویرایش پیشنهادی فایل';const plus=(diff.match(/^\+/gm)||[]).length-1,minus=(diff.match(/^-/gm)||[]).length-1;delta.className='gv-action-delta';delta.textContent=action.type==='command'?'Terminal':`−${Math.max(0,minus)}  +${Math.max(0,plus)}`;title.append(name,delta);e.append(title);const pathLine=document.createElement('div');pathLine.textContent=action.type==='command'?action.command:action.path;e.append(pathLine);if(diff){const pre=document.createElement('pre');pre.textContent=diff;e.append(pre)}b.textContent=action.approvalMode==='auto'?'در حال اجرای خودکار…':'تأیید و اعمال تغییر';const apply=async()=>{b.disabled=true;const p=project(),r=await apiFetch(`${API}/api/agent/action/apply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...p,id:action.id})}),d=await r.json();e.replaceChildren();e.textContent=r.ok?`✓ ${action.path||'دستور'} با موفقیت اعمال شد.`:`خطا: ${d.error||''}`};b.onclick=apply;e.appendChild(b);this.log.appendChild(e);if(action.approvalMode==='auto')apply()}
- async restore(){const p=project();if(!p.game||!p.version)return;try{const r=await apiFetch(`${API}/api/agent/conversation?game=${encodeURIComponent(p.game)}&version=${encodeURIComponent(p.version)}`),d=await r.json();if(r.ok)this.show(d.messages)}catch{}}
- async clear(){const p=project();await apiFetch(`${API}/api/agent/conversation`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});this.show([])}
- async remove(id){const p=project(),r=await apiFetch(`${API}/api/agent/message`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({...p,id})}),d=await r.json();if(r.ok)this.show(d.messages)}
  async encodeAttachment(){if(!this.attachment)return{};const f=this.attachment,b=await new Promise((ok,bad)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',').at(-1));r.onerror=bad;r.readAsDataURL(f)});return{attachmentData:b,attachmentType:f.type||'application/octet-stream',attachmentName:f.name}}
- async send(options={}){const message=this.input.value.trim(),p=project();if((!message&&!options.regenerateOf)||!p.game||!p.version)return;const attach=await this.encodeAttachment();if(!options.regenerateOf)this.add(message,'user');this.input.value='';this.add('در حال خواندن Context پروژه و ارسال درخواست به Agent…','task');try{const r=await apiFetch(`${API}/api/agent/message`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version:p.version,message,model:this.model.value,skill:this.skill.value,approvalMode:this.approvalMode,replaceMessageId:this.editing||'',...attach,...options})}),d=await r.json();this.editing='';this.attachment=null;this.file.value='';this.node.querySelector('#gv-file-name').textContent='';this.log.querySelector('.gv-task:last-of-type')?.remove();if(!r.ok)throw Error(d.error||'پاسخ ناموفق بود');this.show(d.messages);for(const x of d.events||[])this.add(`${x.type}${x.detail?`: ${x.detail}`:''}`,'task');for(const action of d.pendingActions||[])this.actionCard(action)}catch(e){this.add(`خطا: ${e.message}`,'task')}}
  async requestRewrite(){const p=project();if(!p.game||!p.version)return;this.add('AI در حال بررسی فایل‌ها و ساخت Diff است؛ هنوز هیچ تغییری اعمال نمی‌شود.','task');try{const r=await apiFetch(`${API}/api/ai/rewrite`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version:p.version,model:this.model.value})}),d=await r.json();if(!r.ok)throw Error(d.error||'پیشنهاد AI ساخته نشد');if(!d.proposal){this.add(d.message||'تغییر ضروری پیدا نشد.','task');return}const card=document.createElement('article');card.className='gv-ai';const title=document.createElement('b');title.textContent=`Diff پیشنهادی: ${d.proposal.summary}`;card.append(title);for(const file of d.proposal.files){const h=document.createElement('h4'),pre=document.createElement('pre');h.textContent=file.path;pre.textContent=file.diff;card.append(h,pre)}const approve=document.createElement('button');approve.textContent='اعمال پس از Snapshot';approve.title='ابتدا Snapshot ساخته می‌شود، سپس فقط همین Diff اعمال خواهد شد';approve.onclick=async()=>{approve.disabled=true;const applied=await apiFetch(`${API}/api/ai/rewrite/apply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:d.proposal.id,game:p.game,version:p.version})}),result=await applied.json();if(!applied.ok)throw Error(result.error||'اعمال نشد');this.add(`Snapshot ساخته شد و ${result.files.length} فایل تأییدشده اعمال شد.`,'task');card.remove()};card.append(approve);this.log.append(card);this.log.scrollTop=this.log.scrollHeight}catch(error){this.add(`خطای AI Fix: ${error.message}`,'task')}}
 }
 
@@ -67,12 +64,14 @@ GameVaultAgentWidget.prototype.actionCard = function actionCard(action) {
  approve.textContent = action.approvalMode === 'auto' ? 'Applying…' : 'Approve and apply';
  approve.onclick = async () => {
    approve.disabled = true;
+   try {
    const p = project(), response = await apiFetch(`${API}/api/agent/action/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...p, id: action.id }) }), result = await response.json();
    card.replaceChildren();
    const resultTitle = document.createElement('strong'), resultDetail = document.createElement('div');
    resultTitle.textContent = 'Result';
-   resultDetail.textContent = response.ok ? 'Completed' : `Failed: ${result.error || 'Unknown error'}`;
+   resultDetail.textContent = response.ok && result.result?.ok !== false ? 'Completed' : `Failed: ${result.error || result.result?.error || 'Unknown error'}`;
    card.append(resultTitle, resultDetail);
+   } catch (error) { approve.disabled = false; approve.textContent = `Retry: ${error.message}`; }
  };
  card.appendChild(approve);
  this.log.appendChild(card);
@@ -80,24 +79,9 @@ GameVaultAgentWidget.prototype.actionCard = function actionCard(action) {
  if (action.approvalMode === 'auto') approve.click();
 };
 
-GameVaultAgentWidget.prototype.send = async function send(options = {}) {
- const message = this.input.value.trim(), p = project();
- if ((!message && !options.regenerateOf) || !p.game || !p.version) return;
- const attach = await this.encodeAttachment();
- if (!options.regenerateOf) this.add(message, 'user');
- this.input.value = '';
- addCodexStep(this, { type: 'pending' });
- try {
-   const response = await apiFetch(`${API}/api/agent/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: p.game, version: p.version, message, model: this.model.value, skill: this.skill.value, approvalMode: this.approvalMode, replaceMessageId: this.editing || '', ...attach, ...options }) }), data = await response.json();
-   this.editing = ''; this.attachment = null; this.file.value = ''; this.node.querySelector('#gv-file-name').textContent = '';
-   if (!response.ok) throw Error(data.error || 'Agent request failed');
-   this.show(data.messages);
-   for (const event of data.events || []) addCodexStep(this, event);
-   for (const action of data.pendingActions || []) this.actionCard(action);
- } catch (error) { addCodexStep(this, { type: 'error', detail: error.message }); }
-};
 
-function addToolbar(shell){if(document.getElementById('gv-studio-toolbar'))return;const b=document.createElement('div'),p=project(),open=async version=>{const r=await apiFetch(`${API}/api/theia/open`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version})}),data=await r.json();if(r.ok)window.location.assign(data.url)};b.id='gv-studio-toolbar';b.innerHTML='<button id="gv-layout-explorer" title="Explorer">◧</button><button id="gv-layout-split" title="نمایش پنل‌ها">▣</button><button id="gv-layout-focus" title="تمرکز روی ویرایشگر">◨</button><select id="gv-theme-mode" title="تم Studio"><option value="modern-dark">مدرن تیره</option><option value="modern-light">مدرن روشن</option><option value="main-dark">اصلی تیره</option><option value="main-light">اصلی روشن</option></select><select id="gv-version" title="نسخه"></select><button id="gv-version-add" title="افزودن نسخه">＋</button><button id="gv-version-rename" title="تغییر نام نسخه">✎</button><button id="gv-version-delete" title="حذف نسخه">🗑</button><button id="gv-preview" title="Open selected version in a new tab">▷ Preview</button><button id="gv-fix" title="AI Fix با Diff و Snapshot">✣ رفع AI</button><button id="gv-agent">✦ Agent</button>';(document.querySelector('.theia-top-panel')||document.body).appendChild(b);const select=b.querySelector('#gv-version'),theme=b.querySelector('#gv-theme-mode');theme.value=localStorage.getItem('gv-theia-theme-mode')||'modern-dark';theme.onchange=()=>window.dispatchEvent(new CustomEvent('gv-theme-change',{detail:theme.value}));if(p.game)apiFetch(`${API}/api/games`).then(r=>r.json()).then(d=>{const g=(d.games||[]).find(x=>x.slug===p.game||x.id===p.game);for(const item of g?.versions||[]){const version=item.name||item,o=document.createElement('option');o.value=version;o.textContent=version;o.selected=version===p.version;select.appendChild(o)}}).catch(()=>{});select.onchange=()=>open(select.value);b.querySelector('#gv-version-add').onclick=async()=>{const version=window.prompt('نام نسخهٔ جدید','v1.0.1');if(!version)return;const r=await apiFetch(`${API}/api/version`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version,fromVersion:p.version})});if(r.ok)open(version)};b.querySelector('#gv-version-rename').onclick=async()=>{const version=window.prompt('نام تازهٔ نسخه',p.version);if(!version||version===p.version)return;const r=await apiFetch(`${API}/api/version`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version:p.version,newVersion:version})});if(r.ok)open(version)};b.querySelector('#gv-version-delete').onclick=async()=>{if(!window.confirm(`نسخهٔ ${p.version} حذف شود؟`))return;const r=await apiFetch(`${API}/api/version`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version:p.version})});if(r.ok)window.location.assign(`${API}/manage.html`)};b.querySelector('#gv-preview').onclick=()=>window.open(`${API}/games/${encodeURIComponent(p.game)}/versions/${encodeURIComponent(p.version)}/game.html`,'_blank','noopener');b.querySelector('#gv-agent').onclick=()=>shell.activateWidget('game-vault-agent');b.querySelector('#gv-fix').onclick=()=>{shell.activateWidget('game-vault-agent');window.gameVaultAgent?.requestRewrite()};b.querySelector('#gv-layout-explorer').onclick=()=>{shell.leftPanelHandler.expand();shell.rightPanelHandler.collapse()};b.querySelector('#gv-layout-split').onclick=()=>{shell.leftPanelHandler.expand();shell.rightPanelHandler.expand()};b.querySelector('#gv-layout-focus').onclick=()=>{shell.leftPanelHandler.collapse();shell.rightPanelHandler.collapse()}}
+installAgentChat(GameVaultAgentWidget, { project, apiFetch, API, addCodexStep });
+
 class GameVaultProjectToolsWidget extends Widget{
  constructor(){super({node:document.createElement('section')});this.id='game-vault-project-tools';this.title.label='Project Tools';this.title.iconClass='codicon codicon-tools';this.title.closable=true;this.node.className='gv-project-tools theia-widget';this.node.dir='rtl';this.render()}
  render(){this.node.innerHTML='<style>.gv-project-tools{padding:16px;min-width:290px;background:var(--theia-sideBar-background);color:var(--theia-foreground);font-family:Vazirmatn,Arial,sans-serif}.gv-project-tools h3{margin:0 0 14px}.gv-project-tools article{padding:11px;margin:9px 0;border:1px solid var(--theia-panel-border);border-radius:10px}.gv-project-tools button{margin:5px 0;border:0;border-radius:7px;padding:7px 10px;background:var(--theia-button-background);color:var(--theia-button-foreground)}</style><h3>وضعیت پروژه</h3><div id="gv-project-info">در حال دریافت اطلاعات…</div><button id="gv-project-refresh">بروزرسانی</button><h3>Snapshotها</h3><div id="gv-project-history">—</div>';this.node.querySelector('#gv-project-refresh').onclick=()=>this.refresh();this.refresh()}
@@ -107,19 +91,11 @@ const studioModule = new ContainerModule(bind => {
   bind(FrontendApplicationContribution).toDynamicValue(context => ({
     onStart: async () => {
       const shell = context.container.get(ApplicationShell);
-      addToolbar(shell);
+      mountStudioToolbar({ shell, project, apiFetch, API });
       const agent = new GameVaultAgentWidget();
       const tools = new GameVaultProjectToolsWidget();
       if (!shell.getWidgetById(agent.id)) await shell.addWidget(agent, { area: 'right' });
       if (!shell.getWidgetById(tools.id)) await shell.addWidget(tools, { area: 'right' });
-      const bar = document.querySelector('#gv-studio-toolbar');
-      if (bar && !document.querySelector('#gv-project-tools')) {
-        const button = document.createElement('button');
-        button.id = 'gv-project-tools'; button.title = 'Git، منابع و Snapshot';
-        button.textContent = '▤ ابزار پروژه';
-        button.onclick = () => { tools.refresh(); shell.activateWidget(tools.id); };
-        bar.appendChild(button);
-      }
     }
   })).inSingletonScope();
 });

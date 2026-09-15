@@ -42,7 +42,6 @@ const themeModule = new ContainerModule(bind => {
       const actual = available.find(theme => theme.label === modes[selected] || theme.id === modes[selected])
         || available.find(theme => theme.id === family);
       if (actual) themes.setCurrentTheme(actual.id);
-      document.querySelectorAll('#gv-theme-mode').forEach(select => { select.value = selected; });
       window.dispatchEvent(new CustomEvent('gv-theme-applied', { detail: selected }));
       return preferences.set('workbench.colorTheme', actual ? actual.id : family, PreferenceScope.User).catch(console.error);
     };
