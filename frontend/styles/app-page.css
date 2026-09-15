@@ -171,7 +171,8 @@ button {
   margin-left:8px
 }
 .main-content {
-  width:min(1500px,100%);
+  width:100%;
+  max-width:none;
   padding:0 55px 28px;
   margin:0 auto
 }
