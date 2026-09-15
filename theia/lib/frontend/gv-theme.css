@@ -37,3 +37,20 @@ html[data-gv-theme-light="true"] .gv-project-tools{background:#f8fafc;color:#172
 html[data-gv-theme-light="true"] .gv-native-agent textarea,html[data-gv-theme-light="true"] .gv-native-agent select{background:#fff;color:#17243a;border-color:#b8c7d9}
 html[data-gv-theme-light="true"] .gv-native-agent textarea::placeholder{color:#61738a;opacity:1}
 html[data-gv-theme-light="true"] .gv-native-agent .gv-action-delta{color:#18703e}
+.gv-native-agent .gv-head{padding:11px 14px;font-size:12px;align-items:center;gap:8px}
+.gv-native-agent .gv-head small{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;color:var(--theia-descriptionForeground);font-weight:400}
+.gv-native-agent .gv-session-controls{align-items:center;padding:8px 12px;gap:6px;font-size:12px;background:transparent}
+.gv-native-agent .gv-session-controls select{height:30px;padding:4px 8px;border-color:var(--theia-panel-border);border-radius:6px;max-width:none;background:var(--theia-sideBar-background);color:var(--theia-foreground)}
+.gv-native-agent .gv-session-controls button{height:30px;white-space:nowrap;border:0;background:transparent;color:var(--theia-foreground);padding:4px 7px;cursor:pointer}
+.gv-native-agent .gv-session-controls button:hover{background:var(--theia-list-hoverBackground);border-radius:5px}
+.gv-native-agent .gv-action-card{padding:9px 12px;margin:8px 0;border-color:var(--theia-panel-border);background:transparent;box-shadow:none;font-size:12px;border-radius:7px}
+.gv-native-agent .gv-action-card pre{max-height:240px}
+.gv-native-agent .gv-user{background:var(--theia-editorWidget-background);color:var(--theia-foreground);border:1px solid var(--theia-panel-border);border-radius:10px;padding:10px 12px}
+.gv-native-agent .gv-ai{font-size:13px;line-height:1.85;border-bottom:0;animation:gv-message-in .15s ease-out}
+.gv-native-agent .gv-compose textarea{background:var(--theia-editorWidget-background);border-color:var(--theia-panel-border);padding:11px;font-size:13px;min-height:85px;max-height:200px}
+.gv-native-agent .gv-compose-footer select{font-size:12px;background:transparent;border:0;padding:4px;min-width:0}
+.gv-native-agent .gv-send{cursor:pointer}.gv-native-agent .gv-compose-footer [hidden]{display:none!important}
+@keyframes gv-message-in{from{opacity:.5;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-user{background:#edf3f8;color:#17243a}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-session-controls select{background:#fff;color:#17243a}
+html[data-gv-theme-light="true"] .theia-sidepanel-toolbar .theia-toolbar-item.enabled:hover,html[data-gv-theme-light="true"] .lm-TabBar-tab.lm-mod-current{background:#fff!important;color:#17243a!important}

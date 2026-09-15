@@ -30,12 +30,12 @@ assert.deepEqual(
 );
 assert.deepEqual(
   describeAgentActivity({ type: 'action', action: { type: 'write', path: 'src/main.js', diff: '@@\n-old\n+new' } }),
-  { heading: 'Edited 1 file +1 -1', detail: 'src/main.js' },
+  { heading: 'Proposed edit to 1 file +1 -1', detail: 'src/main.js' },
   'write proposals must expose an English file and diff summary',
 );
 assert.deepEqual(
   describeAgentActivity({ type: 'action', action: { type: 'delete', path: 'old.js', diff: '@@\n-old' } }),
-  { heading: 'Deleted 1 file +0 -1', detail: 'old.js' },
+  { heading: 'Proposed deletion of 1 file +0 -1', detail: 'old.js' },
   'deletes must be visibly different from edits',
 );
 console.log('Codex activity presentation passed');

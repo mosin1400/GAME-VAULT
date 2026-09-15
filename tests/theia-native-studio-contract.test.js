@@ -17,7 +17,7 @@ assert.match(studio, /credentials:\s*['"]include['"]/, 'native Agent must send t
 assert.doesNotMatch(studio, /GameVaultMetadataWidget/, 'game.json must use the native Theia text editor, not a graphical metadata form');
 assert.doesNotMatch(studio, /GameVaultReadmeWidget/, 'README.md must use the native Theia text editor, not a graphical README view');
 assert.doesNotMatch(studio, /EditorManager/, 'Studio must not intercept Explorer file opens');
-assert.match(studio, /window\.location\.hostname/, 'Studio API calls must use the same host as the manager session');
+assert.match(studio, /window\.location\.origin/, 'Studio API calls must use a same-origin endpoint');
 assert.match(studio, /x-gv-studio-token/, 'Studio API calls must carry the short-lived access token issued by management');
 assert.match(studio, /\/api\/agent\/conversation/, 'native Agent must restore its persisted conversation');
 assert.match(studio, /\/api\/agent\/message/, 'native Agent must use the contextual Agent endpoint');

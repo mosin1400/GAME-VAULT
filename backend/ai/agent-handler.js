@@ -21,7 +21,13 @@ function unifiedDiff(before, after) {
 function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, createAgentTools, runAgent, saveAction, apiKey, model, port }) {
   const executeAgent = runAgent;
   return async function handle(data, transport = {}) {
-    const runAgent = options => executeAgent({ ...options, ...transport });
+    const timeline = [];
+    const live = { ...transport, onToken: transport.onToken ? token => {
+      const previous = timeline.at(-1);
+      if (previous?.type === 'text') previous.text += token; else timeline.push({ type: 'text', text: token });
+      transport.onToken(token);
+    } : undefined, onEvent: event => { timeline.push({ type: 'activity', event }); transport.onEvent?.(event); } };
+    const runAgent = options => executeAgent({ ...options, ...live });
     const game = String(data.game || ''), version = String(data.version || ''), root = projectRoot(game, version);
     const sessionId = data.sessionId || 'default';
     let message = String(data.message || '').trim(), history = await agentMemory.read(game, version, sessionId);
@@ -53,16 +59,18 @@ function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, creat
         action.diff = unifiedDiff(before, type === 'delete' ? '' : action.content);
       }
       saveAction(action); pendingActions.push(action);
+      live.onEvent({ type: 'action', action });
       return { status: 'pending_confirmation', id: action.id, diff: action.diff || '' };
     };
     const attachmentText = textAttachment(data);
     const userContent = data.attachmentData && String(data.attachmentType || '').startsWith('image/')
       ? [{ type: 'text', text: message || `فایل ${data.attachmentName || ''} را بررسی کن` }, { type: 'image_url', image_url: { url: `data:${data.attachmentType};base64,${data.attachmentData}` } }]
       : `${message}${attachmentText ? `\n\n[پیوست ${data.attachmentName || 'file'}]\n${attachmentText}` : ''}`;
-    const system = `تو Agent پروژه هستی. Skill فعال=${data.skill || 'general'} و حالت تأیید=${data.approvalMode || 'manual'}. ابتدا برای بررسی از ابزارهای خواندنی استفاده کن. برای هر تغییر فایل یا Command فقط ابزار propose را فراخوانی کن؛ خودت هیچ تغییر اثرگذاری اعمال نکن. پس از پیشنهاد ابزار، هرگز شناسه، pending_confirmation، JSON خام یا محتوای کامل فایل را در پاسخ چاپ نکن؛ فقط یک جملهٔ طبیعی فارسی مانند «ویرایش ${'${'}path} آمادهٔ بررسی است.» بنویس. پاسخ نهایی را مختصر و شفاف بنویس.`;
+    const system = `تو Agent پروژه هستی. Skill فعال=${data.skill || 'general'} و حالت تأیید=${data.approvalMode || 'manual'}. ابتدا برای بررسی از ابزارهای خواندنی استفاده کن. برای هر تغییر فایل یا Command فقط ابزار propose را فراخوانی کن؛ خودت هیچ تغییر اثرگذاری اعمال نکن. پس از پیشنهاد ابزار، هرگز شناسه، pending_confirmation، JSON خام یا محتوای کامل فایل را در پاسخ چاپ نکن؛ فقط یک جملهٔ طبیعی فارسی مانند «ویرایش ${'${'}path} آمادهٔ بررسی است.» بنویس. پیش از هر ابزار، شرح کوتاه و طبیعی از کار بعدی بنویس و بعد از نتیجهٔ ابزار، فقط نتیجهٔ قابل مشاهده را توضیح بده. پیشنهاد تغییر یا دستور هنوز اجرا نشده؛ تا دریافت نتیجهٔ اجرای واقعی هرگز نگو انجام شد، فایل ویرایش شد یا بیلد موفق بود. پاسخ نهایی را مختصر و شفاف بنویس.`;
     const result = await runAgent({ endpoint: 'https://openrouter.ai/api/v1/chat/completions', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': `http://localhost:${port}`, 'X-Title': 'Game Vault Studio Agent' }, model: data.model || model || 'openrouter/free', messages: [{ role: 'system', content: system }, ...history.slice(-16).map(item => ({ role: item.role, content: item.content })), { role: 'system', content: `PROJECT CONTEXT: ${JSON.stringify(context.files)}` }, { role: 'user', content: userContent }], tools: { list_files: () => tools.listFiles(), read_file: args => tools.readFile(args.path), search_text: args => tools.searchText(args.query), propose_file_change: args => propose(args.operation === 'delete' ? 'delete' : 'write', { path: String(args.path || ''), content: String(args.content || '') }), propose_terminal_command: args => propose('command', { command: String(args.command || '') }) } });
-    await agentMemory.append(game, version, { role: 'assistant', content: result.reply }, sessionId);
-    return { message: result.reply, events: result.events, pendingActions, messages: await agentMemory.read(game, version, sessionId), context: { files: context.paths.length }, model: data.model || model || 'openrouter/free' };
+    if (!transport.onToken || !timeline.some(item => item.type === 'text')) timeline.push({ type: 'text', text: result.reply });
+    await agentMemory.append(game, version, { role: 'assistant', content: result.reply, timeline }, sessionId);
+    return { message: result.reply, timeline, events: result.events, pendingActions, messages: await agentMemory.read(game, version, sessionId), context: { files: context.paths.length }, model: data.model || model || 'openrouter/free' };
   };
 }
 module.exports = { createAgentHandler };

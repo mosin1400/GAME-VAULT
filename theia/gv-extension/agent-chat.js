@@ -1,4 +1,5 @@
 const { readEventStream } = require('../../backend/ai/event-stream');
+const { renderMarkdown } = require('./markdown-renderer');
 
 function installAgentChat(AgentWidget, { project, apiFetch, API, addCodexStep }) {
   const prototype = AgentWidget.prototype;
@@ -12,7 +13,7 @@ function installAgentChat(AgentWidget, { project, apiFetch, API, addCodexStep })
     this.sessionId = localStorage.getItem(`gv-chat-session:${project().game}:${project().version}`) || 'default';
     render.call(this);
     const controls = document.createElement('div'); controls.className = 'gv-session-controls';
-    controls.innerHTML = '<select aria-label="Chat session"></select><button title="New chat">＋</button><button title="Delete chat">⌫</button>';
+    controls.innerHTML = '<select aria-label="Chat session"><option value="default">گفتگوی تازه</option></select><button class="gv-new-chat" title="New chat">＋ New chat</button><button class="gv-delete-chat" title="Delete chat">⌫</button>';
     this.node.querySelector('.gv-head').after(controls);
     this.sessionsSelect = controls.querySelector('select');
     this.sessionsSelect.onchange = async () => {
@@ -82,12 +83,16 @@ function installAgentChat(AgentWidget, { project, apiFetch, API, addCodexStep })
         if (event === 'error') throw Error(data.error || 'Stream failed');
         if (event === 'token') {
           if (!draft) { draft = document.createElement('article'); draft.className = 'gv-ai'; this.log.appendChild(draft); }
-          text += data.token; draft.textContent = text; this.log.scrollTop = this.log.scrollHeight;
-        } else if (event === 'activity') { addCodexStep(this, data); }
+          text += data.token; draft.innerHTML = renderMarkdown(text); this.log.scrollTop = this.log.scrollHeight;
+        } else if (event === 'activity') {
+          draft = null; text = '';
+          if (data.type === 'action') this.actionCard(data.action); else addCodexStep(this, data);
+        }
         else if (event === 'result') {
-          resultReceived = true; this.show(data.messages);
-          for (const activity of data.events || []) addCodexStep(this, activity);
-          for (const action of data.pendingActions || []) this.actionCard(action);
+          resultReceived = true;
+          // Keep the actual streamed timeline. Re-rendering messages here used
+          // to move every tool step to the bottom and destroy the interleaving.
+          if (!draft && !(data.timeline || []).some(item => item.type === 'text')) this.add(data.message, 'ai');
           this.editing = ''; this.attachment = null; this.file.value = ''; this.node.querySelector('#gv-file-name').textContent = '';
         }
       });

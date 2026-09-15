@@ -5,5 +5,5 @@ const server = fs.readFileSync('server.js', 'utf8');
 const studio = fs.readFileSync('theia/gv-extension/studio-module.js', 'utf8');
 
 assert.match(server, /gvApiPort=\$\{encodeURIComponent\(PORT\)\}/, 'workspace launch URLs must carry the actual API port');
-assert.match(studio, /gvApiPort/, 'Studio must read the API port from its launch URL');
+assert.match(studio, /window\.location\.origin\}\/gv-api/, 'Studio API must use the same-origin proxy, not stale launch ports');
 console.log('Theia API port contract passed');

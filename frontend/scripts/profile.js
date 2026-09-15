@@ -1,5 +1,12 @@
 const $=s=>document.querySelector(s);
-const next=new URLSearchParams(location.search).get('next');
+const params=new URLSearchParams(location.search);
+function localReturn(value){try{const url=new URL(value,location.origin);if(!value||url.origin!==location.origin||url.pathname==='/profile.html')return null;return url.pathname+url.search+url.hash}catch{return null}}
+const next=localReturn(params.get('next'));
+const explicitReturn=localReturn(params.get('returnTo'));
+const referringPage=localReturn(document.referrer);
+$('.back').href=explicitReturn||referringPage||'/';
+$('.back').textContent='← بازگشت به صفحهٔ قبلی';
+$('.back').onclick=event=>{if(!explicitReturn&&referringPage&&history.length>1){event.preventDefault();history.back()}};
 async function api(path,options={}){const response=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'خطا');return data}
 function tab(name){document.querySelectorAll('.auth-tab').forEach(x=>x.classList.toggle('active',x.dataset.auth===name));$('#loginForm').classList.toggle('hidden',name!=='login');$('#authError').textContent=''}
 function fillProfile(user){$('#userAvatar').textContent=user.avatar||user.name[0];$('#userName').textContent=user.name;$('#profileName').value=user.name;$('#profileAvatar').value=user.avatar||'';$('#userRole').textContent=user.role==='admin'?'مدیر سیستم':'کاربر Game Vault';$('#userUsername').textContent='@'+user.username}

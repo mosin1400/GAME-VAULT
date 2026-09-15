@@ -18,8 +18,8 @@ body {
   color:var(--text)
 }
 .profile-page {
-  max-width:1050px;
-  margin:auto;
+  width:100%;
+  min-height:100vh;
   padding:30px
 }
 .back {
@@ -28,6 +28,8 @@ body {
   font-size:12px
 }
 .profile-shell {
+  max-width:1050px;
+  margin:0 auto;
   display:grid;
   grid-template-columns:1fr 410px;
   gap:55px;

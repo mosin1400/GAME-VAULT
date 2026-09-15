@@ -28,6 +28,7 @@ function createAgentMemory({ root, now = () => new Date().toISOString(), limit =
   async function append(game, version, message, sessionId) {
     const messages = await read(game, version, sessionId);
     const entry = { id: crypto.randomUUID(), role: message.role === 'assistant' ? 'assistant' : 'user', content: String(message.content || '').trim(), createdAt: now() };
+    if (Array.isArray(message.timeline)) entry.timeline = message.timeline.slice(0, 200);
     if (!entry.content) return messages;
     messages.push(entry);
     await write(game, version, messages, sessionId);

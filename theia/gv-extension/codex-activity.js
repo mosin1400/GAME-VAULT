@@ -14,7 +14,7 @@ function describeAgentActivity(event) {
   if (event.type === 'action') {
     const action = event.action || {}, { added, removed } = diffCounts(action.diff);
     if (action.type === 'command') return { heading: 'Command proposed', detail: action.command || '' };
-    const verb = action.type === 'delete' ? 'Deleted' : 'Edited';
+    const verb = action.applied ? (action.type === 'delete' ? 'Deleted' : 'Edited') : (action.type === 'delete' ? 'Proposed deletion of' : 'Proposed edit to');
     return { heading: `${verb} 1 file +${added} -${removed}`, detail: action.path || '' };
   }
   return { heading: 'Thinking', detail: 'Using project tools' };

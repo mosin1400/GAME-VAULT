@@ -10,7 +10,7 @@ const PAGE_ROUTES = {
 };
 
 const LEGACY_ASSETS = {};
-const SCRIPT_ASSETS = ['app.js', 'build-manager.js', 'community-admin.js', 'community-ui.js', 'manage.js', 'profile.js', 'project-tools.js', 'theme-sync.js', 'ui-icons.js'];
+const SCRIPT_ASSETS = ['app.js', 'markdown.js', 'activity-tracker.js', 'build-manager.js', 'community-admin.js', 'community-ui.js', 'manage.js', 'profile.js', 'project-tools.js', 'theme-sync.js', 'ui-icons.js'];
 const STYLE_ASSETS = ['app-page.css', 'community.css', 'foundation.css', 'manage-page.css', 'profile-page.css', 'theme.css'];
 for (const file of SCRIPT_ASSETS) LEGACY_ASSETS['/' + file] = 'frontend/scripts/' + file;
 for (const file of STYLE_ASSETS) LEGACY_ASSETS['/' + file] = 'frontend/styles/' + file;

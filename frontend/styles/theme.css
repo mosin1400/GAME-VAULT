@@ -27,3 +27,34 @@ html[data-theme="light"] .comment p,html[data-theme="light"] .comment time,html[
 html[data-theme="light"] .reply,html[data-theme="light"] .admin-comment blockquote,html[data-theme="light"] .build-targets label,html[data-theme="light"] .build-tool{background:#edf4fb;color:#17243a;border-color:#c7d3e0}
 html[data-theme="light"] .community-score{background:#fff1d1;color:#815300}
 html[data-theme="light"] .build-log{background:#edf4fb;color:#17243a;border-color:#c7d3e0}
+html[data-theme="light"] .side-nav a.active,html[data-theme="light"] .nav-item.active,html[data-theme="light"] .filter.active{background:#fdfefe;color:#174467;border-color:#c7d8ea;box-shadow:0 2px 8px #243e5710}
+.public-version-picker{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:13px;color:var(--text)}
+.public-version-picker select{min-width:130px;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit}
+.markdown-body{line-height:1.95;font-size:14px;color:#d7e3f1;overflow-wrap:anywhere}
+.markdown-body p{color:inherit!important;margin:0 0 16px;font-size:inherit;line-height:inherit}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{margin:24px 0 12px;line-height:1.6;color:inherit}
+.markdown-body h1{font-size:26px}.markdown-body h2{font-size:22px}.markdown-body h3{font-size:19px}.markdown-body h4{font-size:17px}.markdown-body h5{font-size:15px}.markdown-body h6{font-size:13px}
+.markdown-body ul,.markdown-body ol{padding-inline-start:25px;margin:12px 0 20px}.markdown-body li{margin:5px 0}
+.markdown-body table{display:block;overflow-x:auto;border-collapse:collapse;max-width:100%;margin:18px 0}.markdown-body th,.markdown-body td{padding:10px 14px;border:1px solid var(--line);text-align:start}.markdown-body th{background:var(--panel);font-weight:700}
+.markdown-body blockquote{margin:16px 0;border-inline-start:3px solid var(--cyan);padding:8px 16px;background:#7080a010}
+.markdown-body pre{padding:16px;direction:ltr;text-align:left;overflow:auto;background:#07111d;border-radius:8px}.markdown-body code{font-family:monospace;background:#7080a015;padding:2px 4px;border-radius:3px}.markdown-body pre code{background:none;padding:0}
+.markdown-body hr{border:0;border-top:1px solid var(--line);margin:24px 0}.markdown-body img{max-width:100%;height:auto;border-radius:9px}.markdown-body a{color:var(--cyan);text-decoration:underline}
+html[data-theme="light"] .markdown-body,html[data-theme="light"] .detail-copy>p,html[data-theme="light"] .game-description,html[data-theme="light"] .manage-content p{color:#34475e}
+html[data-theme="light"] .detail-panel,html[data-theme="light"] .detail-hero{background:#fff;color:#17243a;border-color:#c7d3e0}
+html[data-theme="light"] .markdown-body pre{background:#edf3f8;color:#17243a}
+.manage-card .version-controls{padding:12px;margin:12px 0}
+.manage-card .version-controls label{display:grid;grid-template-columns:1fr auto;gap:8px;font:12px/1.6 Vazirmatn,sans-serif;align-items:center}
+.manage-card .version-controls>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.manage-card .manage-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.manage-card .manage-actions a,.manage-card .manage-actions button,.manage-card .version-controls button,.manage-card .project-actions button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:38px;margin:0;padding:7px 8px;font:12px/1.6 Vazirmatn,sans-serif;text-align:center;border-radius:7px;box-shadow:none;transform:none}
+.manage-card .version-controls select{min-width:80px;max-width:140px;height:34px;font:12px Vazirmatn,sans-serif}
+.manage-card .manage-actions [data-edit]{grid-column:1/-1}
+.manage-card .manage-content p{font-size:12px;line-height:1.85}
+.manage-card .manage-actions .delete{background:#321d32;color:#ffa4bf;border-color:#6a3a58}
+html[data-theme="light"] .manage-card .manage-actions .delete{background:#fff2f3;color:#a32e46;border-color:#e7b9c3}
+.manage-card .compact-version-controls{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding:8px}
+.manage-card .compact-version-controls>span{font:11px Vazirmatn,sans-serif;margin-inline-end:2px}
+.manage-card .compact-version-controls select{flex:1;min-width:55px;max-width:none;height:30px;padding:3px 5px}
+.manage-card .compact-version-controls button,.manage-card .compact-version-controls a{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;min-width:28px;height:28px;min-height:28px;padding:0;margin:0;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);font:17px/1 Vazirmatn,sans-serif;text-decoration:none;cursor:pointer}
+.manage-card .compact-version-controls button:hover,.manage-card .compact-version-controls a:hover{background:#7080a020;color:var(--text);transform:none;box-shadow:none}
+.manage-card .manage-actions [data-edit],.manage-card .manage-actions .delete{grid-column:1/-1}

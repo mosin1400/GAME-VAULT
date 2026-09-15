@@ -102,7 +102,8 @@ body {
   padding:0 42px 35px;
   max-width:1540px;
   width:100%;
-  margin:auto
+  margin:0 auto;
+  align-self:start
 }
 .admin-main header {
   height:92px;
@@ -388,6 +389,7 @@ body {
   margin:5px 0
 }
 .admin-primary {
+  text-decoration: none;
   border:0;
   background:linear-gradient(90deg,var(--cyan),#86a3ff);
   color:#06111f;

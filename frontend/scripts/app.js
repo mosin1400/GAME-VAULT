@@ -61,8 +61,14 @@ function renderDashboard() {
   $('#metricRating').textContent = fa(average.toFixed(1));
   $('#metricRatingLabel').textContent = fa(average.toFixed(1));
   $('#metricPublished').textContent = fa(published);
-  $('#activityChart').innerHTML = Array.from({ length: 7 }, () => '<i style="height:6%"></i>').join('');
-  api('/api/activity/weekly').then((weekly) => { const max = Math.max(1, ...weekly.days.map(day => day.play + day.download)); $('#activityChart').innerHTML = weekly.days.map(day => '<i title="'+escapeHtml(day.label)+' · اجرا '+fa(day.play)+' · دانلود '+fa(day.download)+'" style="height:'+Math.max(6,((day.play+day.download)/max)*100)+'%"></i>').join(''); $('#metricActivity').textContent = fa(weekly.days.reduce((sum,day)=>sum+day.play+day.download,0)); }).catch(() => {});
+  $('#activityChart').innerHTML = '<small>در حال دریافت فعالیت واقعی…</small>';
+  $('#metricActivity').textContent = '…';
+  api('/api/activity/weekly').then(weekly => {
+    const total = weekly.days.reduce((sum, day) => sum + day.play + day.download, 0);
+    const max = Math.max(1, ...weekly.days.map(day => day.play + day.download));
+    $('#activityChart').innerHTML = total ? weekly.days.map(day => '<i data-value="' + (day.play + day.download) + '" title="' + escapeHtml(day.label) + ' · اجرا ' + fa(day.play) + ' · دانلود ' + fa(day.download) + '" style="height:' + ((day.play + day.download) / max * 100) + '%"></i>').join('') : '<small>هنوز فعالیتی در این هفته ثبت نشده است.</small>';
+    $('#metricActivity').textContent = fa(total);
+  }).catch(() => { $('#activityChart').innerHTML = '<small>دریافت فعالیت ممکن نشد.</small>'; $('#metricActivity').textContent = '—'; });
   const categories = Object.entries(games.reduce((all, game) => { all[game.category || 'سایر'] = (all[game.category || 'سایر'] || 0) + 1; return all; }, {}));
   $('#categoryBars').innerHTML = categories.map(([name, count]) => '<div class="category-row"><span>' + escapeHtml(name) + '</span><div class="category-track"><i style="width:' + (count / Math.max(1, games.length) * 100) + '%"></i></div><b>' + fa(count) + '</b></div>').join('') || '<small>داده‌ای موجود نیست</small>';
   const top = games.slice().sort((a, b) => Number(b.rating) - Number(a.rating)).slice(0, 3);
@@ -90,7 +96,7 @@ function renderCards() {
   $('#emptyTitle').textContent = activeView === 'favorites' ? 'هنوز بازی منتخبی نداری' : 'بازی‌ای پیدا نشد';
   $('#emptyCopy').textContent = activeView === 'favorites' ? 'روی ☆ هر کارت بزن تا به این فهرست اضافه شود.' : 'عبارت جست‌وجو یا فیلتر را تغییر بده.';
   $('#emptyState').classList.toggle('hidden', list.length !== 0);
-  $('#gameGrid').innerHTML = list.map((game) => '<article class="game-card"><button class="favorite-corner ' + (favorites().includes(game.id) ? 'saved' : '') + '" data-favorite="' + escapeHtml(game.id) + '" aria-label="افزودن به منتخب">' + (favorites().includes(game.id) ? '★' : '☆') + '</button><button class="game-open cover" data-id="' + escapeHtml(game.id) + '" style="background-image:url(\'' + escapeHtml(game.image) + '\')"><span class="category-badge">' + escapeHtml(game.category) + '</span></button><div class="card-body"><div class="game-title"><h3>' + escapeHtml(game.name) + '</h3><div class="rating">' + fa(Number(game.rating).toFixed(1)) + '<span>/ ۵</span></div></div><p class="game-description">' + escapeHtml(game.description) + '</p><div class="card-meta"><div class="ai-label">ساخته‌شده با AI<b>' + escapeHtml(game.ai) + '</b></div><div class="stars">' + stars(game.rating) + '</div></div><div class="card-actions"><button class="play-btn game-open" data-id="' + escapeHtml(game.id) + '">جزئیات</button><a class="download-btn" href="' + escapeHtml(game.playUrl) + '" target="_blank">▶ بازی کردن</a></div></div></article>').join('');
+  $('#gameGrid').innerHTML = list.map((game) => '<article class="game-card"><button class="favorite-corner ' + (favorites().includes(game.id) ? 'saved' : '') + '" data-favorite="' + escapeHtml(game.id) + '" aria-label="افزودن به منتخب">' + (favorites().includes(game.id) ? '★' : '☆') + '</button><button class="game-open cover" data-id="' + escapeHtml(game.id) + '" style="background-image:url(\'' + escapeHtml(game.image) + '\')"><span class="category-badge">' + escapeHtml(game.category) + '</span></button><div class="card-body"><div class="game-title"><h3>' + escapeHtml(game.name) + '</h3><div class="rating">' + fa(Number(game.rating).toFixed(1)) + '<span>/ ۵</span></div></div><p class="game-description">' + escapeHtml(game.description) + '</p><div class="card-meta"><div class="ai-label">ساخته‌شده با AI<b>' + escapeHtml(game.ai) + '</b></div><div class="stars">' + stars(game.rating) + '</div></div><div class="card-actions"><button class="play-btn game-open" data-id="' + escapeHtml(game.id) + '">جزئیات</button><a class="download-btn" data-activity-type="play" data-activity-game="\' + escapeHtml(game.slug || game.id) + \'" data-activity-version="\' + escapeHtml(game.version) + \'" href="' + escapeHtml('/games/' + encodeURIComponent(game.slug || game.id) + '/versions/' + encodeURIComponent(game.version) + '/game.html') + '" target="_blank">▶ بازی کردن</a></div></div></article>').join('');
   bindGameOpens();
   document.querySelectorAll('[data-favorite]').forEach((button) => button.onclick = () => toggleFavorite(button.dataset.favorite));
 }
@@ -98,17 +104,35 @@ function renderCards() {
 function bindGameOpens() { document.querySelectorAll('.game-open').forEach((button) => button.onclick = () => openGame(button.dataset.id)); }
 function rememberGame(id) { localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...recents().filter((item) => item !== id)].slice(0, 12))); }
 function toggleFavorite(id) { const next = favorites(); const index = next.indexOf(id); if (index >= 0) next.splice(index, 1); else next.unshift(id); localStorage.setItem(FAVORITES_KEY, JSON.stringify(next)); renderCards(); renderDashboard(); if (selectedGame && selectedGame.id === id) renderGameDetail(); }
-function openGame(id) { selectedGame = games.find((game) => game.id === id); if (!selectedGame) return; rememberGame(id); renderGameDetail(); navigateTo('detail'); api('/api/game-detail?game='+encodeURIComponent(id)).then(detail=>{if(selectedGame?.id!==id)return;selectedGame={...selectedGame,...detail.meta,version:detail.version,readme:detail.markdown,activity:detail.activity};renderGameDetail()}).catch(()=>{}); }
+let detailRequestId = 0;
+function openGame(id, version) {
+  const original = games.find(game => game.id === id);
+  if (!original) return;
+  const requested = version || localStorage.getItem('gv-selected-version:' + (original.slug || id)) || original.version;
+  const selected = original.versions?.find(item => item.name === requested);
+  selectedGame = { ...original, ...(selected?.meta || {}), version: selected?.name || original.version, versions: original.versions, rating: original.rating };
+  const requestId = ++detailRequestId;
+  rememberGame(id); renderGameDetail(); navigateTo('detail');
+  api('/api/game-detail?game=' + encodeURIComponent(original.slug || id) + '&version=' + encodeURIComponent(selectedGame.version)).then(detail => {
+    if (requestId !== detailRequestId || selectedGame?.id !== id) return;
+    selectedGame = { ...selectedGame, ...detail.meta, rating: original.rating, version: detail.version, readme: detail.markdown, activity: detail.activity };
+    localStorage.setItem('gv-selected-version:' + (original.slug || id), detail.version);
+    renderGameDetail();
+  }).catch(error => showToast(error.message));
+}
 
 function renderGameDetail() {
-  const game = selectedGame;
-  const isFavorite = favorites().includes(game.id);
-  const readme = escapeHtml(game.readme || game.description).replace(/^#\s+.*$/gm, '').replace(/\n/g, '<br>');
+  const game = selectedGame, slug = game.slug || game.id;
+  const isFavorite = favorites().includes(game.id), list = game.versions || [{ name: game.version }];
+  const base = '/games/' + encodeURIComponent(slug) + '/versions/' + encodeURIComponent(game.version) + '/';
+  const image = /^(https?:|\/)/.test(game.image || '') ? game.image : base + (game.image || '');
+  const readme = window.GameVaultMarkdown.render(game.readme || game.description || '');
   const activity = game.activity || { playCount: 0, downloadCount: 0, lastPlayedAt: null };
   const lastPlayed = activity.lastPlayedAt ? new Date(activity.lastPlayedAt).toLocaleString('fa-IR') : 'هنوز اجرا نشده';
-  $('#gameDetail').innerHTML = '<section class="detail-hero"><div class="detail-cover" style="background-image:url(\'' + escapeHtml(game.image) + '\')"></div><div class="detail-copy"><p class="eyebrow">' + escapeHtml(game.category) + ' <span></span> نسخه ' + escapeHtml(game.version || '۱.۰') + '</p><h1>' + escapeHtml(game.name) + '</h1><p>' + escapeHtml(game.description) + '</p><div class="detail-meta"><span>امتیاز <b>★ ' + fa(game.rating) + '</b></span><span>ساخته‌شده با <b>' + escapeHtml(game.ai) + '</b></span><span>وضعیت <b>' + ((game.status || 'published') === 'published' ? 'منتشرشده' : 'در حال ساخت') + '</b></span></div><div class="detail-actions"><a class="play-btn" href="' + escapeHtml(game.playUrl) + '" target="_blank">▶ بازی کردن</a><a class="download-btn" href="' + escapeHtml(game.downloadUrl || game.playUrl) + '" download>🡳 دانلود</a><button class="favorite-button ' + (isFavorite ? 'saved' : '') + '" data-favorite="' + escapeHtml(game.id) + '">' + (isFavorite ? '★ در منتخب' : '☆ افزودن به منتخب') + '</button></div></div></section><div class="detail-lower"><section class="detail-panel"><h2>معرفی بازی</h2><p>' + readme + '</p></section><section class="detail-panel"><h2>آمار بازی</h2><div class="detail-stat"><span>تعداد اجرا</span><b>' + fa(activity.playCount) + '</b></div><div class="detail-stat"><span>دانلودها</span><b>' + fa(activity.downloadCount) + '</b></div><div class="detail-stat"><span>آخرین اجرا</span><b>' + escapeHtml(lastPlayed) + '</b></div></section></div>';
-  const detailFavorite = $('#gameDetail [data-favorite]');
-  detailFavorite.onclick = () => toggleFavorite(game.id);
+  const tracking = type => ' data-activity-type="' + type + '" data-activity-game="' + escapeHtml(slug) + '" data-activity-version="' + escapeHtml(game.version) + '"';
+  $('#gameDetail').innerHTML = `<section class="detail-hero"><div class="detail-cover" style="background-image:url('${escapeHtml(image)}')"></div><div class="detail-copy"><p class="eyebrow">${escapeHtml(game.category)}</p><h1>${escapeHtml(game.name)}</h1><p class="detail-description">${escapeHtml(game.description)}</p><label class="public-version-picker">نسخهٔ بازی<select id="publicGameVersion" aria-label="نسخهٔ بازی">${list.map(item => '<option value="' + escapeHtml(item.name) + '"' + (item.name === game.version ? ' selected' : '') + '>' + escapeHtml(item.name) + '</option>').join('')}</select></label><div class="detail-meta"><span>امتیاز <b>★ ${fa(game.rating)}</b></span><span>ساخته‌شده با <b>${escapeHtml(game.ai)}</b></span><span>وضعیت <b>${(game.status || 'published') === 'published' ? 'منتشرشده' : 'در حال ساخت'}</b></span></div><div class="detail-actions"><a class="play-btn" href="${base}game.html" target="_blank" rel="noopener"${tracking('play')}>▶ بازی همین نسخه</a><a class="download-btn" href="${base}game.html" download${tracking('download')}>↓ دانلود همین نسخه</a><button class="favorite-button ${isFavorite ? 'saved' : ''}" data-favorite="${escapeHtml(game.id)}">${isFavorite ? '★ در منتخب' : '☆ افزودن به منتخب'}</button></div></div></section><div class="detail-lower"><section class="detail-panel"><h2>معرفی بازی</h2><div class="markdown-body">${readme}</div></section><section class="detail-panel"><h2>آمار بازی</h2><div class="detail-stat"><span>تعداد اجرا</span><b>${fa(activity.playCount)}</b></div><div class="detail-stat"><span>دانلودها</span><b>${fa(activity.downloadCount)}</b></div><div class="detail-stat"><span>آخرین اجرا</span><b>${escapeHtml(lastPlayed)}</b></div></section></div>`;
+  $('#publicGameVersion').onchange = event => openGame(game.id, event.target.value);
+  $('#gameDetail [data-favorite]').onclick = () => toggleFavorite(game.id);
   document.dispatchEvent(new CustomEvent('game-detail-rendered', { detail: game }));
 }
 

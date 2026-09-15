@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 function createMetadataService({ readJson, validateMeta, readmeMarkdown }) {
-  async function repair(root, { game, version }) {
+  async function repair(root, { game, version, preserveReadme = false }) {
     const file = path.join(root, 'game.json');
     const current = await readJson(file, {});
     const metadata = {
@@ -28,8 +28,13 @@ function createMetadataService({ readJson, validateMeta, readmeMarkdown }) {
     const error = validateMeta(metadata);
     if (error) throw new Error(error);
     await fs.promises.mkdir(root, { recursive: true });
-    await fs.promises.writeFile(file, JSON.stringify(metadata, null, 2));
-    await fs.promises.writeFile(path.join(root, 'README.md'), readmeMarkdown(metadata));
+    if (JSON.stringify(current) !== JSON.stringify(metadata)) await fs.promises.writeFile(file, JSON.stringify(metadata, null, 2));
+    const readmeFile = path.join(root, 'README.md');
+    let existingReadme;
+    try { existingReadme = await fs.promises.readFile(readmeFile, 'utf8'); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const generated = readmeMarkdown(metadata);
+    if ((!preserveReadme || existingReadme === undefined) && existingReadme !== generated) await fs.promises.writeFile(readmeFile, generated);
     return { meta: metadata, created: !Object.keys(current).length };
   }
   return { repair };

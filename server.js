@@ -92,6 +92,7 @@ async function synchronizeMetadataReadmes() {
       await metadataService.repair(projectRoot(entry.name, version.name), {
         game: entry.name,
         version: version.name,
+        preserveReadme: true,
       });
     }
   }
@@ -461,7 +462,7 @@ async function api(req, res, url) {
     const data = await body(req),
       game = String(data.game || "");
     if (!safePart(game)) return send(res, 400, { error: "بازی معتبر نیست" });
-    await community.event(game, data.type);
+    await community.event(game, data.type, data.version);
     return send(res, 200, { ok: true });
   }
   if (req.method === "GET" && url.pathname === "/api/game-detail") {
@@ -511,13 +512,15 @@ async function api(req, res, url) {
       "content-disposition": 'attachment; filename="game-vault-community.json"',
     });
   if (req.method === "POST" && url.pathname === "/api/theia/open") {
-    const data = await body(req),
+    const data = await body(req);
+    if (!data.version) data.version = (await versions(data.game)).filter(item => item.valid).sort((a, b) => b.updatedAt - a.updatedAt)[0]?.name;
+    const
       root = projectRoot(data.game, data.version),
       gvToken = studioAccess.issue(sessionUser(req));
     await startTheia();
     return send(res, 200, {
       ok: true,
-      url: `http://${theiaHost(req)}:${THEIA_PORT}/?gvGame=${encodeURIComponent(data.game)}&gvVersion=${encodeURIComponent(data.version)}&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}#${workspaceFragment(root)}`,
+      url: `http://${theiaHost(req)}:${THEIA_PORT}/?workspace=${encodeURIComponent('file://' + root.replaceAll('\\', '/').replace(/^([A-Za-z]:)/, '/$1'))}&gvGame=${encodeURIComponent(data.game)}&gvVersion=${encodeURIComponent(data.version)}&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}#${workspaceFragment(root)}`,
     });
   }
   if (req.method === "POST" && url.pathname === "/api/theia/free") {

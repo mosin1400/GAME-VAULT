@@ -1,4 +1,4 @@
-function mountStudioToolbar({ shell, project, apiFetch, API }) {
+function mountStudioToolbar({ shell, project, apiFetch, API, DASHBOARD = API }) {
   if (document.getElementById('gv-studio-toolbar')) return;
   const bar = document.createElement('div'), p = project();
   bar.id = 'gv-studio-toolbar';
@@ -52,10 +52,10 @@ function mountStudioToolbar({ shell, project, apiFetch, API }) {
     perform(async () => {
       await request('/api/version', 'DELETE', { game: p.game, version: p.version }); notify();
       const remaining = [...select.options].map(option => option.value).filter(version => version !== p.version);
-      if (remaining.length) await open(remaining[0]); else window.location.assign(`${API}/manage.html`);
+      if (remaining.length) await open(remaining[0]); else window.location.assign(`${DASHBOARD}/manage.html`);
     });
   };
-  bar.querySelector('#gv-preview').onclick = () => window.open(`${API}/games/${encodeURIComponent(p.game)}/versions/${encodeURIComponent(p.version)}/game.html`, '_blank', 'noopener');
+  bar.querySelector('#gv-preview').onclick = () => window.open(`${DASHBOARD}/games/${encodeURIComponent(p.game)}/versions/${encodeURIComponent(p.version)}/game.html`, '_blank', 'noopener');
   bar.querySelector('#gv-agent').onclick = () => shell.activateWidget('game-vault-agent');
   bar.querySelector('#gv-fix').onclick = () => { shell.activateWidget('game-vault-agent'); window.gameVaultAgent?.requestRewrite(); };
   bar.querySelector('#gv-layout-explorer').onclick = () => { shell.leftPanelHandler.expand(); shell.rightPanelHandler.collapse(); };

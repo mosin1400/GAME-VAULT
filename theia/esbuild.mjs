@@ -8,7 +8,12 @@ import { nodeOptions } from './gen-esbuild.node.mjs';
 import esbuild from 'esbuild';
 
 const browserContext = await esbuild.context(browserOptions);
-const nodeContext = await esbuild.context(nodeOptions);
+// Keep this optional Windows native certificate provider a runtime dependency.
+// Bundling it otherwise requires a platform-specific .node binary at build time.
+const optionalWindowsCertificates = { name: 'optional-windows-cert-provider', setup(build) {
+    build.onResolve({ filter: /^@vscode\/windows-ca-certs$/ }, args => ({ path: args.path, external: true }));
+} };
+const nodeContext = await esbuild.context({ ...nodeOptions, external: [...(nodeOptions.external || []), '@vscode/windows-ca-certs'], plugins: [optionalWindowsCertificates, ...(nodeOptions.plugins || [])] });
 
 
 if (watch) {

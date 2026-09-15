@@ -8,3 +8,5 @@ builds/
 apps/api/npm-install.*.log
 apps/api/node_modules/
 apps/api/dist/
+theia/lib/backend/
+theia/lib/prebuilds/
