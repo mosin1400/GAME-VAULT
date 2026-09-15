@@ -1,23 +1,31 @@
-# Game Vault / مدیریت بازی‌ها
+# Game Vault
 
-یک داشبورد فارسی و RTL برای نمایش و مدیریت بازی‌ها.
+Game Vault is a browser-based, RTL game library and project management dashboard. It provides a public catalogue for playable projects and a protected management workspace powered by Theia.
 
-## اجرا
+## Features
 
-از داخل همین پوشه یک سرور HTTP اجرا کنید، برای مثال:
+- Version-aware game catalogue with exact-version previews
+- Markdown-rendered game descriptions and real activity tracking
+- User profiles, favourites, community comments, and ratings
+- Admin project management, version operations, and Theia-based editing
+- AI workspace with streamed operational updates and manual file approval
+- Light and dark themes with responsive mobile navigation
+
+## Run locally
+
+From the repository root:
 
 ```powershell
 node server.js
 ```
 
-سپس به `http://localhost:8080` بروید. این سرور برای ذخیره‌ی واقعی فایل‌ها، آپلود ZIP و اتصال امن Agent لازم است.
+Open `http://localhost:8081` in your browser. The Node.js server handles the catalogue, authentication, project files, uploads, activity storage, and the Theia integration.
 
-## حالت ادیت
+## Project layout
 
-روی «حالت ادیت» بزنید و رمز `۱۹۲۸۳۷۴۶۵` را وارد کنید. تغییرات در localStorage همین مرورگر ذخیره می‌شوند.
+- `frontend/` — public dashboard, management views, and shared styling
+- `backend/` — catalogue, authentication, community, activity, and AI services
+- `games/` — versioned game projects and their metadata
+- `theia/` — Theia Studio integration and workspace extensions
 
-## افزودن بازی واقعی
-
-از پنل ادیتور، تصویر، لینک اجرای بازی و لینک دانلود هر بازی را وارد کنید. برای بازی فعلی T-34/85 می‌توانید لینک اجرای فایل `../t3475/game.html` را نگه دارید.
-
-راهنمای مرز امن OpenRouter در `api/README.md` قرار دارد.
+Configuration secrets belong in local environment files and must never be committed.
