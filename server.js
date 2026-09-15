@@ -138,10 +138,7 @@ function newSession(user) {
   return sessionService.create(user);
 }
 function theiaHost(req) {
-  const host = String(req.headers.host || "")
-    .split(":")[0]
-    .toLowerCase();
-  return host === "localhost" || host === "127.0.0.1" ? host : "127.0.0.1";
+  return "127.0.0.1";
 }
 const buildStore = createBuildStore({ root: BUILDS, safePart });
 const buildQueue = createQueue({
@@ -272,29 +269,47 @@ async function gitInfo(root) {
   return systemTools.gitInfo(root);
 }
 function theiaCommand() {
-  const command =
-    process.platform === "win32"
-      ? path.join(THEIA_DIR, "node_modules", ".bin", "theia.cmd")
-      : path.join(THEIA_DIR, "node_modules", ".bin", "theia");
+  const command = path.join(
+    THEIA_DIR,
+    "node_modules",
+    "@theia",
+    "cli",
+    "bin",
+    "theia.js",
+  );
   return fs.existsSync(command) ? command : "";
 }
-function startTheia() {
+async function startTheia() {
+  const probe = () => new Promise(resolve => {
+    const request = http.get(`http://127.0.0.1:${THEIA_PORT}/`, response => { response.resume(); resolve(response.statusCode === 200); });
+    request.setTimeout(1000, () => request.destroy());
+    request.on("error", () => resolve(false));
+  });
+  if (await probe()) return;
   const command = theiaCommand();
   if (!command) throw new Error("Theia هنوز نصب یا build نشده است.");
-  if (theiaProcess && !theiaProcess.killed) return;
-  theiaProcess = spawn(
-    command,
-    ["start", "--hostname=127.0.0.1", "--port=" + THEIA_PORT],
+  if (!theiaProcess || theiaProcess.killed || theiaProcess.exitCode !== null) {
+    theiaProcess = spawn(
+    process.execPath,
+    [command, "start", "--hostname=127.0.0.1", "--port=" + THEIA_PORT],
     {
       cwd: THEIA_DIR,
       windowsHide: true,
       stdio: "ignore",
-      shell: process.platform === "win32",
     },
   );
-  theiaProcess.on("exit", () => {
-    theiaProcess = null;
-  });
+    const child = theiaProcess;
+    child.on("exit", () => { if (theiaProcess === child) theiaProcess = null; });
+    child.on("error", () => { if (theiaProcess === child) theiaProcess = null; });
+  }
+  const deadline = Date.now() + 60000;
+  while (Date.now() < deadline) {
+    const ready = await probe();
+    if (ready) return;
+    if (!theiaProcess) throw new Error("راه‌اندازی Theia ناموفق بود؛ صفحه به سرویس خاموش منتقل نشد.");
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  throw new Error("آماده‌سازی Studio طول کشید. چند لحظه دیگر دوباره باز کنید.");
 }
 async function api(req, res, url) {
   if (applyTheiaCors(req, res) && req.method === "OPTIONS") {
@@ -499,7 +514,7 @@ async function api(req, res, url) {
       root = projectRoot(data.game, data.version),
       workspace = `file:///${root.replaceAll("\\", "/")}`,
       gvToken = studioAccess.issue(sessionUser(req));
-    startTheia();
+    await startTheia();
     return send(res, 200, {
       ok: true,
       url: `http://${theiaHost(req)}:${THEIA_PORT}/?workspace=${encodeURIComponent(workspace)}&gvGame=${encodeURIComponent(data.game)}&gvVersion=${encodeURIComponent(data.version)}&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}`,
@@ -507,7 +522,7 @@ async function api(req, res, url) {
   }
   if (req.method === "POST" && url.pathname === "/api/theia/free") {
     const gvToken = studioAccess.issue(sessionUser(req));
-    startTheia();
+    await startTheia();
     return send(res, 200, {
       ok: true,
       url: `http://${theiaHost(req)}:${THEIA_PORT}/?gvFree=1&gvApiPort=${encodeURIComponent(PORT)}&gvToken=${encodeURIComponent(gvToken)}`,
@@ -974,10 +989,12 @@ async function api(req, res, url) {
       });
       const meta = await readJson(path.join(dest, "game.json"), {});
       meta.version = data.version;
+      delete meta.rating;
       await fsp.writeFile(
         path.join(dest, "game.json"),
         JSON.stringify(meta, null, 2),
       );
+      await fsp.writeFile(path.join(dest, "README.md"), readmeMarkdown(meta));
     } else {
       const meta = {
         id: data.game,
@@ -999,7 +1016,7 @@ async function api(req, res, url) {
       );
       await fsp.writeFile(
         path.join(dest, "README.md"),
-        `# ${data.game}\n\nنسخه جدید.`,
+        readmeMarkdown(meta),
       );
     }
     return send(res, 201, { ok: true });
@@ -1013,10 +1030,12 @@ async function api(req, res, url) {
     await fsp.rename(old, next);
     const meta = await readJson(path.join(next, "game.json"), {});
     meta.version = data.newVersion;
+    delete meta.rating;
     await fsp.writeFile(
       path.join(next, "game.json"),
       JSON.stringify(meta, null, 2),
     );
+    await fsp.writeFile(path.join(next, "README.md"), readmeMarkdown(meta));
     return send(res, 200, { ok: true });
   }
   if (req.method === "DELETE" && url.pathname === "/api/version") {

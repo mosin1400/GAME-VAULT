@@ -14,5 +14,7 @@ assert.match(launch, /gvTheme/, 'Theia launch page must pass the global theme to
 assert.match(theiaTheme, /gvThe(?:me|Theme)/, 'Theia must consume the launch theme bridge');
 assert.match(theiaTheme, /familyKey\(family\)/, 'Theia must retain the selected style separately for each family');
 assert.match(theiaTheme, /selected\.endsWith\('light'\)/, 'Theia must determine the active family from the concrete mode');
+assert.match(theiaTheme, /localStorage\.setItem\('gv-theme', family\)/, 'Theia must update the global dashboard theme key');
+assert.match(theiaTheme, /themes\.setCurrentTheme/, 'Studio must apply an actually registered native workbench theme');
 assert.doesNotMatch(theiaToggle, /detail:\s*light\s*\?\s*['"]light['"]/, 'Theia toggle must send a concrete workbench mode, not a bare light value');
 console.log('light theme synchronization contract passed');

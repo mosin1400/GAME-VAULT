@@ -1,3 +1,18 @@
 #gv-theia-theme-toggle{position:fixed;z-index:100000;right:14px;left:auto;bottom:14px;width:34px;height:34px;border:1px solid #49617d;border-radius:9px;background:#182433;color:#e8f4ff;box-shadow:0 8px 22px #0005;font:17px/1 system-ui;cursor:pointer}
 #gv-theia-theme-toggle:hover{border-color:#6ae4ff;background:#243b55}
 html[data-gv-theme="light"] #gv-theia-theme-toggle{background:#fff;color:#1d3654;border-color:#9fb6d2}
+#gv-theia-theme-toggle{width:auto;min-width:98px;padding:0 12px;font:13px Vazirmatn,Arial,sans-serif}
+#gv-theme-menu{position:fixed;z-index:100001;right:14px;bottom:56px;padding:7px;min-width:180px;border:1px solid var(--theia-panel-border,#8292a6);border-radius:9px;background:var(--theia-editorWidget-background,#fff);color:var(--theia-foreground,#17243a);box-shadow:0 8px 24px #0003}
+#gv-theme-menu[hidden]{display:none}
+#gv-theme-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border:0;background:transparent;color:inherit;cursor:pointer;font:13px Vazirmatn,Arial,sans-serif}
+#gv-theme-menu button:hover,#gv-theme-menu button[aria-checked="true"]{background:var(--theia-list-hoverBackground,#e1eaf5);border-radius:5px}
+#gv-studio-toolbar{position:fixed;top:0;right:0;left:0;z-index:10000;display:flex;justify-content:flex-end;align-items:center;gap:6px;min-height:38px;padding:5px 10px;box-sizing:border-box;background:var(--theia-titleBar-activeBackground,#202b3c);color:var(--theia-titleBar-activeForeground,#edf5ff);border-bottom:1px solid var(--theia-panel-border,#49617d);font:13px Vazirmatn,Arial,sans-serif;flex-wrap:wrap}
+#gv-studio-toolbar button,#gv-studio-toolbar select{padding:5px 9px;border:1px solid var(--theia-input-border,#8292a6);border-radius:5px;background:var(--theia-input-background,#fff);color:var(--theia-input-foreground,#17243a);font:inherit;cursor:pointer}
+body:has(#gv-studio-toolbar) #theia-app-shell{top:44px!important;height:calc(100% - 44px)!important}
+#gv-studio-toolbar{height:44px;flex-wrap:nowrap;overflow-x:auto}
+html[data-gv-theme-style="modern"][data-gv-theme-light="true"] #theia-app-shell{--theia-sideBar-background:#f7f9fc;--theia-titleBar-activeBackground:#edf2f8;--theia-titleBar-activeForeground:#17243a;--theia-editor-background:#fff;--theia-foreground:#17243a;--theia-descriptionForeground:#52657d}
+html[data-gv-theme-style="modern"][data-gv-theme-light="false"] #theia-app-shell{--theia-sideBar-background:#18212d;--theia-editor-background:#101820;--theia-foreground:#edf2f7;--theia-descriptionForeground:#a9bbcf}
+html[data-gv-theme-light="true"] .gv-native-agent{color:#17243a;background:#f8fafc}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-action-card{background:#fff;color:#17243a;border-color:#c7d3e0;box-shadow:none}
+html[data-gv-theme-light="true"] .gv-native-agent .gv-task{color:#475569}
+html[data-gv-theme-light="true"] .gv-native-agent pre{background:#eef2f6;color:#17243a}

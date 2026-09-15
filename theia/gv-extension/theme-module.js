@@ -2,6 +2,7 @@ const { ContainerModule } = require('@theia/core/shared/inversify');
 const { FrontendApplicationContribution } = require('@theia/core/lib/browser/frontend-application-contribution');
 const { PreferenceService } = require('@theia/core/lib/common/preferences/preference-service');
 const { PreferenceScope } = require('@theia/core/lib/common/preferences/preference-scope');
+const { ThemeService } = require('@theia/core/lib/browser/theming');
 
 const modes = {
   'main-dark': 'Dark+ (default dark)',
@@ -26,17 +27,28 @@ const resolveMode = value => {
 const themeModule = new ContainerModule(bind => {
   bind(FrontendApplicationContribution).toDynamicValue(context => {
     const preferences = context.container.get(PreferenceService);
+    const themes = context.container.get(ThemeService);
     const apply = mode => {
       const selected = resolveMode(mode);
       const family = selected.endsWith('light') ? 'light' : 'dark';
       localStorage.setItem('gv-theia-theme-mode', selected);
       localStorage.setItem(familyKey(family), selected);
+      localStorage.setItem('gv-theme', family);
+      document.documentElement.dataset.theme = family;
       document.documentElement.dataset.gvThemeStyle = selected.startsWith('modern') ? 'modern' : 'main';
       document.documentElement.dataset.gvThemeLight = selected.endsWith('light') ? 'true' : 'false';
-      return preferences.set('workbench.colorTheme', modes[selected], PreferenceScope.User).catch(console.error);
+      document.documentElement.dataset.gvTheme = family;
+      const available = themes.getThemes();
+      const actual = available.find(theme => theme.label === modes[selected] || theme.id === modes[selected])
+        || available.find(theme => theme.id === family);
+      if (actual) themes.setCurrentTheme(actual.id);
+      document.querySelectorAll('#gv-theme-mode').forEach(select => { select.value = selected; });
+      window.dispatchEvent(new CustomEvent('gv-theme-applied', { detail: selected }));
+      return preferences.set('workbench.colorTheme', actual ? actual.id : family, PreferenceScope.User).catch(console.error);
     };
     return {
-      onStart: () => {
+      onStart: async () => {
+        await themes.initialized;
         const launchTheme = new URLSearchParams(window.location.search).get('gvTheme');
         apply(launchTheme || localStorage.getItem('gv-theia-theme-mode') || 'modern-dark');
         window.addEventListener('gv-theme-change', event => apply(event.detail));

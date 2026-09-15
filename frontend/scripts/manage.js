@@ -5,7 +5,42 @@ async function api(p,o={}){const r=await fetch(p,{headers:{'content-type':'appli
 async function init(){const session=await api('/api/session');if(!session.authenticated){location.href='/';return}if(session.user){document.querySelector('.admin-user b').textContent=session.user.name;document.querySelector('.admin-user small').textContent=session.user.role==='admin'?'Administrator':'User';document.querySelector('.admin-avatar').textContent=session.user.avatar||session.user.name[0];const name=document.querySelector('#adminProfileName'),avatar=document.querySelector('#adminProfileAvatar');if(name)name.textContent=session.user.name;if(avatar)avatar.textContent=session.user.avatar||session.user.name[0]}games=(await api('/api/games')).games;renderDashboard();renderCards()}
 function renderDashboard(){const rating=games.length?games.reduce((s,g)=>s+Number(g.rating||0),0)/games.length:0;$('#adminGames').textContent=games.length.toLocaleString('fa-IR');$('#adminVersions').textContent=games.reduce((s,g)=>s+Number(g.versionCount||1),0).toLocaleString('fa-IR');$('#adminRating').textContent=rating.toFixed(1).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);$('#profileGames').textContent=games.length.toLocaleString('fa-IR');loadRealActivity();$('#releaseFlow').innerHTML=games.slice(0,5).map(g=>'<div class="release-item"><span class="release-icon">◈</span><span><b>'+esc(g.name)+'</b><small>نسخه '+esc(g.version||'v1.0.0')+' · '+((g.status||'published')==='published'?'منتشر شد':'در حال ساخت')+'</small></span></div>').join('')||'<small>پروژه‌ای موجود نیست</small>'}
 async function loadRealActivity(){try{const data=await api('/api/activity/weekly'),days=Array.isArray(data.days)?data.days:[],values=days.map(day=>Number(day.play||0)+Number(day.download||0)),max=Math.max(1,...values);$('#neonChart').innerHTML=values.map((value,index)=>'<i title="'+esc(days[index].label+': '+value+' فعالیت')+'" style="height:'+Math.max(5,Math.round(value/max*100))+'%" data-value="'+value+'"></i>').join('')||'<small>فعالیتی ثبت نشده است</small>'}catch{$('#neonChart').innerHTML='<small>دریافت فعالیت ممکن نشد</small>'}}
-function renderCards(){$('#manageCards').innerHTML=games.map(g=>'<article class="manage-card"><div class="manage-cover" style="background-image:url(\''+esc(g.image)+'\')"></div><div class="manage-content"><h3>'+esc(g.name)+'</h3><p>'+esc(g.description)+'</p><div class="manage-meta"><span>★ '+esc(g.rating)+'</span><span>'+esc(g.version||'v1.0.0')+'</span></div><div class="manage-actions"><button data-edit="'+esc(g.id)+'">ویرایش در Studio</button><button class="delete" data-delete="'+esc(g.id)+'">حذف بازی</button></div><div class="project-actions"><button data-vscode="'+esc(g.id)+'" data-version="'+esc(g.version||'v1.0.0')+'" title="باز کردن پوشه در VS Code"><span data-icon="vscode"></span> باز کردن در VS Code</button><button data-copy-path="'+esc(g.id)+'" data-version="'+esc(g.version||'v1.0.0')+'" title="کپی مسیر پروژه"><span data-icon="copy"></span></button><button data-project-info="'+esc(g.id)+'" data-version="'+esc(g.version||'v1.0.0')+'" title="Git، حجم فایل و منابع"><span data-icon="chart"></span></button></div></div></article>').join('');document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>location.href='/theia.html?game='+encodeURIComponent(b.dataset.edit)+'&version='+encodeURIComponent((games.find(g=>g.id===b.dataset.edit)||{}).version||'v1.0.0'));document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteGame(b.dataset.delete));window.GameVaultTools?.bind(document.querySelector('#manageCards'))}
+const selectedVersions = new Map();
+function renderCards() {
+  $('#manageCards').innerHTML = games.map(game => {
+    const list = game.versions || [{ name: game.version, meta: game }];
+    const selected = list.find(item => item.name === selectedVersions.get(game.id)) || list[0];
+    const version = selected?.name || game.version || 'v1.0.0';
+    selectedVersions.set(game.id, version);
+    const meta = selected?.meta || game;
+    const base = '/games/' + encodeURIComponent(game.slug || game.id) + '/versions/' + encodeURIComponent(version) + '/';
+    return `<article class="manage-card" data-game="${esc(game.id)}"><div class="manage-cover" style="background-image:url('${esc(meta.image)}')"></div><div class="manage-content"><h3>${esc(meta.name)}</h3><p>${esc(meta.description)}</p><div class="manage-meta"><span>★ ${esc(game.rating)}</span><span>نسخه ${esc(version)}</span></div><section class="version-controls"><label>مدیریت نسخه‌ها<select data-version-select="${esc(game.id)}">${list.map(item => `<option value="${esc(item.name)}"${item.name === version ? ' selected' : ''}>${esc(item.name)}</option>`).join('')}</select></label><div><button data-version-action="add">＋ افزودن نسخه</button><button data-version-action="rename">تغییر نام</button><button data-version-action="delete">حذف نسخه</button></div></section><div class="manage-actions"><button data-edit="${esc(game.id)}">ویرایش همین نسخه در Studio</button><a class="version-preview" href="${base}game.html" target="_blank" rel="noopener">▷ پیش‌نمایش / بازی</a><a href="${base}game.html" download>↓ دانلود همین نسخه</a><button class="delete" data-delete="${esc(game.id)}">حذف بازی</button></div><div class="project-actions"><button data-vscode="${esc(game.id)}" data-version="${esc(version)}" title="باز کردن پوشه در VS Code"><span data-icon="vscode"></span> باز کردن در VS Code</button><button data-copy-path="${esc(game.id)}" data-version="${esc(version)}" title="کپی مسیر پروژه"><span data-icon="copy"></span></button><button data-project-info="${esc(game.id)}" data-version="${esc(version)}" title="Git، حجم فایل و منابع"><span data-icon="chart"></span></button></div></div></article>`;
+  }).join('') || '<p>هنوز پروژه‌ای ایجاد نشده است.</p>';
+  document.querySelectorAll('[data-version-select]').forEach(select => select.onchange = () => { selectedVersions.set(select.dataset.versionSelect, select.value); renderCards(); });
+  document.querySelectorAll('[data-edit]').forEach(button => button.onclick = () => {
+    const game = games.find(item => item.id === button.dataset.edit);
+    location.href = '/theia.html?game=' + encodeURIComponent(game.slug || game.id) + '&version=' + encodeURIComponent(selectedVersions.get(game.id));
+  });
+  document.querySelectorAll('[data-version-action]').forEach(button => button.onclick = () => changeVersion(button.closest('[data-game]').dataset.game, button.dataset.versionAction));
+  document.querySelectorAll('[data-delete]').forEach(button => button.onclick = () => deleteGame(button.dataset.delete));
+  window.GameVaultTools?.bind(document.querySelector('#manageCards'));
+}
+async function changeVersion(id, action) {
+  const game = games.find(item => item.id === id), version = selectedVersions.get(id), slug = game.slug || id;
+  try {
+    if (action === 'delete') {
+      if (!confirm(`نسخه ${version} و فایل‌های آن حذف شوند؟`)) return;
+      await api('/api/version', { method: 'DELETE', body: JSON.stringify({ game: slug, version }) });
+      selectedVersions.delete(id);
+    } else {
+      const name = prompt(action === 'add' ? 'نام نسخه جدید (کپی نسخه انتخاب‌شده)' : 'نام جدید نسخه', action === 'add' ? '' : version)?.trim();
+      if (!name || name === version) return;
+      await api('/api/version', { method: action === 'add' ? 'POST' : 'PATCH', body: JSON.stringify(action === 'add' ? { game: slug, version: name, fromVersion: version } : { game: slug, version, newVersion: name }) });
+      selectedVersions.set(id, name);
+    }
+    await init(); gameVaultChannel.postMessage('versions-changed');
+  } catch (error) { alert(error.message); }
+}
 async function deleteGame(id){if(!confirm('پوشه‌ی این بازی و همه نسخه‌های آن حذف شود؟'))return;await api('/api/game',{method:'DELETE',body:JSON.stringify({game:id})});games=games.filter(g=>g.id!==id);renderDashboard();renderCards()}
 function openGameWizard(){const form=$('#gameWizardForm');if(!form)return;form.reset();$('#gameSlug').value='';$('#wizardMessage').textContent='';$('#gameWizard').classList.remove('hidden');document.body.classList.add('wizard-open');setTimeout(()=>$('#gameName')?.focus(),0)}function closeGameWizard(){const wizard=$('#gameWizard');if(!wizard)return;wizard.classList.add('hidden');document.body.classList.remove('wizard-open')}
 $('#gameName').oninput=e=>{$('#gameSlug').value=e.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')};

@@ -103,4 +103,24 @@ class GameVaultProjectToolsWidget extends Widget{
  render(){this.node.innerHTML='<style>.gv-project-tools{padding:16px;min-width:290px;background:var(--theia-sideBar-background);color:var(--theia-foreground);font-family:Vazirmatn,Arial,sans-serif}.gv-project-tools h3{margin:0 0 14px}.gv-project-tools article{padding:11px;margin:9px 0;border:1px solid var(--theia-panel-border);border-radius:10px}.gv-project-tools button{margin:5px 0;border:0;border-radius:7px;padding:7px 10px;background:var(--theia-button-background);color:var(--theia-button-foreground)}</style><h3>وضعیت پروژه</h3><div id="gv-project-info">در حال دریافت اطلاعات…</div><button id="gv-project-refresh">بروزرسانی</button><h3>Snapshotها</h3><div id="gv-project-history">—</div>';this.node.querySelector('#gv-project-refresh').onclick=()=>this.refresh();this.refresh()}
  async refresh(){const p=project(),info=this.node.querySelector('#gv-project-info'),history=this.node.querySelector('#gv-project-history');if(!p.game||!p.version){info.textContent='پروژه‌ای انتخاب نشده است.';return}try{const [a,b]=await Promise.all([apiFetch(`${API}/api/project-tools?game=${encodeURIComponent(p.game)}&version=${encodeURIComponent(p.version)}`),apiFetch(`${API}/api/history?game=${encodeURIComponent(p.game)}&version=${encodeURIComponent(p.version)}`)]),tools=await a.json(),snapshots=await b.json();if(!a.ok)throw Error(tools.error||'دریافت اطلاعات ناموفق بود');info.innerHTML=`<article><b>Git</b><br>${tools.git?.available?`${tools.git.branch||'بدون شاخه'} · ${tools.git.changes?.length||0} تغییر`:'مخزن Git فعال نیست'}</article><article><b>منابع</b><br>${tools.resources?.files||0} فایل · ${tools.resources?.bytes||0} بایت<br>Asset: ${tools.resources?.assets||0} بایت</article>`;history.replaceChildren();for(const item of (snapshots.history||[]).slice(0,8)){const card=document.createElement('article'),button=document.createElement('button');card.textContent=`${item.message||'Snapshot'} · ${new Date(item.at).toLocaleString('fa-IR')}`;button.textContent='بازگردانی این Snapshot';button.onclick=async()=>{if(!confirm('کل نسخه به این Snapshot بازگردد؟'))return;const r=await apiFetch(`${API}/api/history/restore`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:p.game,version:p.version,id:item.id})});if(r.ok)this.refresh()};card.append(button);history.append(card)}if(!(snapshots.history||[]).length)history.textContent='هنوز Snapshotی ثبت نشده است.'}catch(error){info.textContent=`خطا: ${error.message}`}}
 }
-const studioModule=new ContainerModule(bind=>{bind(GameVaultAgentWidget).toSelf().inSingletonScope();bind(GameVaultProjectToolsWidget).toSelf().inSingletonScope();bind(FrontendApplicationContribution).toDynamicValue(c=>({onStart:()=>{const s=c.container.get(ApplicationShell),a=c.container.get(GameVaultAgentWidget),t=c.container.get(GameVaultProjectToolsWidget);if(!s.getWidgetById(a.id))s.addWidget(a,{area:'right'});if(!s.getWidgetById(t.id))s.addWidget(t,{area:'right'});addToolbar(s);const bar=document.querySelector('#gv-studio-toolbar');if(bar&&!document.querySelector('#gv-project-tools')){const button=document.createElement('button');button.id='gv-project-tools';button.title='Git، منابع و Snapshot';button.textContent='▤ ابزار پروژه';button.onclick=()=>{t.refresh();s.activateWidget(t.id)};bar.append(button)}}})).inSingletonScope()});module.exports.default=studioModule;
+const studioModule = new ContainerModule(bind => {
+  bind(FrontendApplicationContribution).toDynamicValue(context => ({
+    onStart: async () => {
+      const shell = context.container.get(ApplicationShell);
+      addToolbar(shell);
+      const agent = new GameVaultAgentWidget();
+      const tools = new GameVaultProjectToolsWidget();
+      if (!shell.getWidgetById(agent.id)) await shell.addWidget(agent, { area: 'right' });
+      if (!shell.getWidgetById(tools.id)) await shell.addWidget(tools, { area: 'right' });
+      const bar = document.querySelector('#gv-studio-toolbar');
+      if (bar && !document.querySelector('#gv-project-tools')) {
+        const button = document.createElement('button');
+        button.id = 'gv-project-tools'; button.title = 'Git، منابع و Snapshot';
+        button.textContent = '▤ ابزار پروژه';
+        button.onclick = () => { tools.refresh(); shell.activateWidget(tools.id); };
+        bar.appendChild(button);
+      }
+    }
+  })).inSingletonScope();
+});
+module.exports.default = studioModule;

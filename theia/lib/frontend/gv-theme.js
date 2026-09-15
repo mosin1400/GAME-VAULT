@@ -1,23 +1,28 @@
 (() => {
-  const key = 'gv-theia-theme-mode';
   const button = document.querySelector('#gv-theia-theme-toggle');
-  const modeFor = family => {
-    const remembered = localStorage.getItem(`gv-theia-theme-mode-${family}`);
-    return remembered?.endsWith(`-${family}`) ? remembered : `modern-${family}`;
-  };
-  const apply = value => {
-    const mode = value?.endsWith('-light') || value?.endsWith('-dark') ? value : modeFor(value === 'light' ? 'light' : 'dark');
-    const light = mode.endsWith('-light');
-    document.documentElement.dataset.gvTheme = light ? 'light' : 'dark';
-    button.textContent = light ? '☾' : '☀';
-    button.title = light ? 'حالت تاریک' : 'حالت روشن';
-    button.setAttribute('aria-pressed', String(light));
+  const choices = [['modern-light', 'Modern Light'], ['modern-dark', 'Modern Dark'], ['main-light', 'Main Light'], ['main-dark', 'Main Dark']];
+  const menu = document.createElement('div');
+  menu.id = 'gv-theme-menu'; menu.hidden = true; menu.setAttribute('role', 'menu');
+  const apply = mode => {
+    localStorage.setItem('gv-theia-theme-mode', mode);
     window.dispatchEvent(new CustomEvent('gv-theme-change', { detail: mode }));
+    menu.hidden = true; button.setAttribute('aria-expanded', 'false');
   };
-  apply(localStorage.getItem(key) || 'modern-dark');
-  button.addEventListener('click', () => {
-    const next = document.documentElement.dataset.gvTheme === 'light' ? 'dark' : 'light';
-    const mode = modeFor(next);
-    localStorage.setItem(key, mode); apply(mode);
+  for (const [mode, label] of choices) {
+    const item = document.createElement('button');
+    item.type = 'button'; item.textContent = label; item.dataset.mode = mode;
+    item.setAttribute('role', 'menuitemradio'); item.onclick = () => apply(mode);
+    menu.appendChild(item);
+  }
+  document.body.appendChild(menu);
+  button.textContent = '◐ Themes'; button.title = 'Choose Studio color theme';
+  button.setAttribute('aria-haspopup', 'menu'); button.setAttribute('aria-expanded', 'false');
+  button.onclick = () => { menu.hidden = !menu.hidden; button.setAttribute('aria-expanded', String(!menu.hidden)); };
+  document.addEventListener('click', event => {
+    if (!menu.contains(event.target) && !button.contains(event.target)) { menu.hidden = true; button.setAttribute('aria-expanded', 'false'); }
+  });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') menu.hidden = true; });
+  window.addEventListener('gv-theme-applied', event => {
+    for (const item of menu.children) item.setAttribute('aria-checked', String(item.dataset.mode === event.detail));
   });
 })();
