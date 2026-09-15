@@ -1,0 +1,14 @@
+{
+  "name": "F-n8n1-automation-platform",
+  "description": "A self-hosted visual workflow automation platform with validation, execution history, integrations, and AI-assisted authoring.",
+  "ai": "نامشخص",
+  "category": "بدون دسته‌بندی",
+  "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1400&q=85",
+  "playUrl": "game.html",
+  "downloadUrl": "game.html",
+  "status": "draft",
+  "id": "F-n8n1-automation-platform",
+  "slug": "F-n8n1-automation-platform",
+  "version": "v1.0.0",
+  "Order": "1"
+}

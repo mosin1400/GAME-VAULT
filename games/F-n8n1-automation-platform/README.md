@@ -1,5 +1,20 @@
-# ⚡ FlowForge – پلتفرم اتوماسیون هوشمند نسل‌بعدی (Self-hosted)
+# FlowForge Automation Platform
 
+FlowForge is a self-hosted workflow automation platform inspired by n8n. It combines a visual workflow builder with a reliable execution engine, version control, auditability, and extensible integrations.
+
+## Highlights
+
+- Drag-and-drop workflow design with branching, loops, joins, and reusable templates
+- Extensible node and integration registry with custom-node support
+- AI-assisted authoring with validation and safe execution boundaries
+- Queue-based execution, retries, execution history, and audit logs
+- REST APIs and a clean project structure for maintainable deployments
+
+## Project overview
+
+FlowForge is designed around a typed workflow model, validation layer, execution engine, and provider registry. Workflows are validated before execution, while execution records and audit events provide traceability for operators.
+
+<!-- Original product notes -->
 FlowForge یک **اکوسیستم کامل اتوماسیون کاری** مانند n8n است که به‌صورت لوکال با Docker Compose اجرا می‌شود:
 ویرایشگر بصری Drag & Drop، موتور اجرای واقعی با شاخه/حلقه/ادغام، **۵۰۰+ نود داخلی** و **۲۵۰+ یکپارچه‌سازی**، **۹۰۰+ قالب آماده**، AI Agent/RAG/Guardrails، پیام‌رسان‌های **بله و سروش**، IoT (MQTT/Modbus/TCP/UDP/WebSocket)، Queue Mode، Multi-Main، Version Control، Audit Log و REST API/CLI کامل.
 
