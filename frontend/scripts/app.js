@@ -110,7 +110,7 @@ function openGame(id, version) {
   if (!original) return;
   const requested = version || localStorage.getItem('gv-selected-version:' + (original.slug || id)) || original.version;
   const selected = original.versions?.find(item => item.name === requested);
-  selectedGame = { ...original, ...(selected?.meta || {}), version: selected?.name || original.version, versions: original.versions, rating: original.rating };
+  selectedGame = { ...original, ...(selected?.meta || {}), root: !!selected?.root, version: selected?.name || original.version, versions: original.versions, rating: original.rating };
   const requestId = ++detailRequestId;
   rememberGame(id); renderGameDetail(); navigateTo('detail');
   api('/api/game-detail?game=' + encodeURIComponent(original.slug || id) + '&version=' + encodeURIComponent(selectedGame.version)).then(detail => {
@@ -124,7 +124,7 @@ function openGame(id, version) {
 function renderGameDetail() {
   const game = selectedGame, slug = game.slug || game.id;
   const isFavorite = favorites().includes(game.id), list = game.versions || [{ name: game.version }];
-  const base = '/games/' + encodeURIComponent(slug) + '/versions/' + encodeURIComponent(game.version) + '/';
+  const base = game.root ? '/games/' + encodeURIComponent(slug) + '/' : '/games/' + encodeURIComponent(slug) + '/versions/' + encodeURIComponent(game.version) + '/';
   const image = /^(https?:|\/)/.test(game.image || '') ? game.image : base + (game.image || '');
   const readme = window.GameVaultMarkdown.render(game.readme || game.description || '');
   const activity = game.activity || { playCount: 0, downloadCount: 0, lastPlayedAt: null };
@@ -147,6 +147,7 @@ $('#searchInput').addEventListener('input', renderCards);
 document.querySelectorAll('.filter').forEach((button) => button.onclick = () => { document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active')); button.classList.add('active'); activeFilter = button.dataset.filter; renderCards(); });
 document.querySelectorAll('[data-view]').forEach((button) => button.onclick = (event) => { event.preventDefault(); const view = button.dataset.view; if (view === 'recent' || view === 'favorites') { navigateTo('games'); activeView = view; renderCards(); $('#crumbCurrent').textContent = view === 'recent' ? 'اخیراً اضافه‌شده' : 'منتخب من'; } else navigateTo(view); });
 $('#openEditor').onclick = async () => { try { const session = await api('/api/session'); location.href = session.user?.role === 'admin' ? '/manage.html' : '/profile.html?next=' + encodeURIComponent('/manage.html'); } catch { location.href = '/profile.html?next=' + encodeURIComponent('/manage.html'); } };
+$('#mobileMenu').onclick = () => $('.sidebar').classList.toggle('mobile-open');
 $('#passwordForm').onsubmit = (event) => { event.preventDefault(); login().catch((error) => showToast(error.message)); };
 $('#closeEditor').onclick = () => $('#editorDrawer').classList.add('hidden');
 document.querySelectorAll('[data-close]').forEach((button) => button.onclick = () => $('#passwordModal').classList.add('hidden'));

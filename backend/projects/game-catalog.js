@@ -37,7 +37,9 @@ function createGameCatalog({ gamesRoot, readJson, validateMeta }) {
         const meta = await readJson(path.join(root, 'game.json'), null);
         return { name: entry.name, valid: !!meta, meta, updatedAt: await lastModified(root), error: meta ? validateMeta(meta) : 'game.json پیدا نشد' };
       }));
-      return list.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
+      if (list.length) return list.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
+      const rootMeta = await readJson(path.join(gamesRoot, game, 'game.json'), null);
+      return rootMeta ? [{ name: rootMeta.version || 'v1.0.0', root: true, valid: true, meta: { ...rootMeta, version: rootMeta.version || 'v1.0.0' }, updatedAt: await lastModified(path.join(gamesRoot, game)), error: validateMeta(rootMeta) }] : [];
     } catch {
       // Projects that were added directly under games/ are exposed as their
       // first version until they are migrated into versions/<id>.
@@ -54,7 +56,7 @@ function createGameCatalog({ gamesRoot, readJson, validateMeta }) {
       if (!entry.isDirectory()) continue;
       const allVersions = await versions(entry.name);
       const activeVersion = allVersions.filter(version => version.valid).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-      if (activeVersion?.meta) list.push({ ...activeVersion.meta, version: activeVersion.name, versionCount: allVersions.length, versions: allVersions.filter(version => version.valid && version.meta).map(version => ({ name: version.name, meta: version.meta })) });
+      if (activeVersion?.meta) list.push({ ...activeVersion.meta, version: activeVersion.name, root: !!activeVersion.root, versionCount: allVersions.length, versions: allVersions.filter(version => version.valid && version.meta).map(version => ({ name: version.name, root: !!version.root, meta: version.meta })) });
     }
     return list.sort((a, b) => Number(a.Order) - Number(b.Order));
   }
