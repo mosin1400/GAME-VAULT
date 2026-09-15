@@ -100,7 +100,7 @@ body {
 }
 .admin-main {
   padding:0 42px 35px;
-  max-width:1540px;
+  max-width:none;
   width:100%;
   margin:0 auto;
   align-self:start
