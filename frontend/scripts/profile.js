@@ -1,0 +1,12 @@
+const $=s=>document.querySelector(s);
+const next=new URLSearchParams(location.search).get('next');
+async function api(path,options={}){const response=await fetch(path,{headers:{'content-type':'application/json',...(options.headers||{})},...options});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'خطا');return data}
+function tab(name){document.querySelectorAll('.auth-tab').forEach(x=>x.classList.toggle('active',x.dataset.auth===name));$('#loginForm').classList.toggle('hidden',name!=='login');$('#authError').textContent=''}
+function fillProfile(user){$('#userAvatar').textContent=user.avatar||user.name[0];$('#userName').textContent=user.name;$('#profileName').value=user.name;$('#profileAvatar').value=user.avatar||'';$('#userRole').textContent=user.role==='admin'?'مدیر سیستم':'کاربر Game Vault';$('#userUsername').textContent='@'+user.username}
+async function state(){const data=await api('/api/me');$('#guestState').classList.toggle('hidden',!data.guest);$('#userState').classList.toggle('hidden',data.guest);if(!data.guest)fillProfile(data.user)}
+document.querySelectorAll('.auth-tab').forEach(button=>button.onclick=()=>tab(button.dataset.auth));
+$('#loginForm').onsubmit=async event=>{event.preventDefault();try{const logged=await api('/api/auth/login',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(event.target)))});await state();new BroadcastChannel('game-vault').postMessage('profile');if(logged.user?.role==='admin'&&next&&next.startsWith('/'))location.href=next}catch(error){$('#authError').textContent=error.message}};
+$('#registerForm')?.remove();
+$('#profileForm').onsubmit=async event=>{event.preventDefault();try{const data=await api('/api/profile',{method:'PUT',body:JSON.stringify(Object.fromEntries(new FormData(event.target)))});fillProfile(data.user);$('#profileMessage').textContent='پروفایل ذخیره شد';new BroadcastChannel('game-vault').postMessage('profile')}catch(error){$('#profileMessage').textContent=error.message}};
+$('#logoutBtn').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});await state();new BroadcastChannel('game-vault').postMessage('profile')};
+state().catch(error=>$('#authError').textContent=error.message);

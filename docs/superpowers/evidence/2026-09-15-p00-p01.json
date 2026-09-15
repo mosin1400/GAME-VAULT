@@ -1,0 +1,100 @@
+{
+  "date": "2026-09-15",
+  "environmentPolicy": {
+    "contentsRead": false,
+    "hashed": false,
+    "copied": false,
+    "loaderInvoked": false,
+    "protectedPathsExcluded": 4
+  },
+  "backup": {
+    "root": "C:\\Users\\Mohammad Amin Chezgi\\GameVault-Backups\\baseline-20260915-p00a",
+    "restoreRoot": "C:\\Users\\Mohammad Amin Chezgi\\GameVault-Backups\\restore-20260915-p00a",
+    "inventoryHash": "cc2e59ad486c3ce22e8bc2d68f08ea7a3784f44a93c73e2b36e02f9163c060e7",
+    "preservedFiles": 467,
+    "bytesVerified": true,
+    "freshRestoreBytesVerified": true,
+    "operatorRestrictedParent": true,
+    "secretsIncluded": false,
+    "writersFrozen": false,
+    "runtimeVerified": false,
+    "restoredContracts": {
+      "total": 46,
+      "passed": 39,
+      "failed": 7,
+      "baselineFailuresReproduced": 6,
+      "additionalFailure": "theia-frontend-dependencies.test.js: generated output is stale relative to the declared Theia dependency set; clean installation alone cannot validate it"
+    },
+    "dependencyRestore": {
+      "rootLockInstalled": true,
+      "theiaLockInstalled": true,
+      "theiaPackagesInstalled": 1156,
+      "browserBuild": "passed: 0 errors",
+      "nodeBuild": "blocked: @vscode/windows-ca-certs crypt32.node requires Windows C++ build tools for Node 24",
+      "nativeRebuild": "blocked: node-gyp found no supported Visual Studio C++ workload"
+    }
+  },
+  "currentCode": {
+    "command": "npm.cmd test",
+    "exitCode": 0,
+    "survivingRootContractsPassed": 45,
+    "behavioralTestsPassed": 11,
+    "legacyChatOnlyTestRetired": true,
+    "existingTheiaTestsPreserved": true,
+    "syntaxChecksPassed": ["server.js", "backend/http/static-response.js"],
+    "apiSpine": {
+      "typescriptBuild": true,
+      "testsPassed": 3,
+      "routes": ["/health/live", "/health/ready"],
+      "environmentFileAccess": false
+    },
+    "projectAccessPolicy": {
+      "testsPassed": 4,
+      "rules": ["developer-no-publish-or-transfer", "maintainer-no-role-escalation", "system-admin-no-implicit-private-source", "public-metadata-only"],
+      "postgresRlsRuntimeVerified": false
+    },
+    "actorBoundTransactions": {
+      "testsPassed": 2,
+      "rules": ["validate-actor-before-connect", "set-local-actor-before-domain-work", "commit-or-rollback-and-release"],
+      "postgresRuntimeVerified": false
+    },
+    "identitySecurity": {
+      "testsPassed": 7,
+      "migrationApplied": false,
+      "argon2AdapterInstalled": false,
+      "mailFlowRuntimeVerified": false,
+      "policy": ["no-password-normalization", "24-hour-idle-expiry", "30-day-absolute-expiry", "revoke-on-auth-epoch-or-account-state", "local-return-path-only"]
+    },
+    "apiSuite": {
+      "testsPassed": 27,
+      "command": "npm.cmd --prefix apps\\api run test"
+    },
+    "storageOperationFoundation": {
+      "testsPassed": 10,
+      "rules": ["binary-sha256-manifest", "unicode-path-preservation", "directory-link-rejected", "idempotent-retry", "monotonic-operation-state", "source-change-rejected", "tampered-staging-not-promoted"],
+      "durableJournalRuntimeVerified": false,
+      "publishPointerRuntimeVerified": false
+    },
+    "actualFileSmoke": {
+      "isolatedLoopbackHandler": true,
+      "environmentLoaderInvoked": false,
+      "publicPaths200": ["/", "/manage.html", "/profile.html", "/theia.html", "/project-tools.js", "/frontend/styles/theme.css", "/games/t34-steel-front/versions/2/game.html", "/games/t34-steel-front/versions/v1.1.0/game.html"],
+      "privateOrMissingPaths404": ["/server.js", "/backend/auth/admin-account.js", "/.vault/users.json", "/editor.html", "/missing.css"]
+    }
+  },
+  "deployment": {
+    "existing8080ListenerRestarted": true,
+    "existingSourceExposureStillPresent": false,
+    "verifiedProcess": {
+      "command": "node server.js",
+      "listener": "[::1]:8080",
+      "gracefulLifecycle": true
+    },
+    "liveSmoke": {
+      "publicPaths200": ["/", "/manage.html", "/profile.html", "/theia.html", "/project-tools.js", "/games/t34-steel-front/versions/2/game.html"],
+      "privateOrRemovedPaths404": ["/server.js", "/backend/auth/admin-account.js", "/.vault/users.json", "/editor.html", "/missing-does-not-exist.css"]
+    },
+    "publicDeploymentApproved": false,
+    "browserPtySandboxAcceptancePerformed": false
+  }
+}

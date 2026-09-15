@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_automation_builder
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Tehran
+      # For connecting to local MCP or tools
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+      # Mount custom nodes directly
+      - ./custom-nodes:/home/node/.n8n/custom
+    command: /bin/sh -c "cd /home/node/.n8n/custom && npm install && npm run build && npm install -g @chrishdx/n8n-nodes-codex-cli-lm && export NODE_PATH=/usr/local/lib/node_modules && n8n start"
+
+volumes:
+  n8n_data:

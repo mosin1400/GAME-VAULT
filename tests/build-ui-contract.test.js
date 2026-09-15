@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const html=fs.readFileSync('frontend/pages/manage.html','utf8');
+const js=fs.readFileSync('frontend/scripts/build-manager.js','utf8');
+const css=fs.readFileSync('frontend/styles/manage-page.css','utf8');
+assert.match(html,/id="buildSheet"/);
+assert.match(html,/build-manager\.js/);
+assert.match(js,/function openBuildSheet/);
+assert.match(css,/\.build-sheet/);
+console.log('build UI contract passed');

@@ -1,0 +1,20 @@
+{
+  "name": "@game-vault/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test ../../tests/integration/api-spine.test.cjs ../../tests/integration/project-access.test.cjs ../../tests/integration/api-main.test.cjs ../../tests/integration/database-transactions.test.cjs ../../tests/integration/identity-schema.test.cjs ../../tests/integration/identity-policy.test.cjs ../../tests/integration/identity-return-path.test.cjs ../../tests/integration/storage-manifest.test.cjs ../../tests/integration/storage-journal.test.cjs ../../tests/integration/storage-staging.test.cjs ../../tests/integration/storage-commit.test.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.41",
+    "fastify": "5.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "typescript": "5.9.2"
+  }
+}

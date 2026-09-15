@@ -1,0 +1,111 @@
+{
+  "name": "🧠 Codex LLM Proxy (for Agent app)",
+  "nodes": [
+    {
+      "id": "77a71897-f94e-4ea5-b5f8-dc809ce2a3b9",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b5dfec86-2423-4c42-a0a2-76f395839493",
+      "parameters": {
+        "path": "codex-llm",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "notes": "اپ Agent با N8N_CODEX_WEBHOOK_URL به اینجا { system, prompt } می‌فرستد"
+    },
+    {
+      "id": "3b04f41f-a67f-438c-87f4-3806944aa677",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "={{ $json.body.system }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d109b6c9-ca97-486c-b858-7bb5b55d1592",
+      "name": "Codex Chat Model",
+      "type": "@chrishdx/n8n-nodes-codex-cli-lm.codexCliLm",
+      "typeVersion": 1,
+      "position": [
+        260,
+        220
+      ],
+      "parameters": {
+        "model": "gpt-5-codex"
+      }
+    },
+    {
+      "id": "d7c1cad4-2982-4b25-9a8b-fbfa6711d867",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { output: $json.text } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Codex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null
+}

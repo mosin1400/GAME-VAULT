@@ -1,0 +1,19 @@
+{
+  "id": "t34-steel-front",
+  "Order": "1",
+  "name": "جبهه‌ی فولادی",
+  "slug": "t34-steel-front",
+  "description": "فرماندهی یک T-34/85 در قلب یک عملیات سینمایی؛ مسیرت را انتخاب کن و خط مقدم را پس بگیر.",
+  "ai": "ooj",
+  "category": "اکشن",
+  "image": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=1200&q=85",
+  "playUrl": "/games/t34-steel-front/versions/v1.0.0/game.html",
+  "downloadUrl": "/api/download?game=t34-steel-front&version=v1.0.0",
+  "version": "2",
+  "status": "draft",
+  "tags": [
+    "تانک",
+    "جنگی",
+    "سینمایی"
+  ]
+}

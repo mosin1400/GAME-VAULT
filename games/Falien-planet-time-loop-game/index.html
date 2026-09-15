@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>حلقه‌ی زمان — سیاره‌ی وِلوریس</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+ "cannon-es":"https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+}}
+</script>
+<style>
+/* ===================== استایل کلی ===================== */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#05020c;font-family:Vazirmatn,Tahoma,"Segoe UI",sans-serif;color:#eee;user-select:none;-webkit-user-select:none;touch-action:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(8,3,18,.82);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;overflow:auto;pointer-events:auto}
+.panel{background:linear-gradient(160deg,rgba(45,15,80,.92),rgba(10,5,25,.97));border:1px solid rgba(190,120,255,.45);border-radius:16px;padding:20px;max-width:1000px;width:95%;max-height:94vh;overflow:auto;box-shadow:0 0 50px rgba(150,60,255,.35)}
+.panel h1{font-size:28px;color:#e6c8ff;text-shadow:0 0 18px #a050ff;margin-bottom:8px}
+.panel h2{font-size:18px;color:#ffd08a;margin:14px 0 6px;border-bottom:1px solid rgba(255,200,120,.3);padding-bottom:4px}
+.panel p{font-size:14px;line-height:1.9;color:#d8cde8}
+.btn{pointer-events:auto;cursor:pointer;border:1px solid rgba(200,150,255,.6);background:rgba(120,60,220,.45);color:#fff;padding:10px 18px;border-radius:10px;font-size:15px;font-family:inherit;transition:.15s}
+.btn:hover{background:rgba(160,90,255,.7)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.gold{background:rgba(220,150,40,.5);border-color:rgba(255,210,120,.7)}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;font-size:13px;margin-top:10px}
+.keys div{background:rgba(255,255,255,.06);padding:6px 8px;border-radius:8px}
+kbd{background:#2a1a45;border:1px solid #8a5cff;border-radius:5px;padding:1px 6px;font-family:monospace;color:#ffe;margin-left:4px}
+/* ===================== HUD ===================== */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;overflow:hidden}
+#topLeft{position:absolute;top:10px;left:12px;text-align:left;direction:ltr;background:rgba(0,0,0,.35);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);min-width:150px}
+#timer{font-size:30px;font-weight:800;letter-spacing:2px;font-family:monospace;color:#7dff8a;text-shadow:0 0 12px currentColor;transition:color .5s}
+#loopInfo{font-size:13px;color:#d9c9ff;direction:rtl;text-align:right}
+#phase{font-size:12px;color:#ffd39a;direction:rtl;text-align:right}
+#anomaly{font-size:12px;color:#ff8a8a;direction:rtl;text-align:right;margin-top:2px;max-width:220px}
+#compassWrap{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:2px 6px}
+#compass{display:block;width:260px;height:30px}
+#bars{position:absolute;top:10px;right:12px;display:flex;gap:10px;direction:ltr}
+.vbar{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px}
+.vbar .track{width:14px;height:150px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);border-radius:7px;overflow:hidden;position:relative}
+.vbar .fill{position:absolute;bottom:0;left:0;right:0;height:100%;transition:height .3s;box-shadow:0 0 10px currentColor}
+.vbar span{font-family:monospace;font-size:11px;color:#fff;text-shadow:0 0 4px #000}
+.vbar i{font-style:normal;font-size:10px;color:#ccc}
+#minimap{position:absolute;right:12px;bottom:14px;width:170px;height:170px;border-radius:50%;border:2px solid rgba(190,140,255,.5);background:#111;box-shadow:0 0 16px rgba(120,60,255,.5)}
+#res{position:absolute;left:12px;bottom:14px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,.4);padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+#res .row{display:flex;gap:8px;direction:rtl}
+#res .it{display:flex;align-items:center;gap:3px;font-size:13px;min-width:44px;font-family:monospace}
+#res .it b{font-size:16px}
+#msgs{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(92vw,700px);pointer-events:none}
+.msg{font-size:18px;font-weight:700;text-align:center;padding:6px 16px;border-radius:10px;background:rgba(0,0,0,.45);text-shadow:0 0 10px currentColor;animation:pop .35s ease-out;transition:opacity .6s}
+.msg.warn{color:#ff6b6b;border:1px solid rgba(255,90,90,.5)}
+.msg.info{color:#8fe8ff;border:1px solid rgba(90,220,255,.4)}
+.msg.good{color:#8dff9a;border:1px solid rgba(90,255,120,.4)}
+.msg.gold{color:#ffd27a;border:1px solid rgba(255,210,120,.5)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+#banner{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-size:34px;font-weight:900;color:#ff4d6d;text-shadow:0 0 20px #ff004c,0 0 40px #ff004c;animation:pulse 1s infinite alternate;text-align:center;white-space:nowrap}
+@keyframes pulse{from{opacity:.6;transform:translateX(-50%) scale(.97)}to{opacity:1;transform:translateX(-50%) scale(1.03)}}
+#prompt{position:absolute;top:56%;left:50%;transform:translateX(-50%);font-size:15px;background:rgba(0,0,0,.55);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.25);color:#fff}
+#crosshair{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 6px #fff}
+#toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto;max-width:90vw;overflow-x:auto;direction:rtl}
+.tool{background:rgba(20,10,40,.7);border:1px solid rgba(200,150,255,.4);border-radius:10px;padding:5px 9px;font-size:12px;color:#eee;min-width:64px;text-align:center;cursor:pointer;white-space:nowrap}
+.tool.cd{opacity:.4}
+.tool small{display:block;color:#bba;font-size:10px}
+#noiseC{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:0;mix-blend-mode:screen;transition:opacity .3s}
+#dmg{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 50%,rgba(255,0,0,.55) 100%);opacity:0;transition:opacity .2s}
+#cold{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(80,140,255,0) 45%,rgba(120,170,255,.5) 100%);opacity:0;transition:opacity .6s}
+#rad{position:absolute;inset:0;box-shadow:inset 0 0 80px 20px rgba(80,255,60,.5);opacity:0;transition:opacity .3s}
+/* ===================== کنترل‌های موبایل ===================== */
+#mobile{position:absolute;inset:0;pointer-events:none}
+.joy{position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none;transform:translate(-50%,-50%)}
+.joy .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(200,160,255,.55);transform:translate(-50%,-50%);box-shadow:0 0 12px rgba(200,160,255,.6)}
+#mbtns{position:absolute;right:16px;bottom:150px;display:grid;grid-template-columns:repeat(2,64px);gap:10px;direction:ltr;pointer-events:none}
+.mbtn{pointer-events:auto;width:64px;height:64px;border-radius:50%;background:rgba(190,150,255,.4);border:2px solid rgba(255,255,255,.5);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;box-shadow:0 0 10px rgba(0,0,0,.4)}
+.mbtn:active,.mbtn.on{background:rgba(255,220,120,.7)}
+#mtop{position:absolute;top:175px;right:12px;display:flex;flex-direction:column;gap:8px}
+.sbtn{pointer-events:auto;width:46px;height:46px;border-radius:12px;background:rgba(80,40,140,.55);border:1px solid rgba(255,255,255,.5);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center}
+.sbtn.on{background:rgba(255,220,120,.7)}
+@media (max-width:820px){
+ #minimap{width:100px;height:100px;right:auto;left:50%;transform:translateX(-50%);top:46px;bottom:auto}
+ #compass{width:180px;height:24px}
+ #topLeft{padding:5px 8px;min-width:120px}#timer{font-size:22px}
+ .vbar .track{height:100px;width:11px}
+ #res{bottom:10px;padding:5px 7px}#res .it{font-size:11px;min-width:36px}#res .it b{font-size:13px}
+ #msgs{bottom:230px}.msg{font-size:15px}
+ #banner{font-size:24px}
+ #toolbar{bottom:100px;left:auto;right:auto;transform:none;left:12px;max-width:52vw}
+ #crosshair{display:none}
+}
+/* ===================== پنل‌ها ===================== */
+.craftGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:820px){.craftGrid{grid-template-columns:1fr}}
+.tier{background:rgba(255,255,255,.04);border-radius:12px;padding:8px}
+.tier h3{font-size:15px;color:#c9a5ff;margin-bottom:6px;text-align:center}
+.card{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px;margin-bottom:8px;font-size:12px;position:relative}
+.card.done{border-color:rgba(100,255,140,.6);background:rgba(20,80,40,.3)}
+.card.locked{opacity:.55}
+.card b{font-size:13px;color:#ffe9b0}
+.card .cost{color:#9fe;font-family:monospace;margin-top:3px}
+.card .req{color:#f9b;margin-top:2px}
+.card .btn{margin-top:6px;width:100%}
+.mapWrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+#mapC{border:1px solid rgba(200,150,255,.4);border-radius:8px;background:#000;max-width:100%}
+.side{min-width:240px;max-width:320px;font-size:13px;flex:1}
+.side ul{list-style:none;line-height:1.9}
+.obrow{display:flex;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.05);margin-bottom:3px}
+.glyph{font-family:serif;font-size:16px;letter-spacing:4px;color:#8ff}
+#endScreen .panel{text-align:center}
+.close{position:absolute;top:10px;left:14px}
+.panel{position:relative}
+.upg{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(0,0,0,.3);padding:8px;border-radius:10px;font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- ============ صفحه‌ی شروع ============ -->
+<div id="start" class="overlay">
+ <div class="panel">
+  <h1>حلقه‌ی زمان — سیاره‌ی وِلوریس</h1>
+  <p>کپسول شما روی سیاره‌ای بیگانه سقوط کرده است. هر <b>۲۴ دقیقه</b>، زمان به لحظه‌ی سقوط باز می‌گردد. اما دانش شما — نقشه‌ی کشف‌شده، نمادهای رمزگشایی‌شده، ابزارهای ساخته‌شده و ارتقاهای ابلیسک‌ها — باقی می‌ماند.
+  <br>هفت ابلیسک باستانی را بیابید، نمادهایشان را با «قطعه‌های ترجمه» رمزگشایی کنید و آنها را به ترتیب صحیح فعال کنید تا از حلقه رها شوید.</p>
+  <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap">
+   <button class="btn gold" id="btnContinue">ادامه‌ی حلقه‌ی ذخیره‌شده</button>
+   <button class="btn" id="btnNew">حلقه‌ی جدید (سیاره‌ی تازه)</button>
+  </div>
+  <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="chkGyro"> استفاده از ژیروسکوپ برای چرخش دوربین (موبایل)</label>
+  <div class="keys">
+   <div><kbd>W A S D</kbd> حرکت</div><div><kbd>Space</kbd> پرش</div><div><kbd>Shift</kbd> دویدن</div><div><kbd>Ctrl</kbd> راه‌رفتن آرام</div>
+   <div><kbd>E</kbd> تعامل / برداشت</div><div><kbd>کلیک</kbd> ضربه‌ی چاقو / شکار</div><div><kbd>L</kbd> چراغ قوه</div><div><kbd>F</kbd> روشن‌کردن آتش</div>
+   <div><kbd>Tab</kbd> کارگاه و ارتقاها</div><div><kbd>M</kbd> نقشه‌ی بزرگ</div><div><kbd>1-6</kbd> ابزارها</div><div><kbd>اسکرول</kbd> زوم دوربین</div>
+  </div>
+  <p id="startNote" style="margin-top:10px;font-size:12px;color:#aaa">موبایل: نیمه‌ی چپ صفحه = جوی‌استیک حرکت، نیمه‌ی راست = چرخش دوربین، پینچ = زوم.</p>
+ </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+ <div id="topLeft"><div id="timer">24:00</div><div id="loopInfo">حلقه‌ی ۱</div><div id="phase">☀ روز</div><div id="anomaly"></div></div>
+ <div id="compassWrap"><canvas id="compass" width="260" height="30"></canvas></div>
+ <div id="bars">
+  <div class="vbar"><div class="track"><div class="fill" id="fO2" style="background:#3fb8ff;color:#3fb8ff"></div></div><span id="tO2">100</span><i>O₂</i></div>
+  <div class="vbar"><div class="track"><div class="fill" id="fHeat" style="background:#ff8a2a;color:#ff8a2a"></div></div><span id="tHeat">100</span><i>گرما</i></div>
+  <div class="vbar"><div class="track"><div class="fill" id="fHp" style="background:#ff3b5c;color:#ff3b5c"></div></div><span id="tHp">100</span><i>سلامت</i></div>
+  <div class="vbar"><div class="track"><div class="fill" id="fFood" style="background:#b6ff4a;color:#b6ff4a"></div></div><span id="tFood">100</span><i>غذا</i></div>
+ </div>
+ <canvas id="minimap" width="170" height="170"></canvas>
+ <div id="res"></div>
+ <div id="msgs"></div>
+ <div id="banner" class="hidden"></div>
+ <div id="prompt" class="hidden"></div>
+ <div id="crosshair"></div>
+ <div id="toolbar"></div>
+ <canvas id="noiseC" width="160" height="90"></canvas>
+ <div id="dmg"></div><div id="cold"></div><div id="rad"></div>
+ <div id="mobile" class="hidden">
+  <div class="joy" id="joyL"><div class="knob"></div></div>
+  <div class="joy" id="joyR"><div class="knob"></div></div>
+  <div id="mbtns">
+   <div class="mbtn" id="mbAct">ضربه</div><div class="mbtn" id="mbInt">تعامل<br>E</div>
+   <div class="mbtn" id="mbJump">پرش</div><div class="mbtn" id="mbRun">دویدن</div>
+  </div>
+  <div id="mtop"><div class="sbtn" id="mbLight">🔦</div><div class="sbtn" id="mbMap">🗺️</div><div class="sbtn" id="mbCraft">🛠️</div><div class="sbtn" id="mbFire">🔥</div></div>
+ </div>
+</div>
+
+<!-- ============ پنل کارگاه ============ -->
+<div id="craft" class="overlay hidden"><div class="panel">
+ <button class="btn small close" id="closeCraft">✕ بستن (Tab)</button>
+ <h1>🛠️ کارگاه ساخت و ارتقا</h1>
+ <div id="craftRes" style="font-size:13px;color:#9fe;font-family:monospace;margin-bottom:8px"></div>
+ <div id="suitBox" class="upg"></div>
+ <h2>درخت ساخت (۲۰ آیتم — پیش‌نیازها با فلش نمایش داده شده‌اند)</h2>
+ <div class="craftGrid" id="craftGrid"></div>
+</div></div>
+
+<!-- ============ نقشه‌ی بزرگ ============ -->
+<div id="map" class="overlay hidden"><div class="panel">
+ <button class="btn small close" id="closeMap">✕ بستن (M)</button>
+ <h1>🗺️ نقشه‌ی سیاره</h1>
+ <div class="mapWrap">
+  <canvas id="mapC" width="560" height="560"></canvas>
+  <div class="side">
+   <h2>ابلیسک‌ها</h2><div id="obList"></div>
+   <h2>لوگ تکامل حیات وحش</h2><ul id="evoLog"></ul>
+   <h2>وضعیت</h2><div id="mapStatus" style="line-height:1.9"></div>
+   <button class="btn small" id="btnReset" style="margin-top:10px;border-color:#f66">🗑 پاک‌کردن ذخیره و سیاره‌ی جدید</button>
+  </div>
+ </div>
+</div></div>
+
+<div id="endScreen" class="overlay hidden"><div class="panel"><h1 id="endTitle"></h1><p id="endText"></p><button class="btn gold" id="btnEnd" style="margin-top:14px">ادامه</button></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* =====================================================================
+   بخش ۰: ابزارهای کمکی (Utils)
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+const IS_MOBILE=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window && innerWidth<1100);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+const sstep=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t)};
+const TAU=Math.PI*2;
+/** تولیدکننده‌ی اعداد تصادفی با Seed (Mulberry32) */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/** نویز ارزشی دوبعدی + fbm — برای زمین و توزیع اشیا */
+function makeNoise(seed){const r=mulberry32(seed);const p=[];for(let i=0;i<256;i++)p[i]=i;for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}const perm=new Uint8Array(512);for(let i=0;i<512;i++)perm[i]=p[i&255];
+ const h=(ix,iy)=>perm[(perm[ix&255]+iy)&255]/255;
+ const n=(x,y)=>{const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);return lerp(lerp(h(ix,iy),h(ix+1,iy),u),lerp(h(ix,iy+1),h(ix+1,iy+1),u),v)*2-1};
+ const fbm=(x,y,oct=5,lac=2,gain=.5)=>{let a=1,f=1,s=0,nr=0;for(let i=0;i<oct;i++){s+=a*n(x*f,y*f);nr+=a;a*=gain;f*=lac}return s/nr};
+ return {n,fbm}}
+const _v=new THREE.Vector3(),_v2=new THREE.Vector3(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_m=new THREE.Matrix4();
+
+/* =====================================================================
+   بخش ۱: ثابت‌ها و تعاریف محتوا (قابل شخصی‌سازی)
+   ===================================================================== */
+const WORLD=1500, HALF=750, SEG=200, CELL=WORLD/SEG;      // ابعاد جهان و رزولوشن زمین
+const LOOP_LEN=24*60;                                      // طول حلقه‌ی زمانی (ثانیه)
+const O2_MAX_BASE=300;                                     // اکسیژن پایه: ۵ دقیقه
+const CAP={x:50,z:50};                                     // مکان کپسول سقوط
+const EXG=60, EXC=WORLD/EXG;                               // شبکه‌ی مه جنگ (Fog of war)
+const GLYPHS=['ᛟ','ᚦ','ᛇ','ᚹ','ᛉ','ᛞ','ᚷ'];                // الفبای بیگانه (۷ نماد)
+const GLYPH_NAMES=['چشمِ خورشید','دندان','خمیدگی','باد','شاخه','دروازه','گره'];
+const OB_NAMES=['خورشید','ماه','ریشه','طوفان','سکوت','پژواک','دروازه'];
+const ORD=['نخستین','دومین','سومین','چهارمین','پنجمین','ششمین','هفتمین'];
+const RES=[{k:'scrap',n:'فلز قراضه',ic:'⚙️'},{k:'crystal',n:'کریستال انرژی',ic:'💎'},{k:'organic',n:'بافت آلی',ic:'🧬'},{k:'rock',n:'سنگ آذرین',ic:'🪨'},{k:'elec',n:'قطعه الکترونیک',ic:'🔌'},{k:'meteor',n:'سنگ شهابی',ic:'☄️'}];
+/** ناهنجاری‌های تصادفی هر حلقه */
+const ANOMALIES=[
+ {id:'lowg',n:'گرانش ۳۰٪ کمتر',d:'پرش‌ها بلندتر و سقوط‌ها آهسته‌تر است.'},
+ {id:'acid',n:'باران اسیدی',d:'در فضای باز به بدنه آسیب می‌زند؛ به غار یا کنار کپسول پناه ببرید.'},
+ {id:'nocturnal',n:'نورخواران روزگرد',d:'موجودات شب‌زی در روز هم بیدارند. مراقب چراغ قوه باشید.'},
+ {id:'fog',n:'مه غلیظ',d:'دید بسیار محدود است؛ از قطب‌نما استفاده کنید.'},
+ {id:'o2leak',n:'نشت اکسیژن',d:'مصرف اکسیژن ۵۰٪ بیشتر است.'},
+ {id:'cold',n:'سرمای عمیق',d:'افت دما ۵۰٪ سریع‌تر است.'},
+ {id:'longnight',n:'شب بلند',d:'روز ۳ دقیقه، شب ۷ دقیقه.'}];
+/** ۲۰ آیتم کارگاه با زنجیره‌ی پیش‌نیاز (req) */
+const CRAFT=[
+ {id:'pump',t:1,n:'پمپ اکسیژن',d:'سرعت شارژ اکسیژن کنار کپسول ۲ برابر.',cost:{scrap:2,elec:1},req:[]},
+ {id:'knife',t:1,n:'چاقوی حرارتی',d:'برداشت سریع‌تر و آسیب ۲ برابر.',cost:{scrap:2,crystal:1},req:[]},
+ {id:'flask',t:1,n:'قمقمه‌ی گرمایی',d:'۲۰٪ مقاومت بیشتر به سرما.',cost:{scrap:1,organic:2},req:[]},
+ {id:'purifier',t:1,n:'دستگاه تصفیه‌ی سیار',d:'میوه‌ی سمی + ۱ کریستال → غذا.',cost:{scrap:1,elec:1,crystal:1},req:[]},
+ {id:'firekit',t:1,n:'کیت آتش‌افروز',d:'آتش ۲ برابر بیشتر می‌سوزد.',cost:{rock:2,organic:1},req:[]},
+ {id:'sonar',t:1,n:'سونار زیستی',d:'نمایش موجودات روی مینی‌مپ.',cost:{elec:2,crystal:1},req:[]},
+ {id:'lamp',t:1,n:'باتری قوی',d:'چراغ قوه پرنورتر با برد بیشتر.',cost:{crystal:2,elec:1},req:['pump']},
+ {id:'antenna',t:2,n:'آنتن تقویت‌کننده',d:'برد نقشه و اکتشاف ۵۰٪ بیشتر.',cost:{scrap:2,elec:2},req:['sonar']},
+ {id:'repair',t:2,n:'کیت تعمیر زره',d:'ترمیم ۳۰٪ سلامت (مصرفی، قابل ساخت مجدد).',cost:{organic:3,scrap:1},req:[],use:true,consumable:true},
+ {id:'bag',t:2,n:'کیسه‌ی بزرگ',d:'ظرفیت حمل منابع ۱۰ → ۲۰.',cost:{organic:3,scrap:2},req:[]},
+ {id:'boots',t:2,n:'چکمه‌های شنی',d:'سرعت حرکت +۱۵٪.',cost:{organic:2,rock:2},req:['flask']},
+ {id:'mask',t:2,n:'ماسک فیلتر',d:'مصرف اکسیژن −۲۰٪.',cost:{elec:1,organic:2},req:['pump']},
+ {id:'stonearmor',t:2,n:'زره سنگی',d:'آسیب دریافتی −۲۵٪.',cost:{rock:4,scrap:2},req:['repair']},
+ {id:'decoy',t:2,n:'چراغ فریب',d:'نورخواران را ۱۰ ثانیه به سمت خود می‌کشد (فعال‌شونده).',cost:{crystal:1,elec:2},req:['lamp'],use:true,cd:40},
+ {id:'jet',t:3,n:'موتور جت',d:'پرش دوگانه برای عبور از پرتگاه‌ها.',cost:{scrap:4,crystal:3,elec:2,meteor:1},req:['boots','lamp']},
+ {id:'shield',t:3,n:'سپر یونی',d:'۵۰٪ کاهش آسیب به مدت ۵ ثانیه (فعال‌شونده).',cost:{crystal:3,elec:3,meteor:1},req:['lamp'],use:true,cd:30},
+ {id:'converter',t:3,n:'مبدل حرارتی',d:'۳۰ گرما → ۶۰ ثانیه اکسیژن (اضطراری).',cost:{scrap:2,crystal:2,elec:1},req:['flask','pump'],use:true,cd:20},
+ {id:'faraday',t:3,n:'قفس فارادی',d:'وسایل الکترونیکی در طوفان یونی کار می‌کنند.',cost:{scrap:3,elec:3,meteor:1},req:['antenna']},
+ {id:'scanner',t:3,n:'اسکنر ابلیسک',d:'مکان همه‌ی ابلیسک‌ها روی نقشه.',cost:{elec:4,crystal:2},req:['antenna']},
+ {id:'core',t:3,n:'هسته‌ی پورتال',d:'برای فعال‌سازی ابلیسک هفتم (دروازه) لازم است.',cost:{crystal:5,rock:3,elec:3,meteor:2},req:['shield','jet']}];
+const SUIT_MAX=5;
+const suitCost=l=>({scrap:2+l*2,crystal:1+l,elec:l,rock:l>2?l-1:0});
+
+/* =====================================================================
+   بخش ۲: وضعیت دائمی (P) — بین حلقه‌ها باقی می‌ماند — و ذخیره‌سازی
+   ===================================================================== */
+const SAVE_KEY='velloris_loop_v1';
+function newP(){return {seed:(Math.random()*4294967295)>>>0,loops:1,fragments:0,activated:[],suit:0,crafted:{},explored:new Array(EXG*EXG).fill(0),evolved:{light:false,echo:false},log:[],discOb:[],discCave:[],won:false,anomIdx:-1}}
+let P=null;
+function saveP(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(P))}catch(e){}}
+function loadP(){try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const p=JSON.parse(s);if(!p.explored||p.explored.length!==EXG*EXG)return null;return p}catch(e){return null}}
+/** وضعیت حلقه (S) — در پایان هر حلقه بازنشانی می‌شود */
+let S=null;
+function newS(){return {t:0,inv:{scrap:0,crystal:0,organic:0,rock:0,elec:0,meteor:0},wood:0,fruit:0,food:0,o2:0,heat:100,hunger:100,hp:0,kills:{light:0,echo:0,prey:0},anomaly:null,light:false,fires:[],storm:{next:300,warned:false,active:false,until:0},meteor:{next:420,warned:false,sites:[],zones:[],falling:[]},cooldowns:{},shieldUntil:0,decoyUntil:0,decoyPos:null,repairKits:0,harvestCd:0,attackCd:0,dmgFlash:0,nearCap:false,inCave:false}}
+
+/* =====================================================================
+   بخش ۳: رندرر، صحنه، دوربین، پس‌پردازش (Bloom) و فیزیک
+   ===================================================================== */
+const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:!IS_MOBILE,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=!IS_MOBILE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x6a3a8a,0.0018);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,4000);
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),IS_MOBILE?0.55:0.75,0.5,0.82);
+composer.addPass(bloom);composer.addPass(new OutputPass());
+if(IS_MOBILE)composer.setPixelRatio(1);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight)});
+// نورها
+const hemi=new THREE.HemisphereLight(0xb08cff,0xff8a3c,0.6);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffe0c0,1.6);sun.position.set(100,150,50);scene.add(sun);scene.add(sun.target);
+if(!IS_MOBILE){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-90;sc.right=90;sc.top=90;sc.bottom=-90;sc.near=10;sc.far=500;sun.shadow.bias=-0.0015}
+// فیزیک Cannon-es
+const world=new CANNON.World({gravity:new CANNON.Vec3(0,-22,0)});
+world.broadphase=new CANNON.SAPBroadphase(world);world.allowSleep=false;
+const matP=new CANNON.Material('p'),matW=new CANNON.Material('w');
+world.addContactMaterial(new CANNON.ContactMaterial(matP,matW,{friction:0,restitution:0}));
+function addBoxBody(x,y,z,sx,sy,sz,ry=0){const b=new CANNON.Body({mass:0,material:matW,shape:new CANNON.Box(new CANNON.Vec3(sx/2,sy/2,sz/2))});b.position.set(x,y,z);b.quaternion.setFromEuler(0,ry,0);world.addBody(b);return b}
+function addSphereBody(x,y,z,r){const b=new CANNON.Body({mass:0,material:matW,shape:new CANNON.Sphere(r)});b.position.set(x,y,z);world.addBody(b);return b}
+function addCylBody(x,y,z,r,h){const b=new CANNON.Body({mass:0,material:matW,shape:new CANNON.Cylinder(r,r,h,8)});b.position.set(x,y,z);world.addBody(b);return b}
+
+/* =====================================================================
+   بخش ۴: زمین رویه‌ای (Procedural Terrain) — ساختار کلی با Seed ثابت
+   ===================================================================== */
+const tn=makeNoise(1337);                 // نویز پایه‌ی زمین (ثابت: کوه‌ها و دشت‌ها همیشه یکسان)
+let rng=null;                             // RNG اشیا (از Seed سیاره)
+let caves=[];                             // غارها (قبل از ساخت ارتفاع‌ها تعیین می‌شوند تا گودال ایجاد شود)
+function mountainMask(x,z){return sstep(0.15,0.6,tn.fbm(x*0.0009+7,z*0.0009+3,3))}
+function baseH(x,z){
+ let h=tn.fbm(x*0.0025,z*0.0025,4)*35;                                   // تپه‌ها
+ const ridge=1-Math.abs(tn.n(x*0.004+11,z*0.004+5));
+ h+=mountainMask(x,z)*ridge*95;                                          // کوه‌ها
+ h+=tn.fbm(x*0.02,z*0.02,3)*3+Math.sin(x*0.15+tn.n(x*0.01,z*0.01)*3)*0.5; // تپه‌های ماسه‌ای و موج شن
+ h+=sstep(640,750,Math.max(Math.abs(x),Math.abs(z)))*90;                 // دیواره‌ی مرز جهان
+ h=lerp(h,8,sstep(140,40,Math.hypot(x,z)));                              // مسطح‌کردن منطقه‌ی شروع/مرکز
+ for(const c of caves){const d=Math.hypot(x-c.x,z-c.z);if(d<c.r*1.3)h-=c.depth*sstep(c.r*1.1,c.r*0.3,d)}  // گودال غارها
+ return h}
+const heights=new Float32Array((SEG+1)*(SEG+1));
+const gi=(ix,iz)=>iz*(SEG+1)+ix;
+/** ارتفاع زمین در نقطه‌ی دلخواه (درون‌یابی دوخطی) */
+function H(x,z){const fx=clamp((x+HALF)/CELL,0,SEG-0.001),fz=clamp((z+HALF)/CELL,0,SEG-0.001);const ix=fx|0,iz=fz|0,tx=fx-ix,tz=fz-iz;
+ return lerp(lerp(heights[gi(ix,iz)],heights[gi(ix+1,iz)],tx),lerp(heights[gi(ix,iz+1)],heights[gi(ix+1,iz+1)],tx),tz)}
+function slopeAt(x,z){return Math.hypot(H(x+2,z)-H(x-2,z),H(x,z+2)-H(x,z-2))/4}
+let terrain=null,thumb=null;
+function buildTerrain(){
+ for(let iz=0;iz<=SEG;iz++)for(let ix=0;ix<=SEG;ix++)heights[gi(ix,iz)]=baseH(-HALF+ix*CELL,-HALF+iz*CELL);
+ const g=new THREE.PlaneGeometry(WORLD,WORLD,SEG,SEG);const pos=g.attributes.position;const col=new Float32Array(pos.count*3);
+ for(let i=0;i<pos.count;i++){const x=pos.getX(i),py=pos.getY(i);const z=-py;pos.setXYZ(i,x,H(x,z),z)}
+ g.computeVertexNormals();const nrm=g.attributes.normal;
+ const c=new THREE.Color();
+ for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),ny=nrm.getY(i);
+  // رنگ‌آمیزی: ماسه‌ی نارنجی → صخره‌ی بنفش‌خاکستری در شیب → قله‌های روشن
+  c.setRGB(0.88,0.46,0.16);
+  const rock=new THREE.Color(0.36,0.26,0.36),dark=new THREE.Color(0.55,0.28,0.12),snow=new THREE.Color(0.85,0.7,0.9);
+  c.lerp(dark,sstep(10,35,y)*0.5);c.lerp(rock,sstep(0.9,0.6,ny));c.lerp(snow,sstep(75,110,y));
+  let inCave=0;for(const cv of caves){const d=Math.hypot(x-cv.x,z-cv.z);if(d<cv.r)inCave=Math.max(inCave,sstep(cv.r,cv.r*0.5,d))}
+  c.lerp(new THREE.Color(0.1,0.12,0.2),inCave);
+  const v=tn.n(x*0.05,z*0.05)*0.06;col[i*3]=c.r+v;col[i*3+1]=c.g+v*0.6;col[i*3+2]=c.b+v*0.4}
+ g.setAttribute('color',new THREE.BufferAttribute(col,3));
+ terrain=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0}));terrain.receiveShadow=true;scene.add(terrain);
+ // فیزیک زمین (Heightfield)
+ const data=[];for(let i=0;i<=SEG;i++){const colm=[];for(let j=0;j<=SEG;j++)colm.push(heights[gi(i,SEG-j)]);data.push(colm)}
+ const hb=new CANNON.Body({mass:0,material:matW,shape:new CANNON.Heightfield(data,{elementSize:CELL})});
+ hb.quaternion.setFromEuler(-Math.PI/2,0,0);hb.position.set(-HALF,0,HALF);world.addBody(hb);
+ // تصویر کوچک زمین برای نقشه
+ thumb=document.createElement('canvas');thumb.width=thumb.height=300;const tc=thumb.getContext('2d');const img=tc.createImageData(300,300);
+ for(let j=0;j<300;j++)for(let i=0;i<300;i++){const x=-HALF+i*5,z=-HALF+j*5,y=H(x,z),s=slopeAt(x,z);const k=(j*300+i)*4;
+  let r=200,gg=110,b=40;const t=sstep(10,50,y);r=lerp(r,120,t);gg=lerp(gg,80,t);b=lerp(b,110,t);const sl=sstep(0.5,1.2,s);r=lerp(r,90,sl);gg=lerp(gg,70,sl);b=lerp(b,95,sl);
+  const sn=sstep(75,110,y);r=lerp(r,220,sn);gg=lerp(gg,190,sn);b=lerp(b,235,sn);img.data[k]=r;img.data[k+1]=gg;img.data[k+2]=b;img.data[k+3]=255}
+ tc.putImageData(img,0,0)}
+/* =====================================================================
+   بخش ۵: آسمان، دو ماه، ستاره‌ها، شفق قطبی، گرده‌ها و باران
+   ===================================================================== */
+const skyU={top:{value:new THREE.Color(0x2a0a4a)},bot:{value:new THREE.Color(0xff7a3c)},mid:{value:new THREE.Color(0x7a2a9a)}};
+const sky=new THREE.Mesh(new THREE.SphereGeometry(2600,24,12),new THREE.ShaderMaterial({uniforms:skyU,side:THREE.BackSide,depthWrite:false,
+ vertexShader:`varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+ fragmentShader:`uniform vec3 top,bot,mid;varying vec3 vP;void main(){float h=normalize(vP).y;vec3 c=mix(mid,top,pow(clamp(h,0.,1.),0.45));c=mix(bot,c,smoothstep(-0.08,0.3,h));gl_FragColor=vec4(c,1.0);}`}));
+sky.renderOrder=-10;scene.add(sky);
+// دو ماه: بزرگ زرد و کوچک آبی
+const moon1=new THREE.Mesh(new THREE.SphereGeometry(130,24,16),new THREE.MeshBasicMaterial({color:0xffd27a,fog:false}));
+const moon2=new THREE.Mesh(new THREE.SphereGeometry(48,20,14),new THREE.MeshBasicMaterial({color:0x7ac8ff,fog:false}));
+scene.add(moon1,moon2);
+const MOON1_DIR=new THREE.Vector3(0.55,0.32,-0.75).normalize(),MOON2_DIR=new THREE.Vector3(-0.7,0.5,0.35).normalize();
+// ستاره‌ها
+const starGeo=new THREE.BufferGeometry();{const a=new Float32Array(1800*3);const r=mulberry32(99);for(let i=0;i<1800;i++){const th=r()*TAU,ph=Math.acos(r()*0.9+0.05);a[i*3]=Math.sin(ph)*Math.cos(th)*2400;a[i*3+1]=Math.cos(ph)*2400;a[i*3+2]=Math.sin(ph)*Math.sin(th)*2400}starGeo.setAttribute('position',new THREE.BufferAttribute(a,3))}
+const starMat=new THREE.PointsMaterial({color:0xffffff,size:2.2,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false});
+const stars=new THREE.Points(starGeo,starMat);scene.add(stars);
+// شفق قطبی (سه نوار متحرک)
+const auroraMat=new THREE.ShaderMaterial({uniforms:{t:{value:0},inten:{value:0}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,fog:false,
+ vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+ fragmentShader:`uniform float t,inten;varying vec2 vUv;void main(){float w=sin(vUv.x*22.0+t*0.7)*0.5+0.5;float w2=sin(vUv.x*7.0-t*0.4+3.0)*0.5+0.5;float band=smoothstep(0.0,0.35,vUv.y)*smoothstep(1.0,0.45,vUv.y);float a=band*(0.3+0.7*w*w2)*inten;vec3 c=mix(vec3(0.2,1.0,0.6),vec3(0.75,0.3,1.0),clamp(vUv.y+0.3*sin(vUv.x*10.0+t),0.,1.));gl_FragColor=vec4(c*a,a);}`});
+const auroras=[];for(let i=0;i<3;i++){const g=new THREE.CylinderGeometry(1500+i*200,1500+i*200,320+i*60,64,1,true,i*1.6,2.6);const m=new THREE.Mesh(g,auroraMat);m.position.y=650+i*120;m.renderOrder=-5;scene.add(m);auroras.push(m)}
+// بافت نرم برای ذرات
+function softTex(){const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');const g=x.createRadialGradient(16,16,0,16,16,16);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.4,'rgba(255,255,255,.6)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,32,32);return new THREE.CanvasTexture(c)}
+const dotTex=softTex();
+// گرده‌های شناور گیاهان بیگانه
+const POLLEN=IS_MOBILE?300:600;const polGeo=new THREE.BufferGeometry();const polPos=new Float32Array(POLLEN*3);const polVel=[];
+for(let i=0;i<POLLEN;i++){polPos[i*3]=(Math.random()-.5)*80;polPos[i*3+1]=Math.random()*25;polPos[i*3+2]=(Math.random()-.5)*80;polVel.push({x:(Math.random()-.5)*.4,y:(Math.random()-.5)*.3,z:(Math.random()-.5)*.4,p:Math.random()*TAU})}
+polGeo.setAttribute('position',new THREE.BufferAttribute(polPos,3));
+const pollen=new THREE.Points(polGeo,new THREE.PointsMaterial({color:0xffe9a0,size:0.35,map:dotTex,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false}));scene.add(pollen);
+// باران اسیدی (فقط در ناهنجاری)
+const RAIN=700;const rainGeo=new THREE.BufferGeometry();const rainPos=new Float32Array(RAIN*3);for(let i=0;i<RAIN;i++){rainPos[i*3]=(Math.random()-.5)*60;rainPos[i*3+1]=Math.random()*40;rainPos[i*3+2]=(Math.random()-.5)*60}
+rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
+const rain=new THREE.Points(rainGeo,new THREE.PointsMaterial({color:0x9aff5a,size:0.25,transparent:true,opacity:0.7,depthWrite:false}));rain.visible=false;scene.add(rain);
+
+/* =====================================================================
+   بخش ۶: تولید محتوای پویا — جنگل قارچی، منابع، غارها، سفینه‌ها، ابلیسک‌ها
+   ===================================================================== */
+const nodeSets={},allNodes=[];
+function inAnyCave(x,z,mult=0.95){for(const c of caves){if(Math.hypot(x-c.x,z-c.z)<c.r*mult)return c}return null}
+function randPos({minC=0,maxC=640,tries=40,minH=-99,maxH=60,steep=0.45}={}){for(let i=0;i<tries;i++){const x=(rng()*2-1)*maxC,z=(rng()*2-1)*maxC;if(Math.hypot(x,z)<minC)continue;const y=H(x,z);if(y<minH||y>maxH)continue;if(slopeAt(x,z)>steep)continue;if(inAnyCave(x,z,1.5))continue;return {x,z,y}}return null}
+/** مجموعه‌ی گره‌های منبع (InstancedMesh) — با برداشت، مقیاس صفر می‌شود */
+class NodeSet{
+ constructor(type,geo,mat,cap,label,yOff=0){this.type=type;this.label=label;this.yOff=yOff;this.cap=cap;this.items=[];this.mesh=new THREE.InstancedMesh(geo,mat,cap);this.mesh.count=0;this.mesh.castShadow=!IS_MOBILE;this.mesh.frustumCulled=false;scene.add(this.mesh);nodeSets[type]=this}
+ add(x,z,s=1,wave=0,yAbs=null){if(this.items.length>=this.cap)return null;const i=this.items.length;const it={type:this.type,x,y:(yAbs===null?H(x,z):yAbs)+this.yOff*s,z,s,r:rng()*TAU,taken:false,active:wave===0,wave,set:this,idx:i};this.items.push(it);allNodes.push(it);this.mesh.count=i+1;this.setM(i,it.active?s:0);return it}
+ setM(i,s){const it=this.items[i];_m.compose(_v.set(it.x,it.y,it.z),_q.setFromEuler(_e.set(0,it.r,0)),_v2.set(s,s,s));this.mesh.setMatrixAt(i,_m);this.mesh.instanceMatrix.needsUpdate=true}
+ take(it){it.taken=true;this.setM(it.idx,0)}
+ reset(loop,r2){this.items.forEach((it,i)=>{it.taken=false;it.active=it.wave===0||r2()<0.22*(loop-1);this.setM(i,it.active?it.s:0)})}
+}
+const std=(o)=>new THREE.MeshStandardMaterial(o);
+function makeNodeSets(){
+ new NodeSet('exogen',new THREE.ConeGeometry(0.28,1.0,5),std({color:0x9ffcff,emissive:0x5ff7ff,emissiveIntensity:1.7}),260,'کریستال اگزوجن (اکسیژن +۲۵٪)',0.45);
+ new NodeSet('wood',new THREE.CylinderGeometry(0.25,0.34,2.4,6).rotateZ(Math.PI/2),std({color:0x5a4636,roughness:1}),240,'چوب فسیلی',0.3);
+ new NodeSet('fruit',new THREE.DodecahedronGeometry(0.45),std({color:0x8a2be2,emissive:0x5a0a9a,emissiveIntensity:.6}),160,'میوه‌ی سمی (نیاز به تصفیه)',0.45);
+ new NodeSet('scrap',new THREE.BoxGeometry(0.8,0.4,1.0),std({color:0x8a8f99,metalness:.85,roughness:.4}),220,'فلز قراضه',0.2);
+ new NodeSet('crystal',new THREE.OctahedronGeometry(0.5).scale(1,2.2,1),std({color:0x2a6aff,emissive:0x3a7aff,emissiveIntensity:1.8}),160,'کریستال انرژی',0.9);
+ new NodeSet('rock',new THREE.DodecahedronGeometry(0.6),std({color:0x3a1a14,emissive:0x8a2a00,emissiveIntensity:.35,roughness:1}),160,'سنگ آذرین',0.4);
+ new NodeSet('elec',new THREE.BoxGeometry(0.55,0.3,0.55),std({color:0x1e3a2a,emissive:0x22ff88,emissiveIntensity:1.0}),110,'قطعه‌ی الکترونیک',0.15);
+ new NodeSet('organic',new THREE.SphereGeometry(0.42,8,6).scale(1,1.5,1),std({color:0x2a8a4a,emissive:0x33ff77,emissiveIntensity:.8}),220,'گیاه بافت آلی',0.5);
+ new NodeSet('fragment',new THREE.BoxGeometry(0.75,0.5,0.55),std({color:0x5a4a10,emissive:0xffc832,emissiveIntensity:1.5,metalness:.6}),30,'صندوقچه‌ی باستانی: قطعه‌ی ترجمه',0.25);
+ new NodeSet('meteor',new THREE.IcosahedronGeometry(0.6,0),std({color:0x3a1a0a,emissive:0xff5a1a,emissiveIntensity:1.8}),60,'سنگ شهابی (منطقه رادیواکتیو!)',0.4);
+}
+// ---- جنگل قارچی (Instanced) ----
+const MAXM=IS_MOBILE?520:760;
+const trunkMesh=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3,0.7,1,7).translate(0,0.5,0),std({color:0xe8dcc8,roughness:.9}),MAXM);
+const capTeal=new THREE.InstancedMesh(new THREE.SphereGeometry(1,12,8,0,TAU,0,Math.PI*0.55),std({color:0x1a5a5a,emissive:0x22ffcc,emissiveIntensity:.75,roughness:.6}),MAXM);
+const capPink=new THREE.InstancedMesh(new THREE.SphereGeometry(1,12,8,0,TAU,0,Math.PI*0.55),std({color:0x5a1a4a,emissive:0xff4ad8,emissiveIntensity:.7,roughness:.6}),MAXM);
+[trunkMesh,capTeal,capPink].forEach(m=>{m.count=0;m.castShadow=!IS_MOBILE;m.frustumCulled=false;scene.add(m)});
+const forests=[],wrecks=[],obelisks=[],nests=[],creatureSpawns=[];let capsuleGroup,portal,portalDisc,obelisk7;
+function addMushroom(x,z,h,s){const i=trunkMesh.count;if(i>=MAXM)return;const y=H(x,z)-0.3;
+ _m.compose(_v.set(x,y,z),_q.identity(),_v2.set(s,h,s));trunkMesh.setMatrixAt(i,_m);
+ const cr=s*2.6+h*0.25;_m.compose(_v.set(x,y+h,z),_q.setFromEuler(_e.set(0,rng()*TAU,0)),_v2.set(cr,cr*0.55,cr));
+ const capM=rng()<0.65?capTeal:capPink;capM.setMatrixAt(i,_m);(capM===capTeal?capPink:capTeal).setMatrixAt(i,_m.makeScale(0,0,0));
+ trunkMesh.count=capTeal.count=capPink.count=i+1;
+ if(h>4.5)addCylBody(x,y+h/2,z,s*0.55,h)}
+// ---- صخره‌های بزرگ ----
+const MAXR=150;const rockMesh=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),std({color:0x6a4a5a,roughness:1,flatShading:true}),MAXR);rockMesh.count=0;rockMesh.castShadow=!IS_MOBILE;scene.add(rockMesh);
+function addBigRock(x,z,s){const i=rockMesh.count;if(i>=MAXR)return;const y=H(x,z)-s*0.25;_m.compose(_v.set(x,y,z),_q.setFromEuler(_e.set(rng(),rng()*TAU,rng())),_v2.set(s,s*0.8,s));rockMesh.setMatrixAt(i,_m);rockMesh.count=i+1;addSphereBody(x,y,z,s*0.8)}
+// ---- غار ----
+const caveMat=std({color:0x3a2a3c,roughness:1,side:THREE.DoubleSide,flatShading:true});
+const bigCrystalMat=std({color:0x2a5aff,emissive:0x4a8aff,emissiveIntensity:1.6});
+function buildCave(c){
+ let rim=0;for(let k=0;k<4;k++)rim+=H(c.x+Math.cos(k*1.57)*c.r*1.2,c.z+Math.sin(k*1.57)*c.r*1.2);rim/=4;c.rimY=rim;c.floorY=H(c.x,c.z);
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(c.r*0.98,22,12,c.dir+0.5,TAU-1.0,0,Math.PI/2),caveMat);dome.position.set(c.x,rim-0.6,c.z);dome.receiveShadow=true;scene.add(dome);
+ for(let k=0;k<14;k++){const a=k*TAU/14;let dd=Math.abs(((a-c.dir)%TAU+TAU)%TAU);if(dd>Math.PI)dd=TAU-dd;if(dd<0.55)continue;const wx=c.x-Math.cos(a)*c.r*0.9,wz=c.z+Math.sin(a)*c.r*0.9;addBoxBody(wx,rim,wz,c.r*0.5,10,1.4,Math.PI/2-a)}
+ c.entrance={x:c.x-Math.cos(c.dir)*c.r,z:c.z+Math.sin(c.dir)*c.r};
+ for(let k=0;k<6;k++){const a=rng()*TAU,d=rng()*c.r*0.6;const cr=new THREE.Mesh(new THREE.ConeGeometry(0.5+rng()*0.5,2.5+rng()*2.5,5),bigCrystalMat);cr.position.set(c.x+Math.cos(a)*d,H(c.x+Math.cos(a)*d,c.z+Math.sin(a)*d)+0.8,c.z+Math.sin(a)*d);cr.rotation.set((rng()-.5)*0.6,0,(rng()-.5)*0.6);scene.add(cr)}
+ const pl=new THREE.PointLight(0x4488ff,IS_MOBILE?2.5:3.5,c.r*2.2,1.5);pl.position.set(c.x,c.floorY+3,c.z);scene.add(pl);
+ const warm=new THREE.PointLight(0xff8a2a,1.2,c.r*1.5,2);warm.position.set(c.x,c.floorY+1,c.z);scene.add(warm);
+ for(let k=0;k<5;k++){const a=rng()*TAU,d=2+rng()*c.r*0.55;nodeSets.crystal.add(c.x+Math.cos(a)*d,c.z+Math.sin(a)*d,1,k>2?1:0)}
+ for(let k=0;k<2;k++){const a=rng()*TAU,d=1+rng()*c.r*0.5;nodeSets.fragment.add(c.x+Math.cos(a)*d,c.z+Math.sin(a)*d,1,0)}
+ for(let k=0;k<3;k++){const a=rng()*TAU,d=2+rng()*c.r*0.5;nodeSets.rock.add(c.x+Math.cos(a)*d,c.z+Math.sin(a)*d,1,0)}
+ for(let k=0;k<2;k++){const a=rng()*TAU,d=2+rng()*c.r*0.5;nodeSets.wood.add(c.x+Math.cos(a)*d,c.z+Math.sin(a)*d,1,0)}
+}
+// ---- بقایای سفینه ----
+const hullMat=std({color:0x6a7080,metalness:.9,roughness:.45}),glowMat=std({color:0x331100,emissive:0xff6a00,emissiveIntensity:2});
+function buildWreck(p,i){
+ const g=new THREE.Group();const yaw=rng()*TAU,tilt=(rng()-.5)*0.5;const y=H(p.x,p.z);
+ const hull=new THREE.Mesh(new THREE.CylinderGeometry(2.4,3.2,15,12),hullMat);hull.rotation.z=Math.PI/2;g.add(hull);
+ const nose=new THREE.Mesh(new THREE.ConeGeometry(2.4,5,12),hullMat);nose.rotation.z=-Math.PI/2;nose.position.x=10;g.add(nose);
+ const wing=new THREE.Mesh(new THREE.BoxGeometry(6,0.4,14),hullMat);wing.position.set(-3,0.5,0);g.add(wing);
+ const strip=new THREE.Mesh(new THREE.BoxGeometry(12,0.25,0.25),glowMat);strip.position.set(0,2.2,2.6);g.add(strip);
+ const strip2=strip.clone();strip2.position.z=-2.6;g.add(strip2);
+ const fin=new THREE.Mesh(new THREE.BoxGeometry(5,4,0.4),hullMat);fin.position.set(-5,3,0);g.add(fin);
+ g.position.set(p.x,y+1.6,p.z);g.rotation.set(0,yaw,tilt);g.traverse(o=>{o.castShadow=!IS_MOBILE;o.receiveShadow=true});scene.add(g);
+ const fl=new THREE.PointLight(0xff6a00,2,22,2);fl.position.set(p.x,y+3,p.z);scene.add(fl);
+ addBoxBody(p.x,y+1.6,p.z,16,5,6.5,yaw);
+ wrecks.push({x:p.x,z:p.z});
+ for(let k=0;k<7;k++){const a=rng()*TAU,d=5+rng()*7;nodeSets.scrap.add(p.x+Math.cos(a)*d,p.z+Math.sin(a)*d,1,k>4?1:0)}
+ for(let k=0;k<4;k++){const a=rng()*TAU,d=4+rng()*6;nodeSets.elec.add(p.x+Math.cos(a)*d,p.z+Math.sin(a)*d,1,k>2?1:0)}
+ for(let k=0;k<(i<2?2:1);k++){const a=rng()*TAU,d=4+rng()*5;nodeSets.fragment.add(p.x+Math.cos(a)*d,p.z+Math.sin(a)*d,1,0)}
+}
+// ---- ابلیسک ----
+const obMat=std({color:0x1a1226,roughness:.5,metalness:.4}),beamMat=new THREE.MeshBasicMaterial({color:0x9affff,transparent:true,opacity:0.35,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+function holoTexture(code,decoded,active){const c=document.createElement('canvas');c.width=512;c.height=128;const x=c.getContext('2d');x.clearRect(0,0,512,128);x.font='bold 84px serif';x.textAlign='center';x.textBaseline='middle';
+ code.forEach((s,i)=>{const col=active?'#7dffb0':(decoded.includes(s)?'#8ff6ff':'#c46bff');x.shadowColor=col;x.shadowBlur=22;x.fillStyle=col;x.fillText(GLYPHS[s],80+i*118,64)});return new THREE.CanvasTexture(c)}
+function buildObelisk(x,z,id){
+ const y=H(x,z);const g=new THREE.Group();g.position.set(x,y,z);
+ const body=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.8,15,4),obMat);body.position.y=7;body.castShadow=!IS_MOBILE;g.add(body);
+ const edges=new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry),new THREE.LineBasicMaterial({color:0xc46bff}));edges.position.y=7;g.add(edges);
+ const runes=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.55,6,4,1,true),new THREE.MeshBasicMaterial({color:0x9a4aff,transparent:true,opacity:0.35,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));runes.position.y=6;g.add(runes);
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(4,4.5,1,8),std({color:0x2a2036,roughness:1}));base.position.y=0.3;g.add(base);
+ for(let k=0;k<6;k++){const st=new THREE.Mesh(new THREE.BoxGeometry(1,1.6,1),std({color:0x3a2a48}));st.position.set(Math.cos(k*TAU/6)*7,0.6,Math.sin(k*TAU/6)*7);g.add(st)}
+ const holo=new THREE.Sprite(new THREE.SpriteMaterial({map:null,transparent:true,depthWrite:false,fog:false}));holo.scale.set(9,2.25,1);holo.position.y=17;g.add(holo);
+ const pl=new THREE.PointLight(0x9a4aff,2,35,1.6);pl.position.y=10;g.add(pl);
+ const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,400,10,1,true),beamMat);beam.position.y=200;beam.visible=false;g.add(beam);
+ scene.add(g);
+ const code=[0,1,2,3].map(()=>Math.floor(rng()*7));
+ const ob={id,x,z,y,g,holo,beam,pl,runes,code,activated:false,body:addBoxBody(x,y+7,z,3,15,3)};
+ obelisks.push(ob);return ob}
+// ---- کپسول سقوط ----
+function buildCapsule(){
+ const y=H(CAP.x,CAP.z);const g=new THREE.Group();g.position.set(CAP.x,y+1.8,CAP.z);
+ const body=new THREE.Mesh(new THREE.CapsuleGeometry(2,4,6,14),std({color:0xdcdcdc,metalness:.6,roughness:.35}));body.rotation.z=Math.PI/2;body.rotation.y=0.4;g.add(body);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(2.05,0.25,8,24),std({color:0xff7a1a,emissive:0xff4a00,emissiveIntensity:.5}));ring.rotation.y=Math.PI/2+0.4;g.add(ring);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(1.6,2,0.3),std({color:0x224466,emissive:0x44aaff,emissiveIntensity:1.2}));door.position.set(0,-0.2,2.05);g.add(door);
+ const station=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,1),std({color:0x333a44,metalness:.7}));station.position.set(4.5,-0.9,3);g.add(station);
+ const panel=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.1),std({color:0x003344,emissive:0x33e0ff,emissiveIntensity:2.5}));panel.position.set(4.5,-0.4,3.55);g.add(panel);
+ const pl=new THREE.PointLight(0x33e0ff,2.5,25,1.8);pl.position.set(4.5,1,3.5);g.add(pl);
+ const scorch=new THREE.Mesh(new THREE.CircleGeometry(10,24),std({color:0x1a0a08,roughness:1,transparent:true,opacity:.75}));scorch.rotation.x=-Math.PI/2;scorch.position.y=-1.72;g.add(scorch);
+ g.traverse(o=>{o.castShadow=!IS_MOBILE});scene.add(g);capsuleGroup=g;
+ addBoxBody(CAP.x,y+1.8,CAP.z,7,3.6,4.4,0.4);addBoxBody(CAP.x+4.5,y+1,CAP.z+3,1,2,1);
+ for(let k=0;k<3;k++)nodeSets.scrap.add(CAP.x+8+k*2,CAP.z-6+k*3,1,0);
+ nodeSets.exogen.add(CAP.x-6,CAP.z+7,1,0);nodeSets.wood.add(CAP.x-8,CAP.z-4,1,0);nodeSets.wood.add(CAP.x+10,CAP.z+9,1,0)}
+// ---- پورتال ----
+function buildPortal(){
+ const y=H(0,-14);portal=new THREE.Group();portal.position.set(0,y+5,-14);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(4.5,0.45,12,48),std({color:0x113333,emissive:0x33ffee,emissiveIntensity:2.5}));portal.add(ring);
+ portalDisc=new THREE.Mesh(new THREE.CircleGeometry(4.2,48),new THREE.ShaderMaterial({uniforms:{t:{value:0}},transparent:true,side:THREE.DoubleSide,fog:false,
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv-0.5;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`uniform float t;varying vec2 vUv;void main(){float r=length(vUv)*2.0;float a=atan(vUv.y,vUv.x);float s=sin(a*5.0-t*3.0+r*12.0)*0.5+0.5;vec3 c=mix(vec3(0.1,0.9,1.0),vec3(0.8,0.3,1.0),s);float al=smoothstep(1.0,0.2,r)*0.9;gl_FragColor=vec4(c*(0.6+s*0.8),al);}`}));
+ portal.add(portalDisc);const pl=new THREE.PointLight(0x33ffee,4,40,1.5);portal.add(pl);portal.visible=false;scene.add(portal)}
+/** ساخت کل جهان از روی Seed */
+function generateWorld(){
+ rng=mulberry32(P.seed);
+ // غارها (قبل از زمین)
+ caves=[];let guard=0;while(caves.length<8&&guard++<500){const x=(rng()*2-1)*600,z=(rng()*2-1)*600;if(Math.hypot(x,z)<180)continue;if(mountainMask(x,z)>0.3)continue;if(caves.some(c=>Math.hypot(c.x-x,c.z-z)<120))continue;caves.push({x,z,r:13+rng()*5,depth:6,dir:rng()*TAU,id:caves.length})}
+ buildTerrain();makeNodeSets();
+ caves.forEach(buildCave);
+ // جنگل‌های قارچی
+ guard=0;while(forests.length<6&&guard++<300){const p=randPos({minC:120,maxC:600,maxH:40,steep:0.35});if(!p)continue;if(forests.some(f=>Math.hypot(f.x-p.x,f.z-p.z)<220))continue;forests.push({x:p.x,z:p.z,r:80+rng()*50})}
+ forests.forEach(f=>{for(let k=0;k<(IS_MOBILE?70:100);k++){const a=rng()*TAU,d=Math.sqrt(rng())*f.r;const x=f.x+Math.cos(a)*d,z=f.z+Math.sin(a)*d;if(slopeAt(x,z)>0.6||inAnyCave(x,z,1.4)||H(x,z)>60)continue;const h=2+rng()*8,s=0.5+rng()*1.1;addMushroom(x,z,h,s);
+   if(rng()<0.35)nodeSets.exogen.add(x+1.5,z+1,1,k>60?1:0);if(rng()<0.2)nodeSets.organic.add(x-1.5,z+1.5,1,k>60?1:0)}
+  for(let k=0;k<12;k++){const a=rng()*TAU,d=rng()*f.r;nodeSets.fruit.add(f.x+Math.cos(a)*d,f.z+Math.sin(a)*d,1,k>7?1:0)}
+  for(let k=0;k<10;k++){const a=rng()*TAU,d=rng()*f.r;nodeSets.wood.add(f.x+Math.cos(a)*d,f.z+Math.sin(a)*d,1,k>6?1:0)}
+  for(let k=0;k<8;k++){const a=rng()*TAU,d=rng()*f.r;nodeSets.organic.add(f.x+Math.cos(a)*d,f.z+Math.sin(a)*d,1,k>5?1:0)}});
+ // سفینه‌ها
+ guard=0;while(wrecks.length<6&&guard++<300){const p=randPos({minC:150,maxC:600,maxH:45});if(!p)continue;if(wrecks.some(w=>Math.hypot(w.x-p.x,w.z-p.z)<200))continue;buildWreck(p,wrecks.length)}
+ // ابلیسک‌ها (۶ تای دورافتاده + هفتمی در مرکز)
+ guard=0;while(obelisks.length<6&&guard++<500){const p=randPos({minC:330,maxC:620,maxH:70,steep:0.5});if(!p)continue;if(obelisks.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<230))continue;buildObelisk(p.x,p.z,obelisks.length)}
+ obelisk7=buildObelisk(0,0,6);obelisk7.g.visible=false;obelisk7.hidden=true;
+ // ترتیب صحیح فعال‌سازی و ترتیب رمزگشایی نمادها (وابسته به Seed)
+ const perm=[0,1,2,3,4,5];for(let i=5;i>0;i--){const j=Math.floor(rng()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]]}
+ obelisks.forEach((o,i)=>{if(i<6)o.order=perm.indexOf(i);else o.order=6});
+ const so=[0,1,2,3,4,5,6];for(let i=6;i>0;i--){const j=Math.floor(rng()*(i+1));[so[i],so[j]]=[so[j],so[i]]}P.symOrder=so;
+ // لانه‌ها
+ guard=0;while(nests.length<7&&guard++<300){const p=randPos({minC:160,maxC:600,maxH:50});if(!p)continue;if(nests.some(n=>Math.hypot(n.x-p.x,n.z-p.z)<150))continue;
+  const m=new THREE.Mesh(new THREE.SphereGeometry(3.2,10,8),std({color:0x1a0a22,roughness:1,flatShading:true}));m.scale.y=0.45;m.position.set(p.x,p.y,p.z);scene.add(m);
+  const hole=new THREE.Mesh(new THREE.CircleGeometry(1.2,10),new THREE.MeshBasicMaterial({color:0x000000}));hole.rotation.x=-Math.PI/2;hole.position.set(p.x,p.y+1.5,p.z);scene.add(hole);nests.push({x:p.x,z:p.z})}
+ // صخره‌های بزرگ و منابع پراکنده
+ for(let k=0;k<(IS_MOBILE?100:MAXR);k++){const p=randPos({minC:60,maxC:640,maxH:90,steep:0.9});if(p)addBigRock(p.x,p.z,1.5+rng()*3.5)}
+ for(let k=0;k<40;k++){const p=randPos({minC:40,maxH:50});if(p)nodeSets.scrap.add(p.x,p.z,1,k>25?1:0)}
+ for(let k=0;k<30;k++){const p=randPos({minC:80,maxH:70});if(p)nodeSets.crystal.add(p.x,p.z,1,k>18?1:0)}
+ for(let k=0;k<70;k++){const p=randPos({minC:60,minH:18,maxH:90,steep:0.8});if(p)nodeSets.rock.add(p.x,p.z,1,k>40?1:0)}
+ for(let k=0;k<70;k++){const p=randPos({minC:30,maxH:50});if(p)nodeSets.wood.add(p.x,p.z,1,k>45?1:0)}
+ for(let k=0;k<20;k++){const p=randPos({minC:80,maxH:60});if(p)nodeSets.elec.add(p.x,p.z,1,k>10?1:0)}
+ for(let k=0;k<50;k++){const p=randPos({minC:30,maxH:50});if(p)nodeSets.organic.add(p.x,p.z,1,k>30?1:0)}
+ for(let k=0;k<40;k++){const p=randPos({minC:60,maxH:50});if(p)nodeSets.fruit.add(p.x,p.z,1,k>25?1:0)}
+ for(let k=0;k<50;k++){const p=randPos({minC:60,maxH:50});if(p)nodeSets.exogen.add(p.x,p.z,1,k>30?1:0)}
+ buildCapsule();buildPortal();
+}
+/* =====================================================================
+   بخش ۷: بازیکن — مدل فضانورد، فیزیک، حرکت، دوربین سوم‌شخص
+   ===================================================================== */
+const inp={f:0,r:0,jump:false,run:false,sneak:false,act:false,interact:false,jx:0,jy:0};
+const player={body:null,g:null,parts:{},yaw:Math.PI*0.75,pitch:0.32,dist:5.5,grounded:false,jumps:0,mode:'walk',anim:0,facing:0,light:null,shake:0,lastGround:0,swing:0};
+function lerpAngle(a,b,t){let d=((b-a+Math.PI)%TAU+TAU)%TAU-Math.PI;return a+d*t}
+function buildAstronaut(){
+ const g=new THREE.Group();const suit=std({color:0xe8e8f0,roughness:.5,metalness:.2}),acc=std({color:0xff7a1a,roughness:.6});
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.3,0.5,4,10),suit);torso.position.y=1.05;g.add(torso);
+ const chest=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.2,0.1),std({color:0x112233,emissive:0x33ffaa,emissiveIntensity:1.5}));chest.position.set(0,1.15,0.3);g.add(chest);
+ const helmet=new THREE.Mesh(new THREE.SphereGeometry(0.3,14,12),suit);helmet.position.y=1.68;g.add(helmet);
+ const visor=new THREE.Mesh(new THREE.SphereGeometry(0.24,12,10,0,Math.PI),std({color:0x113355,emissive:0x33aaff,emissiveIntensity:1.3,metalness:.8,roughness:.2}));visor.position.set(0,1.68,0.09);g.add(visor);
+ const pack=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.55,0.25),acc);pack.position.set(0,1.1,-0.32);g.add(pack);
+ const tank=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.5,8),std({color:0x3fb8ff,emissive:0x3fb8ff,emissiveIntensity:.6}));tank.position.set(0.12,1.15,-0.48);g.add(tank);const tank2=tank.clone();tank2.position.x=-0.12;g.add(tank2);
+ const mk=(x,y)=>{const p=new THREE.Group();p.position.set(x,y,0);const m=new THREE.Mesh(new THREE.CapsuleGeometry(0.11,0.45,4,8),suit);m.position.y=-0.3;p.add(m);g.add(p);return p};
+ player.parts.lL=mk(-0.16,0.75);player.parts.lR=mk(0.16,0.75);player.parts.aL=mk(-0.42,1.35);player.parts.aR=mk(0.42,1.35);
+ const knife=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.35,0.08),std({color:0xccccdd,emissive:0xff4400,emissiveIntensity:0.0,metalness:.9}));knife.position.set(0,-0.65,0.1);player.parts.aR.add(knife);player.parts.knife=knife;
+ // چراغ قوه
+ const sl=new THREE.SpotLight(0xfff2d0,0,45,0.5,0.45,1.2);sl.position.set(0,1.6,0.2);g.add(sl);g.add(sl.target);sl.target.position.set(0,1.2,8);player.light=sl;
+ const lens=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6),std({color:0xffffff,emissive:0xffffff,emissiveIntensity:0}));lens.position.set(0.2,1.7,0.22);g.add(lens);player.parts.lens=lens;
+ g.traverse(o=>{o.castShadow=!IS_MOBILE});return g}
+function buildPlayer(){
+ player.g=buildAstronaut();scene.add(player.g);
+ const b=new CANNON.Body({mass:6,material:matP,shape:new CANNON.Sphere(0.6),fixedRotation:true,linearDamping:0});
+ b.position.set(CAP.x+6,H(CAP.x+6,CAP.z+8)+2,CAP.z+8);world.addBody(b);player.body=b}
+function respawnPlayer(){const b=player.body;b.position.set(CAP.x+6,H(CAP.x+6,CAP.z+8)+2,CAP.z+8);b.velocity.set(0,0,0);player.yaw=Math.PI*0.75;player.facing=Math.PI}
+/** ضریب سرعت با توجه به ارتقاها و وضعیت بدن */
+function speedMult(){let m=1+P.suit*0.06;if(P.activated.length>=3)m*=1.1;if(has('boots'))m*=1.15;if(S.heat<=0)m*=0.5;return m}
+function has(id){return !!P.crafted[id]}
+function updatePlayer(dt){
+ const b=player.body;const px=b.position.x,pz=b.position.z;const gy=H(px,pz);
+ const gNow=b.position.y-gy<0.82&&b.velocity.y<2.5;
+ if(gNow){player.grounded=true;player.jumps=0;player.lastGround=0}else{player.lastGround+=dt;player.grounded=player.lastGround<0.12}
+ let ix=inp.r+inp.jx,iz=inp.f+inp.jy;const len=Math.min(1,Math.hypot(ix,iz));if(len>1e-4){const l=Math.hypot(ix,iz);ix/=l;iz/=l}
+ const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+ const dx=(-sy*iz+cy*ix)*len,dz=(-cy*iz-sy*ix)*len;
+ player.mode=inp.sneak?'sneak':(inp.run&&len>0.1?'run':'walk');
+ let sp=(player.mode==='run'?9.5:player.mode==='sneak'?3:6)*speedMult();
+ if(slopeAt(px,pz)>0.95)sp*=0.5;
+ const ctrl=player.grounded?1:0.3;const k=Math.min(1,dt*12)*ctrl;
+ b.velocity.x=lerp(b.velocity.x,dx*sp,k);b.velocity.z=lerp(b.velocity.z,dz*sp,k);
+ if(len<0.01&&player.grounded){b.velocity.x*=0.4;b.velocity.z*=0.4} // جلوگیری از سُرخوردن روی شیب هنگام سکون
+ if(inp.jump){inp.jump=false;if(player.grounded){b.velocity.y=10.5;player.jumps=1;player.grounded=false;player.lastGround=1;sfx('jump')}else if(has('jet')&&player.jumps<2){b.velocity.y=10.5;player.jumps=2;jetFX();sfx('jet')}}
+ if(b.position.y<gy-0.3){b.position.y=gy+0.7;b.velocity.y=0}
+ if(b.position.y>gy+80)b.velocity.y=Math.max(b.velocity.y,-40);
+ b.position.x=clamp(b.position.x,-735,735);b.position.z=clamp(b.position.z,-735,735);
+ // مدل و انیمیشن
+ player.g.position.set(px,b.position.y-0.62,pz);
+ if(len>0.1)player.facing=lerpAngle(player.facing,Math.atan2(dx,dz),Math.min(1,dt*10));
+ player.g.rotation.y=player.facing;
+ const hs=Math.hypot(b.velocity.x,b.velocity.z);player.anim+=dt*hs*1.7;
+ const sw=Math.sin(player.anim)*Math.min(1,hs/4)*0.75;const P_=player.parts;
+ P_.lL.rotation.x=sw;P_.lR.rotation.x=-sw;P_.aL.rotation.x=-sw*0.8;
+ player.swing=Math.max(0,player.swing-dt*4);P_.aR.rotation.x=sw*0.8-player.swing*2.2;
+ const shiver=S.heat<=0?Math.sin(performance.now()*0.05)*0.05:0;player.g.rotation.z=shiver;
+ // چراغ قوه (در طوفان یونی خاموش مگر با قفس فارادی)
+ const lightOn=S.light&&electronicsOK();player.light.intensity=lightOn?(has('lamp')?260:150):0;player.light.distance=has('lamp')?70:45;player.light.angle=has('lamp')?0.6:0.5;
+ P_.lens.material.emissiveIntensity=lightOn?4:0;P_.knife.material.emissiveIntensity=has('knife')?1.5:0}
+function jetFX(){const g=new THREE.PointLight(0x66ccff,6,10,2);g.position.copy(player.g.position).add(_v.set(0,0.5,0));scene.add(g);setTimeout(()=>scene.remove(g),180)}
+function updateCamera(dt){
+ const b=player.body;const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+ const tx=b.position.x+cy*0.7,ty=b.position.y+1.3,tz=b.position.z-sy*0.7;
+ const cp=Math.cos(player.pitch),d=player.dist;
+ let cx=tx+sy*cp*d,cyy=ty+Math.sin(player.pitch)*d,cz=tz+cy*cp*d;
+ const gy=H(cx,cz)+0.6;if(cyy<gy)cyy=gy;
+ player.shake=Math.max(0,player.shake-dt*2);const sh=player.shake+(S.heat<=0?0.05:0);
+ camera.position.set(cx+(Math.random()-.5)*sh,cyy+(Math.random()-.5)*sh,cz+(Math.random()-.5)*sh);camera.lookAt(tx,ty,tz);
+ sky.position.copy(camera.position);stars.position.copy(camera.position);
+ moon1.position.copy(camera.position).addScaledVector(MOON1_DIR,2000);moon2.position.copy(camera.position).addScaledVector(MOON2_DIR,2100);
+ auroras.forEach(a=>{a.position.x=camera.position.x;a.position.z=camera.position.z});
+ sun.position.set(b.position.x+120,b.position.y+180,b.position.z+60);sun.target.position.set(b.position.x,b.position.y,b.position.z)}
+
+/* =====================================================================
+   بخش ۸: آتش اردوگاه
+   ===================================================================== */
+const flameMat=std({color:0xff6a00,emissive:0xff8a1a,emissiveIntensity:2.5,transparent:true,opacity:.9});
+function lightFire(){
+ if(S.wood<1){msg('چوب فسیلی ندارید!','warn');return}
+ S.wood--;const b=player.body;const x=b.position.x+Math.sin(player.facing)*1.5,z=b.position.z+Math.cos(player.facing)*1.5;const y=H(x,z);
+ const g=new THREE.Group();g.position.set(x,y,z);
+ for(let k=0;k<4;k++){const lg=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.12,1.2,5),std({color:0x3a2a1a}));lg.rotation.z=Math.PI/2;lg.rotation.y=k*Math.PI/4;lg.position.y=0.12;g.add(lg)}
+ const fl=new THREE.Mesh(new THREE.ConeGeometry(0.4,1.2,7),flameMat);fl.position.y=0.7;g.add(fl);
+ const pl=new THREE.PointLight(0xff8a2a,5,16,1.6);pl.position.y=1;g.add(pl);scene.add(g);
+ S.fires.push({x,z,g,fl,pl,until:S.t+(has('firekit')?180:90)});msg('🔥 آتش روشن شد','good');sfx('fire')}
+function updateFires(dt){for(let i=S.fires.length-1;i>=0;i--){const f=S.fires[i];if(S.t>f.until){scene.remove(f.g);S.fires.splice(i,1);continue}const fk=0.8+Math.random()*0.5;f.fl.scale.set(fk,fk*(1+Math.random()*.3),fk);f.pl.intensity=4+Math.random()*2}}
+function nearFire(){const b=player.body;return S.fires.some(f=>Math.hypot(f.x-b.position.x,f.z-b.position.z)<(has('firekit')?11:8))}
+
+/* =====================================================================
+   بخش ۹: حیات وحش تطبیقی — نورخوار، پژواک‌ساز، شن‌خز + تکامل
+   ===================================================================== */
+const creatures=[];
+const CK={light:{hp:40,speed:7.2,dmg:10,n:'نورخوار'},echo:{hp:60,speed:8.8,dmg:12,n:'پژواک‌ساز'},prey:{hp:10,speed:6.5,dmg:0,n:'شن‌خز'}};
+const shellMat=std({color:0x9a9a86,roughness:.9,flatShading:true});
+function buildCreatureMesh(kind,evolved){
+ const g=new THREE.Group();
+ if(kind==='light'){const b=new THREE.Mesh(new THREE.SphereGeometry(0.9,12,10),std({color:0x0a0612,roughness:.8}));b.position.y=1.1;g.add(b);
+  for(let k=0;k<3;k++){const e=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,6),std({color:0xffe36b,emissive:0xffe36b,emissiveIntensity:3.5}));e.position.set((k-1)*0.35,1.35-Math.abs(k-1)*0.1,0.78);g.add(e)}
+  for(let k=0;k<5;k++){const t=new THREE.Mesh(new THREE.ConeGeometry(0.15,1.1,5),std({color:0x1a0a22}));t.position.set(Math.cos(k*TAU/5)*0.5,0.45,Math.sin(k*TAU/5)*0.5);t.rotation.x=Math.PI;g.add(t)}
+ }else if(kind==='echo'){const b=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),std({color:0x3a5a3a,roughness:.7}));b.scale.set(1.5,0.75,0.85);b.position.y=0.95;g.add(b);
+  const hd=new THREE.Mesh(new THREE.ConeGeometry(0.45,1.2,8),std({color:0x2a4a2a}));hd.rotation.x=Math.PI/2;hd.position.set(0,0.95,1.7);g.add(hd);
+  for(let k=0;k<4;k++){const s=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.8,5),std({color:0x224422,emissive:0x44ffaa,emissiveIntensity:1.2}));s.position.set(-0.9+k*0.6,1.6,0);g.add(s)}
+  for(let k=0;k<4;k++){const l=new THREE.Mesh(new THREE.BoxGeometry(0.15,1.0,0.15),std({color:0x2a3a2a}));l.position.set(k<2?-0.7:0.7,0.5,k%2?0.6:-0.6);g.add(l)}
+ }else{const b=new THREE.Mesh(new THREE.SphereGeometry(0.42,10,8),std({color:0xffa040,roughness:.6}));b.position.y=0.42;g.add(b);
+  const tl=new THREE.Mesh(new THREE.ConeGeometry(0.15,0.8,5),std({color:0xff8a20}));tl.rotation.x=Math.PI/2;tl.position.set(0,0.35,-0.7);g.add(tl);
+  for(let k=0;k<2;k++){const e=new THREE.Mesh(new THREE.SphereGeometry(0.07,6,6),std({color:0x000000,emissive:0x88ffff,emissiveIntensity:1.5}));e.position.set(k?0.15:-0.15,0.55,0.38);g.add(e)}}
+ if(evolved){const sh=new THREE.Mesh(new THREE.SphereGeometry(kind==='echo'?1.35:1.05,10,8,0,TAU,0,Math.PI*0.55),shellMat);sh.position.y=kind==='echo'?1.0:1.15;if(kind==='echo')sh.scale.set(1.3,0.9,0.9);g.add(sh)}
+ g.traverse(o=>{o.castShadow=!IS_MOBILE});return g}
+class Creature{
+ constructor(kind,x,z){this.kind=kind;this.k=CK[kind];this.evolved=kind!=='prey'&&!!P.evolved[kind];this.maxHp=this.k.hp*(this.evolved?1.3:1);this.hp=this.maxHp;this.x=x;this.z=z;this.home={x,z};this.tx=x;this.tz=z;this.tT=0;this.atkCd=0;this.alert=0;this.chaseT=0;this.buried=false;this.spot=null;this.dead=false;this.respawnT=0;this.hidden=false;this.state='wander';this.phase=Math.random()*TAU;this.flash=0;
+  this.g=buildCreatureMesh(kind,this.evolved);scene.add(this.g);this.body=new CANNON.Body({mass:0,type:CANNON.Body.KINEMATIC,material:matW,shape:new CANNON.Sphere(kind==='prey'?0.5:1.15)});world.addBody(this.body);this.yaw=0}
+ moveTo(tx,tz,sp,dt){const dx=tx-this.x,dz=tz-this.z;const d=Math.hypot(dx,dz);if(d<0.3)return true;const m=Math.min(d,sp*dt);this.x+=dx/d*m;this.z+=dz/d*m;this.yaw=lerpAngle(this.yaw,Math.atan2(dx,dz),Math.min(1,dt*8));this.x=clamp(this.x,-730,730);this.z=clamp(this.z,-730,730);return false}
+ pickWander(r=50){const a=Math.random()*TAU,d=Math.random()*r;this.tx=this.home.x+Math.cos(a)*d;this.tz=this.home.z+Math.sin(a)*d;this.tT=3+Math.random()*4}
+ hit(dmg){if(this.dead)return;this.hp-=dmg;this.flash=0.2;this.alert=8;this.chaseT=12;if(this.buried){this.buried=false}if(this.hp<=0)this.die();else sfx('hit')}
+ die(){this.dead=true;this.g.visible=false;this.body.position.set(0,-300,0);S.kills[this.kind]++;this.respawnT=this.kind==='prey'?45:90;sfx('kill');
+  if(this.kind==='prey'){S.food=Math.min(S.food+1,9);addRes('organic',1);msg('🍖 شکار موفق: +۱ غذا','good')}else{addRes('organic',1);msg(`${this.k.n} کشته شد (${S.kills[this.kind]}/۵ تا تکامل)`,'info');
+   if(S.kills[this.kind]===5&&!P.evolved[this.kind])msg(`⚠ ${this.k.n}ها در حلقه‌ی بعد تکامل می‌یابند: زره آهکی + کمین`,'warn')}}
+ update(dt,ctx){
+  if(this.dead){this.respawnT-=dt;if(this.respawnT<=0){this.dead=false;this.hp=this.maxHp;this.g.visible=true;this.x=this.home.x;this.z=this.home.z;this.buried=false;this.spot=null}return}
+  const b=player.body;const dx=b.position.x-this.x,dz=b.position.z-this.z;const dist=Math.hypot(dx,dz);
+  const K=this.kind;let sp=this.k.speed;let chase=false;
+  if(K==='light'){
+   const active=ctx.isNight||ctx.anomaly==='nocturnal';
+   if(!active){if(!this.hidden){this.hidden=true;this.g.visible=false;this.body.position.set(0,-300,0)}return}
+   if(this.hidden){this.hidden=false;this.g.visible=true;this.x=this.home.x+2;this.z=this.home.z;this.spot=null}
+   if(this.evolved){chase=this.ambush(dt,dist);}
+   else{
+    let target=null;
+    if(S.decoyUntil>S.t&&S.decoyPos&&Math.hypot(S.decoyPos.x-this.x,S.decoyPos.z-this.z)<60)target=S.decoyPos;
+    else if(ctx.lightOn&&dist<40)target={x:b.position.x,z:b.position.z};
+    if(target){this.moveTo(target.x,target.z,sp,dt);chase=target!==S.decoyPos;this.state='chase'}
+    else{this.state='wander';this.tT-=dt;if(this.tT<=0||this.moveTo(this.tx,this.tz,3.5,dt))this.pickWander(70)}}
+  }else if(K==='echo'){
+   if(ctx.isNight&&this.alert<=0){this.state='sleep';this.g.position.y=H(this.x,this.z)-0.2;this.body.position.set(this.x,H(this.x,this.z)+0.8,this.z);return}
+   if(this.evolved){chase=this.ambush(dt,dist)}
+   else{
+    if(dist<60&&ctx.mode==='run')this.alert=Math.max(this.alert,5);
+    if(dist<4&&ctx.mode!=='sneak')this.alert=Math.max(this.alert,4);
+    if(this.alert>0){this.alert-=dt;this.moveTo(b.position.x,b.position.z,sp,dt);chase=true;this.state='chase'}
+    else{this.state='wander';this.tT-=dt;if(this.tT<=0||this.moveTo(this.tx,this.tz,4,dt))this.pickWander(60)}}
+  }else{ // شن‌خز (طعمه)
+   if(dist<10){this.alert=3}
+   if(this.alert>0){this.alert-=dt;this.moveTo(this.x-dx*2,this.z-dz*2,sp,dt);this.state='flee'}
+   else{this.tT-=dt;if(this.tT<=0||this.moveTo(this.tx,this.tz,2,dt))this.pickWander(30)}}
+  // حمله
+  this.atkCd-=dt;if(chase&&dist<2.2&&this.atkCd<=0&&this.k.dmg>0){this.atkCd=1.2;damagePlayer(this.k.dmg,this.k.n);this.flash=0.15}
+  if(chase&&dist<28&&this.k.dmg>0)ctx.threat=true;
+  // مکان و ظاهر
+  const gy=H(this.x,this.z);const bob=this.state==='chase'?Math.abs(Math.sin(performance.now()*0.012))*0.3:Math.sin(performance.now()*0.004+this.phase)*0.08;
+  this.g.position.set(this.x,gy+(this.buried?-2.6:bob),this.z);this.g.rotation.y=this.yaw;
+  this.body.position.set(this.x,gy+(this.buried?-5:1),this.z);
+  if(this.flash>0){this.flash-=dt;this.g.scale.setScalar(1.15)}else this.g.scale.setScalar(1)}
+ /** رفتار کمین (نسخه‌ی تکامل‌یافته): زیر شن پنهان می‌شود و در ۸ متری بیرون می‌پرد */
+ ambush(dt,dist){
+  const b=player.body;
+  if(this.chaseT>0){this.chaseT-=dt;this.buried=false;this.moveTo(b.position.x,b.position.z,this.k.speed*1.05,dt);this.state='chase';if(this.chaseT<=0)this.spot=null;return true}
+  if(!this.spot){const a=Math.random()*TAU,d=15+Math.random()*45;this.spot={x:clamp(this.home.x+Math.cos(a)*d,-700,700),z:clamp(this.home.z+Math.sin(a)*d,-700,700)};this.buried=false}
+  if(!this.buried){if(this.moveTo(this.spot.x,this.spot.z,4,dt)){this.buried=true;this.state='buried'}return false}
+  if(dist<8){this.buried=false;this.chaseT=12;msg(`💥 کمین ${this.k.n} زره‌پوش!`,'warn');sfx('roar');player.shake=0.4;return true}
+  return false}
+ remove(){scene.remove(this.g);world.removeBody(this.body)}
+}
+function spawnCreatures(){
+ creatures.forEach(c=>c.remove());creatures.length=0;const L=P.loops;
+ const nL=Math.min(16,6+2*(L-1)),nE=Math.min(14,5+2*(L-1)),nP=Math.min(30,14+3*(L-1));
+ for(let i=0;i<nL;i++){const n=nests[i%nests.length];creatures.push(new Creature('light',n.x+(Math.random()-.5)*6,n.z+(Math.random()-.5)*6))}
+ for(let i=0;i<nE;i++){const p=randPosR({minC:130});creatures.push(new Creature('echo',p.x,p.z))}
+ for(let i=0;i<nP;i++){const p=randPosR({minC:40});creatures.push(new Creature('prey',p.x,p.z))}}
+/** مکان تصادفی (غیر Seed) برای موجودات */
+function randPosR({minC=0,maxC=620}={}){for(let i=0;i<40;i++){const x=(Math.random()*2-1)*maxC,z=(Math.random()*2-1)*maxC;if(Math.hypot(x,z)<minC||H(x,z)>60||slopeAt(x,z)>0.6||inAnyCave(x,z,1.5))continue;return {x,z}}return {x:200,z:200}}
+/** ضربه‌ی چاقو: آسیب به موجودات جلوی بازیکن + برداشت گره‌ی نزدیک */
+function attack(){
+ if(S.attackCd>0)return;S.attackCd=has('knife')?0.3:0.5;player.swing=1;sfx('swing');
+ const b=player.body;const fx=Math.sin(player.facing),fz=Math.cos(player.facing);let hitAny=false;
+ const dmg=15*(has('knife')?2:1)*(P.activated.length>=6?1.5:1);
+ for(const c of creatures){if(c.dead||c.hidden)continue;const dx=c.x-b.position.x,dz=c.z-b.position.z;const d=Math.hypot(dx,dz);if(d<3.4&&(dx*fx+dz*fz)/Math.max(d,0.01)>0.3){c.hit(dmg);hitAny=true}}
+ if(!hitAny)tryHarvest()}
+/* =====================================================================
+   بخش ۱۰: پیام‌ها، موجودی و برداشت منابع
+   ===================================================================== */
+const lastMsg={};let bannerT=0;
+function msg(text,type='info',dur=4){const now=performance.now();if(lastMsg[text]&&now-lastMsg[text]<2500)return;lastMsg[text]=now;const el=document.createElement('div');el.className='msg '+type;el.textContent=text;const box=$('msgs');box.appendChild(el);while(box.children.length>4)box.removeChild(box.firstChild);setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),600)},dur*1000)}
+function banner(text,dur=4){const b=$('banner');b.textContent=text;b.classList.remove('hidden');clearTimeout(bannerT);bannerT=setTimeout(()=>b.classList.add('hidden'),dur*1000)}
+function capacity(){return has('bag')?20:10}
+function addRes(k,n){const c=capacity();if(S.inv[k]>=c){msg('ظرفیت حمل پر است! (کیسه‌ی بزرگ بسازید)','warn');return false}S.inv[k]=Math.min(c,S.inv[k]+n);return true}
+function maxHp(){return 100+P.suit*15+(P.activated.length>=1?20:0)}
+function o2Max(){return O2_MAX_BASE+P.suit*30+(P.activated.length>=2?60:0)}
+let nearNode=null,nearOb=null,nearPortal=false;
+function findInteractables(){
+ const b=player.body;nearNode=null;let best=3.0;
+ for(const it of allNodes){if(it.taken||!it.active)continue;const dx=it.x-b.position.x,dz=it.z-b.position.z;if(dx>3||dx<-3||dz>3||dz<-3)continue;const d=Math.hypot(dx,dz);if(d<best&&Math.abs(it.y-b.position.y)<3.5){best=d;nearNode=it}}
+ nearOb=null;for(const o of obelisks){if(o.hidden)continue;if(Math.hypot(o.x-b.position.x,o.z-b.position.z)<7)nearOb=o}
+ nearPortal=portal.visible&&Math.hypot(portal.position.x-b.position.x,portal.position.z-b.position.z)<7}
+function decodedSymbols(){return P.symOrder.slice(0,Math.min(7,Math.floor(P.fragments/3)))}
+function isDecoded(o){const d=decodedSymbols();return o.code.every(s=>d.includes(s))}
+function refreshHolos(){const d=decodedSymbols();obelisks.forEach(o=>{if(o.holo.material.map)o.holo.material.map.dispose();o.holo.material.map=holoTexture(o.code,d,o.activated);o.holo.material.needsUpdate=true})}
+function tryHarvest(){
+ if(S.harvestCd>0||!nearNode)return;const it=nearNode;let ok=true;
+ switch(it.type){
+  case 'exogen':S.o2=Math.min(o2Max(),S.o2+o2Max()*0.25);msg('🫧 اکسیژن +۲۵٪','good');break;
+  case 'wood':if(S.wood>=9){msg('چوب بیشتر نمی‌توانید حمل کنید','warn');ok=false}else{S.wood++;msg('🪵 چوب فسیلی +۱','info')}break;
+  case 'fruit':if(S.fruit>=9)ok=false;else{S.fruit++;msg('🍇 میوه‌ی سمی +۱ (نیاز به تصفیه)','info')}break;
+  case 'organic':ok=addRes('organic',1);break;
+  case 'scrap':case 'crystal':case 'rock':case 'elec':case 'meteor':ok=addRes(it.type,1);if(ok)msg(`${RES.find(r=>r.k===it.type).ic} ${RES.find(r=>r.k===it.type).n} +۱`,'info',2);break;
+  case 'fragment':P.fragments++;const before=Math.floor((P.fragments-1)/3),after=Math.floor(P.fragments/3);msg(`📜 قطعه‌ی ترجمه ${P.fragments}/۲۴`,'gold');
+   if(after>before&&after<=7){const s=P.symOrder[after-1];msg(`🔓 نماد جدید رمزگشایی شد: ${GLYPHS[s]} «${GLYPH_NAMES[s]}»`,'gold',6);sfx('decode');checkHints();refreshHolos()}saveP();break}
+ if(!ok)return;S.harvestCd=has('knife')?0.25:0.5;it.set.take(it);sfx('pick')}
+function checkHints(){P.hints=P.hints||[];obelisks.forEach(o=>{if(o.id===6||P.hints.includes(o.id)||!isDecoded(o))return;P.hints.push(o.id);setTimeout(()=>msg(`🗿 «ابلیسک ${OB_NAMES[o.id]}» رمزگشایی شد: این ابلیسک ${ORD[o.order]} کلید زنجیره است.`,'gold',9),800)})}
+function interact(){if(nearOb)activateObelisk(nearOb);else if(nearPortal)winGame();else tryHarvest()}
+
+/* =====================================================================
+   بخش ۱۱: بقا (اکسیژن/گرما/گرسنگی)، آسیب و مرگ
+   ===================================================================== */
+let paused=true;
+function damagePlayer(amt,src,ignoreArmor=false){if(!ignoreArmor){if(S.shieldUntil>S.t)amt*=0.5;if(has('stonearmor'))amt*=0.75}S.hp-=amt;S.dmgFlash=1;player.shake=Math.max(player.shake,0.35);sfx('hurt');if(S.hp<=0)die(src)}
+function die(src){if(player.dead)return;player.dead=true;S.hp=0;sfx('death');showEnd('☠ مرگ در حلقه',`علت: ${src}. زمان به لحظه‌ی سقوط باز می‌گردد — اما دانش شما باقی می‌ماند.`,()=>resetLoop('death'))}
+function updateSurvival(dt){
+ const b=player.body;const A=S.anomaly?S.anomaly.id:null;
+ const dCap=Math.hypot(b.position.x-CAP.x,b.position.z-CAP.z);S.nearCap=dCap<100;S.inCave=!!inAnyCave(b.position.x,b.position.z,0.95);
+ let use=player.mode==='run'?2:player.mode==='sneak'?0.7:1;if(has('mask'))use*=0.8;if(A==='o2leak')use*=1.5;
+ S.o2-=use*dt;if(S.nearCap)S.o2+=(has('pump')?6:3)*dt;S.o2=clamp(S.o2,0,o2Max());
+ if(S.o2<=0){S.hp-=5*dt;S.dmgFlash=Math.max(S.dmgFlash,0.5);msg('⚠ اکسیژن تمام شد! خفگی...','warn')}
+ else if(S.o2<45)msg('⚠ اکسیژن کم است','warn');
+ const night=isNight();const warm=nearFire()||S.inCave||dCap<12;
+ if(warm)S.heat+=8*dt;else if(night){let dr=0.7;if(has('flask'))dr*=0.8;if(P.activated.length>=4)dr*=0.8;if(A==='cold')dr*=1.5;S.heat-=dr*dt}else S.heat+=1.5*dt;S.heat=clamp(S.heat,0,100);
+ if(S.heat<=0)msg('🥶 یخ‌زدگی! سرعت ۵۰٪ کاهش یافت — آتش روشن کنید یا به غار بروید','warn');
+ let hr=100/480;if(P.activated.length>=5)hr*=0.7;S.hunger-=hr*dt;
+ if(S.hunger<=0){S.hunger=0;S.starveT=(S.starveT||0)+dt;if(S.starveT>=30){S.starveT=0;S.hp-=1;msg('🍽 گرسنگی شدید: −۱ سلامت','warn')}}
+ if(A==='acid'&&!S.inCave&&dCap>12){S.acidT=(S.acidT||0)+dt;if(S.acidT>2){S.acidT=0;S.hp-=1.5;S.dmgFlash=0.4;msg('☢ باران اسیدی بدنه را می‌خورد!','warn')}}
+ S.inRad=false;for(const z of S.meteor.zones){if(S.t<z.until&&Math.hypot(z.x-b.position.x,z.z-b.position.z)<z.r)S.inRad=true}
+ if(S.inRad){S.hp-=0.02*maxHp()*dt;msg('☢ منطقه‌ی رادیواکتیو! −۲٪ سلامت در ثانیه','warn')}
+ S.hp=Math.min(S.hp,maxHp());if(S.hp<=0&&!player.dead)die(S.o2<=0?'خفگی':S.inRad?'تشعشع':S.hunger<=0?'گرسنگی':'آسیب محیطی')}
+
+/* =====================================================================
+   بخش ۱۲: حلقه‌ی زمانی — بازنشانی، ناهنجاری‌ها، مقیاس دشواری
+   ===================================================================== */
+function initLoopState(first=false){
+ const old=S;if(old){old.fires.forEach(f=>scene.remove(f.g));old.meteor.falling.forEach(f=>scene.remove(f.m));old.meteor.zones.forEach(z=>scene.remove(z.cr))}
+ S=newS();S.anomaly=P.loops>1?ANOMALIES[P.anomIdx]:null;S.hp=maxHp();S.o2=o2Max();
+ const A=S.anomaly?S.anomaly.id:null;
+ world.gravity.set(0,A==='lowg'?-15.4:-22,0);scene.fog.density=A==='fog'?0.0065:0.0018;rain.visible=A==='acid';
+ const r2=mulberry32(P.seed*3+P.loops*101);for(const k in nodeSets){if(k==='meteor')continue;nodeSets[k].reset(P.loops,r2)}
+ // پاک‌سازی سنگ‌های شهابی
+ const ms=nodeSets.meteor;ms.items.forEach(it=>{const i=allNodes.indexOf(it);if(i>=0)allNodes.splice(i,1)});ms.items=[];ms.mesh.count=0;
+ spawnCreatures();
+ obelisks.forEach(o=>{o.activated=P.activated.includes(o.id);o.beam.visible=o.activated;o.pl.color.set(o.activated?0x33ffaa:0x9a4aff)});
+ obelisk7.hidden=P.activated.length<6;obelisk7.g.visible=!obelisk7.hidden;obelisk7.body.collisionResponse=!obelisk7.hidden;portal.visible=P.activated.includes(6);
+ refreshHolos();respawnPlayer();player.dead=false;
+ renderToolbar();
+ if(!first||P.loops>1){banner(S.anomaly?`⚠ ناهنجاری حلقه‌ی ${fa(P.loops)}: ${S.anomaly.n}`:'حلقه‌ی جدید',6);if(S.anomaly)msg(`ناهنجاری: ${S.anomaly.n} — ${S.anomaly.d}`,'warn',9)}
+ else msg('حلقه‌ی اول: جهان پایدار است. منابع را جمع کنید و ابلیسک‌ها را بیابید.','info',7);
+ $('anomaly').textContent=S.anomaly?`⚠ ${S.anomaly.n}`:'';saveP()}
+function resetLoop(reason){
+ ['light','echo'].forEach(k=>{if(S.kills[k]>=5&&!P.evolved[k]){P.evolved[k]=true;P.log.push(`حلقه‌ی ${P.loops}: ${S.kills[k]} ${CK[k].n} کشته شد → ${CK[k].n}ها تکامل یافتند: زره آهکی (+۳۰٪ مقاومت) و رفتار کمین.`)}});
+ P.loops++;const r=mulberry32(P.seed+P.loops*7919);P.anomIdx=Math.floor(r()*ANOMALIES.length);
+ P.log.push(`حلقه‌ی ${P.loops} آغاز شد (${reason==='death'?'پس از مرگ':'پایان ۲۴ دقیقه'}). دشمنان و منابع بیشتر شدند.`);
+ initLoopState(false);sfx('loop');paused=false}
+
+/* =====================================================================
+   بخش ۱۳: چرخه‌ی روز/شب و نورپردازی آسمان
+   ===================================================================== */
+function dayLen(){return S.anomaly&&S.anomaly.id==='longnight'?180:300}
+function phaseInfo(){const p=S.t%600,d=dayLen();if(p<d)return {night:false,f:Math.sin(Math.PI*p/d)};return {night:true,f:-Math.sin(Math.PI*(p-d)/(600-d))}}
+function isNight(){return phaseInfo().night}
+const fogDay=new THREE.Color(0xc07a9a),fogNight=new THREE.Color(0x1a0a2e);
+function updateSkyLighting(t){
+ const {f}=phaseInfo();const day=clamp(f,0,1),nightK=clamp(-f,0,1),dusk=1-Math.abs(f);
+ sun.intensity=0.12+1.7*day;sun.color.setRGB(lerp(0.45,1,day),lerp(0.55,0.88,day),lerp(0.9,0.75,day));
+ hemi.intensity=0.12+0.6*day;
+ skyU.top.value.setRGB(lerp(0.02,0.16,day),lerp(0.01,0.04,day),lerp(0.07,0.30,day));
+ skyU.mid.value.setRGB(lerp(0.08,0.48,day)+dusk*0.2,lerp(0.03,0.17,day),lerp(0.16,0.6,day));
+ skyU.bot.value.setRGB(lerp(0.18,1.0,day)+dusk*0.1,lerp(0.06,0.5,day),lerp(0.25,0.28,day)+dusk*0.15);
+ scene.fog.color.copy(fogNight).lerp(fogDay,day);
+ starMat.opacity=nightK;auroraMat.uniforms.inten.value=0.12+nightK*0.9;auroraMat.uniforms.t.value=t;
+ bloom.strength=(IS_MOBILE?0.55:0.75)+nightK*0.25;
+ moon1.material.color.setRGB(1,0.82+0.1*day,0.45+0.3*day)}
+
+/* =====================================================================
+   بخش ۱۴: آب‌وهوای پویا — طوفان یونی و شهاب‌سنگ‌ها
+   ===================================================================== */
+function electronicsOK(){return !S.storm.active||has('faraday')||S.inCave}
+const craterMat=std({color:0x1a0a05,emissive:0xff3a00,emissiveIntensity:.8,roughness:1});
+function updateWeather(dt){
+ const st=S.storm;
+ if(!st.active){if(!st.warned&&S.t>=st.next-20){st.warned=true;banner('⚡ طوفان یونی در ۲۰ ثانیه!',5);msg('طوفان یونی نزدیک است — به غار پناه ببرید یا از قطب‌نمای مکانیکی استفاده کنید','warn',6);sfx('alarm')}
+  if(S.t>=st.next){st.active=true;st.until=S.t+30;banner('⚡ طوفان یونی — وسایل الکترونیکی از کار افتادند',4);sfx('storm')}}
+ else if(S.t>=st.until){st.active=false;st.next+=300;st.warned=false;msg('طوفان یونی فروکش کرد. سیستم‌ها آنلاین شدند.','info')}
+ const mt=S.meteor;const b=player.body;
+ if(!mt.warned&&S.t>=mt.next-20){mt.warned=true;mt.sites=[];for(let k=0;k<3;k++){const a=Math.random()*TAU,d=120+Math.random()*180;mt.sites.push({x:clamp(b.position.x+Math.cos(a)*d,-650,650),z:clamp(b.position.z+Math.sin(a)*d,-650,650)})}
+  banner('☄ هشدار شهاب‌سنگ: برخورد در ۲۰ ثانیه',4);msg('مکان برخورد روی مینی‌مپ با نقطه‌ی قرمز مشخص شد. منطقه ۲ دقیقه رادیواکتیو خواهد بود.','warn',7);sfx('alarm')}
+ if(mt.warned&&S.t>=mt.next){mt.sites.forEach(s=>{const m=new THREE.Mesh(new THREE.SphereGeometry(1.2,8,6),std({color:0x331100,emissive:0xff6a1a,emissiveIntensity:4}));const pl=new THREE.PointLight(0xff6a1a,8,60,1.5);m.add(pl);scene.add(m);mt.falling.push({s,t:0,m})});mt.next+=420;mt.warned=false;mt.sites=[]}
+ for(let i=mt.falling.length-1;i>=0;i--){const f=mt.falling[i];f.t+=dt;const k=Math.min(1,f.t/3);const gy=H(f.s.x,f.s.z);f.m.position.set(f.s.x+90*(1-k),gy+320*(1-k)*(1-k)+1,f.s.z-70*(1-k));
+  if(k>=1){scene.remove(f.m);mt.falling.splice(i,1);const cr=new THREE.Mesh(new THREE.RingGeometry(3,9,20),craterMat);cr.rotation.x=-Math.PI/2;cr.position.set(f.s.x,gy+0.15,f.s.z);scene.add(cr);
+   const fl=new THREE.PointLight(0xffaa55,30,80,1.5);fl.position.set(f.s.x,gy+5,f.s.z);scene.add(fl);setTimeout(()=>scene.remove(fl),600);
+   for(let q=0;q<3;q++){const a=Math.random()*TAU,d=2+Math.random()*5;nodeSets.meteor.add(f.s.x+Math.cos(a)*d,f.s.z+Math.sin(a)*d,1,0)}
+   mt.zones.push({x:f.s.x,z:f.s.z,r:22,until:S.t+120,cr});player.shake=Math.max(player.shake,0.6);sfx('impact');msg('☄ برخورد شهاب‌سنگ! سنگ‌های انرژی در محل برخورد — ۲ دقیقه رادیواکتیو','gold',6)}}
+ for(let i=mt.zones.length-1;i>=0;i--){const z=mt.zones[i];if(S.t>z.until){z.cr.material=std({color:0x1a0a05,roughness:1});mt.zones.splice(i,1)}}
+ // پارازیت بنفش در طوفان
+ const noiseOn=S.storm.active&&!electronicsOK();const nc=$('noiseC');nc.style.opacity=noiseOn?0.55:0;
+ if(noiseOn){const x=nc.getContext('2d');const im=x.createImageData(160,90);for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=v*0.7;im.data[i+1]=v*0.2;im.data[i+2]=v;im.data[i+3]=Math.random()>0.5?200:60}x.putImageData(im,0,0)}}
+
+/* =====================================================================
+   بخش ۱۵: ابلیسک‌ها — فعال‌سازی، صاعقه‌ی مجازات، ارتقاهای دائمی
+   ===================================================================== */
+const PERKS=['+۲۰٪ سلامت بیشینه','+۶۰ ثانیه ظرفیت اکسیژن','+۱۰٪ سرعت حرکت','+۲۰٪ مقاومت به سرما','−۳۰٪ سرعت گرسنگی','+۵۰٪ آسیب چاقو'];
+function activateObelisk(o){
+ if(o.activated){msg('این ابلیسک قبلاً فعال شده است.','info');return}
+ const next=P.activated.length;
+ if(o.id===6){if(!has('core')){msg('دروازه خاموش است: به «هسته‌ی پورتال» (کارگاه، سطح ۳) نیاز دارید.','warn',6);return}
+  o.activated=true;P.activated.push(6);o.beam.visible=true;portal.visible=true;refreshHolos();sfx('activate');banner('🌀 پورتال گشوده شد!',5);msg('به درون پورتال بروید و E را بزنید.','gold',8);saveP();return}
+ if(o.order===next){o.activated=true;P.activated.push(o.id);o.beam.visible=true;o.pl.color.set(0x33ffaa);refreshHolos();sfx('activate');player.shake=0.3;
+  banner(`🗿 ابلیسک ${OB_NAMES[o.id]} فعال شد (${next+1}/۶)`,5);msg(`ارتقای دائمی: ${PERKS[next]}`,'gold',8);S.hp=maxHp();
+  P.log.push(`ابلیسک ${OB_NAMES[o.id]} فعال شد → ${PERKS[next]}`);
+  if(P.activated.length===6){obelisk7.hidden=false;obelisk7.g.visible=true;obelisk7.body.collisionResponse=true;setTimeout(()=>{banner('ابلیسک هفتم «دروازه» در مرکز نقشه ظاهر شد',6);sfx('decode')},1500);if(!P.discOb.includes(6))P.discOb.push(6)}
+  saveP()}
+ else lightning(o)}
+function lightning(o){
+ const b=player.body;const dx=b.position.x-o.x,dz=b.position.z-o.z;const d=Math.max(1,Math.hypot(dx,dz));
+ b.velocity.set(dx/d*30,17,dz/d*30);damagePlayer(maxHp()*0.2,'صاعقه‌ی ابلیسک',true);
+ const pts=[];for(let k=0;k<=8;k++){const t=k/8;pts.push(new THREE.Vector3(o.x+dx*t+(k%8?(Math.random()-.5)*3:0),o.y+15-13*t+(k%8?(Math.random()-.5)*3:0),o.z+dz*t+(k%8?(Math.random()-.5)*3:0)))}
+ const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xaaffff}));scene.add(ln);
+ const fl=new THREE.PointLight(0xaaffff,40,60);fl.position.set(o.x,o.y+10,o.z);scene.add(fl);setTimeout(()=>{scene.remove(ln);scene.remove(fl)},350);
+ banner('⚡ ترتیب اشتباه!',3);msg('موج صاعقه شما را ۵۰ متر به عقب پرتاب کرد (−۲۰٪ سلامت). نمادها را رمزگشایی کنید.','warn',6);sfx('lightning');player.shake=1}
+function winGame(){P.won=true;saveP();sfx('win');showEnd('🌌 رهایی از حلقه‌ی زمان، بازگشت به خانه',`پس از ${P.loops} حلقه، دروازه‌ی باستانی گشوده شد و سیاره‌ی وِلوریس رهایتان کرد. می‌توانید به کاوش ادامه دهید یا از نقشه، سیاره‌ی جدیدی آغاز کنید.`,()=>{paused=false})}
+
+/* =====================================================================
+   بخش ۱۶: کارگاه ساخت، ارتقای بدنه و ابزارها
+   ===================================================================== */
+function canAfford(cost){return Object.entries(cost).every(([k,v])=>S.inv[k]>=v)}
+function canCraft(it){if(P.crafted[it.id]&&!it.consumable)return false;if(!it.req.every(r=>P.crafted[r]))return false;return canAfford(it.cost)}
+function craft(id){const it=CRAFT.find(i=>i.id===id);if(!canCraft(it))return;Object.entries(it.cost).forEach(([k,v])=>S.inv[k]-=v);P.crafted[id]=true;if(it.consumable)S.repairKits++;
+ msg(`🛠 ساخته شد: ${it.n}`,'good');sfx('craft');saveP();renderCraft();renderToolbar()}
+function buySuit(){if(P.suit>=SUIT_MAX)return;const c=suitCost(P.suit+1);if(!canAfford(c)){msg('منابع کافی نیست','warn');return}Object.entries(c).forEach(([k,v])=>S.inv[k]-=v);P.suit++;S.hp=Math.min(maxHp(),S.hp+15);msg(`🚀 بدنه سطح ${P.suit}: سرعت +۶٪، سلامت +۱۵، اکسیژن +۳۰ ثانیه`,'good',6);sfx('craft');saveP();renderCraft()}
+const TOOLS=[
+ {id:'eat',n:'خوردن غذا',ic:'🍖',avail:()=>true,count:()=>S.food,use:()=>{if(S.food<1){msg('غذا ندارید: شکار کنید یا میوه تصفیه کنید','warn');return false}S.food--;S.hunger=Math.min(100,S.hunger+40);msg('🍖 سیر شدید (+۴۰)','good');sfx('pick')}},
+ {id:'purify',n:'تصفیه‌ی میوه',ic:'🧪',avail:()=>has('purifier'),count:()=>S.fruit,use:()=>{if(S.fruit<1||S.inv.crystal<1){msg('نیاز: ۱ میوه‌ی سمی + ۱ کریستال انرژی','warn');return false}S.fruit--;S.inv.crystal--;S.food=Math.min(9,S.food+1);msg('🧪 میوه تصفیه شد → +۱ غذا','good');sfx('craft')}},
+ {id:'repair',n:'کیت تعمیر',ic:'🩹',avail:()=>has('repair'),count:()=>S.repairKits,use:()=>{if(S.repairKits<1){msg('کیت تعمیر ندارید (در کارگاه بسازید)','warn');return false}S.repairKits--;S.hp=Math.min(maxHp(),S.hp+maxHp()*0.3);msg('🩹 زره ترمیم شد (+۳۰٪)','good');sfx('craft')}},
+ {id:'shield',n:'سپر یونی',ic:'🛡️',avail:()=>has('shield'),cd:30,use:()=>{S.shieldUntil=S.t+5;msg('🛡 سپر یونی فعال: ۵ ثانیه','good');sfx('activate')}},
+ {id:'converter',n:'مبدل حرارتی',ic:'♨️',avail:()=>has('converter'),cd:20,use:()=>{if(S.heat<30){msg('گرمای کافی ندارید (حداقل ۳۰)','warn');return false}S.heat-=30;S.o2=Math.min(o2Max(),S.o2+60);msg('♨ ۳۰ گرما → ۶۰ ثانیه اکسیژن','good')}},
+ {id:'decoy',n:'چراغ فریب',ic:'🏮',avail:()=>has('decoy'),cd:40,use:()=>{const b=player.body;S.decoyUntil=S.t+10;S.decoyPos={x:b.position.x+Math.sin(player.facing)*3,z:b.position.z+Math.cos(player.facing)*3};const l=new THREE.PointLight(0xffffaa,8,30);l.position.set(S.decoyPos.x,H(S.decoyPos.x,S.decoyPos.z)+1.5,S.decoyPos.z);scene.add(l);setTimeout(()=>scene.remove(l),10000);msg('🏮 چراغ فریب کار گذاشته شد','good')}}];
+function visibleTools(){return TOOLS.filter(t=>t.avail())}
+function useTool(i){const t=visibleTools()[i];if(!t)return;if(t.cd&&(S.cooldowns[t.id]||0)>S.t){msg(`${t.n}: ${Math.ceil(S.cooldowns[t.id]-S.t)} ثانیه تا آماده‌شدن`,'warn');return}const ok=t.use();if(ok!==false&&t.cd)S.cooldowns[t.id]=S.t+t.cd;renderToolbar()}
+function renderToolbar(){const tb=$('toolbar');tb.innerHTML='';visibleTools().forEach((t,i)=>{const d=document.createElement('div');d.className='tool'+((t.cd&&(S.cooldowns[t.id]||0)>S.t)?' cd':'');d.innerHTML=`${t.ic} ${t.n}<small>${IS_MOBILE?'':'['+(i+1)+'] '}${t.count?('×'+t.count()):(t.cd?'فعال‌شونده':'')}</small>`;d.onclick=()=>useTool(i);tb.appendChild(d)})}
+function renderCraft(){
+ $('craftRes').textContent=RES.map(r=>`${r.ic} ${r.n}: ${S.inv[r.k]}/${capacity()}`).join('   |   ');
+ const sb=$('suitBox');const nc=P.suit<SUIT_MAX?suitCost(P.suit+1):null;
+ sb.innerHTML=`<div><b>🚀 ارتقای بدنه‌ی شخصیت — سطح ${P.suit}/${SUIT_MAX}</b><br><span style="color:#bbb">هر سطح: سرعت +۶٪، سلامت +۱۵، اکسیژن +۳۰ ثانیه (دائمی)</span>${nc?`<br><span style="color:#9fe;font-family:monospace">هزینه: ${Object.entries(nc).filter(e=>e[1]>0).map(([k,v])=>RES.find(r=>r.k===k).ic+v).join(' ')}</span>`:'<br>حداکثر سطح'}</div>`;
+ if(nc){const b=document.createElement('button');b.className='btn small gold';b.textContent='ارتقا';b.disabled=!canAfford(nc);b.onclick=buySuit;sb.appendChild(b)}
+ const grid=$('craftGrid');grid.innerHTML='';
+ [1,2,3].forEach(t=>{const col=document.createElement('div');col.className='tier';col.innerHTML=`<h3>سطح ${t}</h3>`;
+  CRAFT.filter(i=>i.t===t).forEach(it=>{const done=!!P.crafted[it.id],reqOk=it.req.every(r=>P.crafted[r]);const c=document.createElement('div');c.className='card'+(done&&!it.consumable?' done':'')+(!reqOk?' locked':'');
+   c.innerHTML=`<b>${done?'✓ ':''}${it.n}</b><div>${it.d}</div><div class="cost">هزینه: ${Object.entries(it.cost).map(([k,v])=>`${RES.find(r=>r.k===k).ic}${v}`).join(' ')}</div>${it.req.length?`<div class="req">⬅ نیاز به: ${it.req.map(r=>CRAFT.find(x=>x.id===r).n).join('، ')}</div>`:''}`;
+   const b=document.createElement('button');b.className='btn small';b.textContent=done&&!it.consumable?'ساخته شده':(it.consumable&&done?`ساخت دوباره (موجود: ${S.repairKits})`:'ساخت');b.disabled=!canCraft(it);b.onclick=()=>craft(it.id);c.appendChild(b);col.appendChild(c)});grid.appendChild(col)})}
+
+/* =====================================================================
+   بخش ۱۷: اکتشاف نقشه (مه جنگ) و کشف ابلیسک/غار
+   ===================================================================== */
+function updateExploration(){
+ const b=player.body;const R=60*(has('antenna')?1.5:1);const cx=Math.floor((b.position.x+HALF)/EXC),cz=Math.floor((b.position.z+HALF)/EXC),n=Math.ceil(R/EXC);
+ for(let j=cz-n;j<=cz+n;j++)for(let i=cx-n;i<=cx+n;i++){if(i<0||j<0||i>=EXG||j>=EXG)continue;const wx=-HALF+(i+0.5)*EXC,wz=-HALF+(j+0.5)*EXC;if(Math.hypot(wx-b.position.x,wz-b.position.z)<R)P.explored[j*EXG+i]=1}
+ obelisks.forEach(o=>{if(o.hidden)return;if(!P.discOb.includes(o.id)&&(has('scanner')||Math.hypot(o.x-b.position.x,o.z-b.position.z)<150)){P.discOb.push(o.id);msg(`🗿 ابلیسک «${OB_NAMES[o.id]}» کشف شد و روی نقشه ثبت شد`,'gold');sfx('decode')}});
+ caves.forEach(c=>{if(!P.discCave.includes(c.id)&&Math.hypot(c.x-b.position.x,c.z-b.position.z)<80){P.discCave.push(c.id);msg('🕳 غار کریستالی کشف شد (گرم و امن)','info')}})}
+/* =====================================================================
+   بخش ۱۸: HUD، مینی‌مپ، قطب‌نما، نقشه‌ی بزرگ
+   ===================================================================== */
+const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+let hudN=0;
+function updateHUD(){
+ if(++hudN%10===0)renderToolbar();
+ const rem=Math.max(0,LOOP_LEN-S.t);const mm=Math.floor(rem/60),ss=Math.floor(rem%60);const tm=$('timer');tm.textContent=`${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;tm.style.color=rem<180?'#ff4d6d':rem<600?'#ffd84d':'#7dff8a';
+ $('loopInfo').textContent=`حلقه‌ی ${fa(P.loops)} | قطعه‌ها ${fa(P.fragments)}/۲۴ | ابلیسک ${fa(P.activated.length)}/۷`;
+ const ph=$('phase');ph.textContent=(isNight()?'🌙 شب':'☀ روز')+(S.inCave?' · 🕳 پناهگاه':'')+(S.nearCap?' · 🫧 شارژ':'')+(S.shieldUntil>S.t?' · 🛡':'');
+ const set=(f,t,v,max)=>{$(f).style.height=clamp(v/max*100,0,100)+'%';$(t).textContent=Math.round(v/max*100)};
+ set('fO2','tO2',S.o2,o2Max());set('fHeat','tHeat',S.heat,100);set('fHp','tHp',S.hp,maxHp());set('fFood','tFood',S.hunger,100);
+ $('res').innerHTML=`<div class="row">${RES.map(r=>`<div class="it" title="${r.n}">${r.ic}<b>${S.inv[r.k]}</b></div>`).join('')}</div><div class="row"><div class="it">🪵<b>${S.wood}</b></div><div class="it">🍇<b>${S.fruit}</b></div><div class="it">🍖<b>${S.food}</b></div><div class="it">🔦<b>${S.light?'on':'off'}</b></div><div class="it" style="color:#aaa;font-size:11px">ظرفیت ${capacity()}</div></div>`;
+ const pr=$('prompt');let txt='';
+ if(nearOb)txt=nearOb.activated?`ابلیسک ${OB_NAMES[nearOb.id]} (فعال)`:`E: فعال‌سازی ابلیسک «${OB_NAMES[nearOb.id]}» ${isDecoded(nearOb)?'— رمزگشایی‌شده: '+ORD[nearOb.order]+' کلید':'— رمزگشایی نشده (خطر صاعقه!)'}`;
+ else if(nearPortal)txt='E: ورود به پورتال — بازگشت به خانه';
+ else if(nearNode)txt=`E: ${nearNode.set.label}`;
+ pr.textContent=txt;pr.classList.toggle('hidden',!txt);
+ $('dmg').style.opacity=S.dmgFlash;$('cold').style.opacity=S.heat<25?(1-S.heat/25)*0.9:0;$('rad').style.opacity=S.inRad?1:0}
+function drawMinimap(){
+ const c=$('minimap'),x=c.getContext('2d');const W=c.width;const b=player.body;x.clearRect(0,0,W,W);x.save();x.beginPath();x.arc(W/2,W/2,W/2,0,TAU);x.clip();
+ if(!electronicsOK()){for(let i=0;i<60;i++){x.fillStyle=`rgba(${120+Math.random()*100},40,${180+Math.random()*70},${Math.random()*0.6})`;x.fillRect(Math.random()*W,Math.random()*W,Math.random()*30,3)}x.fillStyle='#f8f';x.font='bold 12px sans-serif';x.textAlign='center';x.fillText('پارازیت',W/2,W/2);x.restore();return}
+ const R=150*(has('antenna')?1.5:1),s=W/(2*R);
+ x.drawImage(thumb,(b.position.x-R+HALF)*0.2,(b.position.z-R+HALF)*0.2,2*R*0.2,2*R*0.2,0,0,W,W);
+ const toPx=(wx,wz)=>[(wx-b.position.x)*s+W/2,(wz-b.position.z)*s+W/2];
+ x.fillStyle='rgba(0,0,0,0.85)';const c0=Math.floor((b.position.x-R+HALF)/EXC),c1=Math.ceil((b.position.x+R+HALF)/EXC),r0=Math.floor((b.position.z-R+HALF)/EXC),r1=Math.ceil((b.position.z+R+HALF)/EXC);
+ for(let j=r0;j<=r1;j++)for(let i=c0;i<=c1;i++){if(i<0||j<0||i>=EXG||j>=EXG||P.explored[j*EXG+i])continue;const [px,pz]=toPx(-HALF+i*EXC,-HALF+j*EXC);x.fillRect(px,pz,EXC*s+0.6,EXC*s+0.6)}
+ const dot=(wx,wz,col,r=3)=>{const [px,pz]=toPx(wx,wz);x.fillStyle=col;x.beginPath();x.arc(px,pz,r,0,TAU);x.fill()};
+ dot(CAP.x,CAP.z,'#ffffff',4);
+ caves.forEach(cv=>{if(P.discCave.includes(cv.id))dot(cv.x,cv.z,'#4a8aff',3.5)});
+ obelisks.forEach(o=>{if(P.discOb.includes(o.id)&&!o.hidden)dot(o.x,o.z,o.activated?'#33ffaa':'#c46bff',4.5)});
+ S.fires.forEach(f=>dot(f.x,f.z,'#ff8a2a',3));
+ if(portal.visible)dot(portal.position.x,portal.position.z,'#33ffee',5);
+ const blink=Math.floor(performance.now()/300)%2;S.meteor.sites.forEach(m=>{if(blink)dot(m.x,m.z,'#ff2a2a',5)});
+ S.meteor.zones.forEach(z=>{const [px,pz]=toPx(z.x,z.z);x.fillStyle='rgba(255,40,40,0.35)';x.beginPath();x.arc(px,pz,z.r*s,0,TAU);x.fill()});
+ if(has('sonar'))creatures.forEach(cr=>{if(cr.dead||cr.hidden||cr.buried)return;dot(cr.x,cr.z,cr.kind==='prey'?'#ffd27a':'#ff3b5c',2.5)});
+ x.translate(W/2,W/2);x.rotate(Math.PI-player.facing);x.fillStyle='#fff';x.beginPath();x.moveTo(0,-7);x.lineTo(5,5);x.lineTo(-5,5);x.closePath();x.fill();x.restore();
+ x.fillStyle='#ff6b6b';x.font='bold 11px sans-serif';x.textAlign='center';x.fillText('ش',W/2,12)}
+function drawCompass(){
+ const c=$('compass'),x=c.getContext('2d');const W=c.width,Hh=c.height;x.clearRect(0,0,W,Hh);const hd=((-player.yaw*180/Math.PI)%360+360)%360;const b=player.body;
+ x.font='bold 13px sans-serif';x.textAlign='center';
+ [[0,'ش'],[90,'خ'],[180,'ج'],[270,'غ'],[45,'·'],[135,'·'],[225,'·'],[315,'·']].forEach(([deg,l])=>{let d=((deg-hd+180)%360+360)%360-180;if(Math.abs(d)>70)return;x.fillStyle=l==='ش'?'#ff6b6b':'#fff';x.fillText(l,W/2+d/70*(W/2-10),20)});
+ const mark=(wx,wz,col)=>{const ang=Math.atan2(wx-b.position.x,-(wz-b.position.z))*180/Math.PI;let d=((ang-hd+180)%360+360)%360-180;if(Math.abs(d)>70)return;const px=W/2+d/70*(W/2-10);x.fillStyle=col;x.beginPath();x.moveTo(px,3);x.lineTo(px-4,-3+8);x.lineTo(px+4,5);x.closePath();x.fill()};
+ mark(CAP.x,CAP.z,'#ffffff');const nxt=obelisks.find(o=>o.order===P.activated.length&&P.discOb.includes(o.id)&&!o.hidden);if(nxt)mark(nxt.x,nxt.z,'#33ffaa');if(portal.visible)mark(portal.position.x,portal.position.z,'#33ffee');
+ x.fillStyle='#ffd84d';x.fillRect(W/2-1,0,2,Hh)}
+function drawMap(){
+ const c=$('mapC');const size=Math.min(560,innerWidth-40);c.width=c.height=size;const x=c.getContext('2d');const s=size/WORLD;const b=player.body;
+ x.drawImage(thumb,0,0,size,size);x.fillStyle='rgba(0,0,0,0.88)';
+ for(let j=0;j<EXG;j++)for(let i=0;i<EXG;i++){if(!P.explored[j*EXG+i])x.fillRect(i*EXC*s,j*EXC*s,EXC*s+0.6,EXC*s+0.6)}
+ const px=w=>(w+HALF)*s,pz=w=>(w+HALF)*s;const dot=(wx,wz,col,r,label)=>{x.fillStyle=col;x.beginPath();x.arc(px(wx),pz(wz),r,0,TAU);x.fill();if(label){x.fillStyle='#fff';x.font='11px sans-serif';x.textAlign='center';x.fillText(label,px(wx),pz(wz)-r-3)}};
+ caves.forEach(cv=>{if(P.discCave.includes(cv.id))dot(cv.x,cv.z,'#4a8aff',4,'غار')});
+ obelisks.forEach(o=>{if(P.discOb.includes(o.id)&&!o.hidden)dot(o.x,o.z,o.activated?'#33ffaa':'#c46bff',5,OB_NAMES[o.id]+(isDecoded(o)?' ('+ORD[o.order]+')':''))});
+ S.meteor.sites.forEach(m=>dot(m.x,m.z,'#ff2a2a',5,'☄'));S.meteor.zones.forEach(z=>{x.fillStyle='rgba(255,40,40,0.35)';x.beginPath();x.arc(px(z.x),pz(z.z),z.r*s,0,TAU);x.fill()});
+ S.fires.forEach(f=>dot(f.x,f.z,'#ff8a2a',3));dot(CAP.x,CAP.z,'#fff',5,'کپسول');if(portal.visible)dot(portal.position.x,portal.position.z,'#33ffee',6,'پورتال');
+ x.save();x.translate(px(b.position.x),pz(b.position.z));x.rotate(Math.PI-player.facing);x.fillStyle='#ffd84d';x.beginPath();x.moveTo(0,-8);x.lineTo(6,6);x.lineTo(-6,6);x.closePath();x.fill();x.restore();
+ const d=decodedSymbols();
+ $('obList').innerHTML=obelisks.map(o=>{const disc=P.discOb.includes(o.id);const code=o.code.map(sy=>d.includes(sy)?GLYPHS[sy]:'?').join('');const st=o.activated?'<span style="color:#8dff9a">فعال ✓</span>':isDecoded(o)?`<span style="color:#ffd27a">${o.id===6?'دروازه':ORD[o.order]+' کلید'}</span>`:'<span style="color:#f9b">رمزگشایی نشده</span>';
+  return `<div class="obrow"><span>${disc?'📍':'❔'} ${OB_NAMES[o.id]}</span><span class="glyph">${code}</span>${st}</div>`}).join('')+`<div style="font-size:12px;color:#9fe;margin-top:4px">نمادهای رمزگشایی‌شده: <span class="glyph">${d.map(sy=>GLYPHS[sy]).join('')||'—'}</span> (هر ۳ قطعه = ۱ نماد) — کلید بعدی: ${ORD[P.activated.length]||'—'}</div>`;
+ $('evoLog').innerHTML=(P.log.length?P.log.slice(-10).reverse():['هنوز رویدادی ثبت نشده است.']).map(l=>`<li>• ${l}</li>`).join('')+`<li style="color:#f9b">نورخوار: ${P.evolved.light?'تکامل‌یافته (زره‌دار، کمین)':'عادی'} | پژواک‌ساز: ${P.evolved.echo?'تکامل‌یافته (زره‌دار، کمین)':'عادی'}</li>`;
+ const ns=Math.max(0,S.storm.next-S.t),nm=Math.max(0,S.meteor.next-S.t);
+ $('mapStatus').innerHTML=`Seed سیاره: <b>${P.seed}</b><br>حلقه: ${fa(P.loops)} | ناهنجاری: ${S.anomaly?S.anomaly.n:'ندارد'}<br>طوفان یونی بعدی: ${fa(Math.floor(ns/60))}:${String(Math.floor(ns%60)).padStart(2,'0')} | شهاب‌سنگ بعدی: ${fa(Math.floor(nm/60))}:${String(Math.floor(nm%60)).padStart(2,'0')}<br>سطح بدنه: ${fa(P.suit)}/۵ | آیتم‌های ساخته‌شده: ${fa(Object.keys(P.crafted).length)}/۲۰<br>کشتار این حلقه — نورخوار ${fa(S.kills.light)} / پژواک‌ساز ${fa(S.kills.echo)} / شن‌خز ${fa(S.kills.prey)}`}
+function togglePanel(which){const el=$(which);const wasOpen=!el.classList.contains('hidden');closePanels();if(!wasOpen){el.classList.remove('hidden');paused=true;if(which==='craft')renderCraft();else drawMap();if(document.exitPointerLock)document.exitPointerLock()}}
+function closePanels(){['craft','map'].forEach(id=>$(id).classList.add('hidden'));paused=!$('endScreen').classList.contains('hidden')}
+function showEnd(title,text,cb){paused=true;$('endTitle').textContent=title;$('endText').textContent=text;$('endScreen').classList.remove('hidden');if(document.exitPointerLock)document.exitPointerLock();$('btnEnd').onclick=()=>{$('endScreen').classList.add('hidden');paused=false;cb&&cb()}}
+$('closeCraft').onclick=()=>togglePanel('craft');$('closeMap').onclick=()=>togglePanel('map');
+$('btnReset').onclick=()=>{if(confirm('ذخیره پاک شود و سیاره‌ی جدیدی ساخته شود؟')){localStorage.removeItem(SAVE_KEY);location.reload()}};
+function toggleLight(){S.light=!S.light;msg(S.light?'🔦 چراغ قوه روشن (نورخواران را جذب می‌کند!)':'🔦 چراغ قوه خاموش','info',2);sfx('click')}
+
+/* =====================================================================
+   بخش ۱۹: ورودی — کیبورد/ماوس (دسکتاپ)، لمس/ژیروسکوپ (موبایل)
+   ===================================================================== */
+const keys={};const cv=$('c');
+addEventListener('keydown',e=>{if(!S)return;if(e.code==='Tab'){e.preventDefault();togglePanel('craft');return}if(e.code==='KeyM'){togglePanel('map');return}if(e.code==='Escape'){closePanels();return}
+ if(paused)return;keys[e.code]=true;
+ switch(e.code){case 'Space':inp.jump=true;e.preventDefault();break;case 'KeyE':interact();break;case 'KeyL':toggleLight();break;case 'KeyF':lightFire();break;
+  case 'Digit1':case 'Digit2':case 'Digit3':case 'Digit4':case 'Digit5':case 'Digit6':useTool(+e.code.slice(5)-1);break}});
+addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
+function pollKeys(){if(IS_MOBILE)return;inp.f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);inp.r=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);inp.run=!!(keys.ShiftLeft||keys.ShiftRight);inp.sneak=!!(keys.ControlLeft||keys.ControlRight||keys.KeyC)}
+cv.addEventListener('click',()=>{if(IS_MOBILE||paused||!S)return;if(document.pointerLockElement!==cv){cv.requestPointerLock();return}attack()});
+addEventListener('mousemove',e=>{if(document.pointerLockElement===cv&&!paused){player.yaw-=e.movementX*0.0025;player.pitch=clamp(player.pitch+e.movementY*0.0025,-0.5,1.25)}});
+addEventListener('wheel',e=>{player.dist=clamp(player.dist+Math.sign(e.deltaY)*0.6,2.5,12)},{passive:true});
+// ---- لمس: جوی‌استیک شناور چپ، چرخش دوربین راست، پینچ برای زوم ----
+let joyId=null,joyO=null,lookId=null,lookLast=null,pinchD=null;
+const jl=$('joyL'),jr=$('joyR');
+function setJoy(el,x,y){el.style.left=x+'px';el.style.top=y+'px';el.style.display='block'}
+cv.addEventListener('touchstart',e=>{e.preventDefault();if(!S)return;for(const t of e.changedTouches){if(t.clientX<innerWidth/2&&joyId===null){joyId=t.identifier;joyO={x:t.clientX,y:t.clientY};setJoy(jl,t.clientX,t.clientY)}else if(lookId===null){lookId=t.identifier;lookLast={x:t.clientX,y:t.clientY};setJoy(jr,t.clientX,t.clientY)}}
+ if(e.touches.length===2)pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===joyId){let dx=t.clientX-joyO.x,dy=t.clientY-joyO.y;const d=Math.hypot(dx,dy);if(d>50){dx*=50/d;dy*=50/d}inp.jx=dx/50;inp.jy=-dy/50;jl.firstElementChild.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`}
+  else if(t.identifier===lookId){if(!pinchD||e.touches.length<2){player.yaw-=(t.clientX-lookLast.x)*0.006;player.pitch=clamp(player.pitch+(t.clientY-lookLast.y)*0.006,-0.5,1.25)}lookLast={x:t.clientX,y:t.clientY};jr.firstElementChild.style.transform=`translate(calc(-50% + ${clamp(t.clientX-parseFloat(jr.style.left),-40,40)}px),calc(-50% + ${clamp(t.clientY-parseFloat(jr.style.top),-40,40)}px))`}}
+ if(e.touches.length===2&&pinchD){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);player.dist=clamp(player.dist-(d-pinchD)*0.03,2.5,12);pinchD=d}},{passive:false});
+const endTouch=e=>{for(const t of e.changedTouches){if(t.identifier===joyId){joyId=null;inp.jx=inp.jy=0;jl.style.display='none';jl.firstElementChild.style.transform='translate(-50%,-50%)'}if(t.identifier===lookId){lookId=null;jr.style.display='none';jr.firstElementChild.style.transform='translate(-50%,-50%)'}}if(e.touches.length<2)pinchD=null};
+cv.addEventListener('touchend',endTouch);cv.addEventListener('touchcancel',endTouch);
+// دکمه‌های لمسی
+const onTap=(id,fn)=>{const el=$(id);el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();if(S&&!paused)fn()},{passive:false});el.addEventListener('click',e=>{if(!('ontouchstart' in window)&&S)fn()})};
+onTap('mbAct',attack);onTap('mbInt',interact);onTap('mbJump',()=>{inp.jump=true});
+let mobMode=0;onTap('mbRun',()=>{mobMode=(mobMode+1)%3;inp.run=mobMode===1;inp.sneak=mobMode===2;const b=$('mbRun');b.textContent=['دویدن','🏃 می‌دود','🤫 آرام'][mobMode];b.classList.toggle('on',mobMode>0)});
+onTap('mbLight',()=>{toggleLight();$('mbLight').classList.toggle('on',S.light)});onTap('mbFire',lightFire);
+$('mbMap').addEventListener('touchstart',e=>{e.preventDefault();togglePanel('map')},{passive:false});$('mbCraft').addEventListener('touchstart',e=>{e.preventDefault();togglePanel('craft')},{passive:false});
+$('mbMap').addEventListener('click',()=>{if(!('ontouchstart' in window))togglePanel('map')});$('mbCraft').addEventListener('click',()=>{if(!('ontouchstart' in window))togglePanel('craft')});
+// ژیروسکوپ
+let gyroLast=null;
+async function enableGyro(){try{if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')return}addEventListener('deviceorientation',e=>{if(e.alpha==null||paused)return;if(gyroLast){let da=e.alpha-gyroLast.a;if(da>180)da-=360;if(da<-180)da+=360;const db=e.beta-gyroLast.b;if(Math.abs(da)<20&&Math.abs(db)<20){player.yaw+=da*Math.PI/180;player.pitch=clamp(player.pitch-db*Math.PI/180*0.5,-0.5,1.25)}}gyroLast={a:e.alpha,b:e.beta}});msg('ژیروسکوپ فعال شد','info')}catch(e){}}
+
+/* =====================================================================
+   بخش ۲۰: صدا (WebAudio رویه‌ای — بدون فایل خارجی)
+   ===================================================================== */
+let AC=null,master=null;
+function initAudio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=0.35;master.connect(AC.destination);
+ const drone=AC.createOscillator();drone.type='sawtooth';drone.frequency.value=48;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=180;const dg=AC.createGain();dg.gain.value=0.07;
+ const lfo=AC.createOscillator();lfo.frequency.value=0.07;const lg=AC.createGain();lg.gain.value=60;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();drone.connect(lp);lp.connect(dg);dg.connect(master);drone.start();
+ const pad=AC.createOscillator();pad.type='sine';pad.frequency.value=196;const pg=AC.createGain();pg.gain.value=0.025;pad.connect(pg);pg.connect(master);pad.start()}catch(e){}}
+function tone(f,dur,type='sine',g=0.25,slide=0,delay=0){if(!AC)return;const t0=AC.currentTime+delay;const o=AC.createOscillator(),gn=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t0);if(slide)o.frequency.linearRampToValueAtTime(Math.max(20,f+slide),t0+dur);gn.gain.setValueAtTime(g,t0);gn.gain.exponentialRampToValueAtTime(0.001,t0+dur);o.connect(gn);gn.connect(master);o.start(t0);o.stop(t0+dur+0.02)}
+function noiseBurst(dur,g=0.4,lpf=800){if(!AC)return;const b=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=lpf;const gn=AC.createGain();gn.gain.value=g;s.connect(f);f.connect(gn);gn.connect(master);s.start()}
+function sfx(n){if(!AC)return;switch(n){
+ case 'pick':tone(880,0.08,'square',0.12);tone(1320,0.12,'square',0.1,0,0.07);break;case 'click':tone(600,0.05,'square',0.1);break;
+ case 'jump':tone(300,0.18,'sine',0.18,220);break;case 'jet':noiseBurst(0.3,0.25,1500);tone(200,0.3,'sawtooth',0.1,300);break;
+ case 'swing':noiseBurst(0.08,0.15,2500);break;case 'hit':tone(180,0.1,'square',0.2,-80);break;case 'kill':tone(160,0.3,'sawtooth',0.2,-120);noiseBurst(0.2,0.2,600);break;
+ case 'hurt':tone(120,0.25,'sawtooth',0.3,-60);break;case 'death':tone(200,1.2,'sawtooth',0.3,-180);noiseBurst(1,0.3,400);break;
+ case 'alarm':[0,0.25,0.5].forEach(d=>{tone(720,0.2,'square',0.15,0,d);tone(540,0.2,'square',0.15,0,d+0.12)});break;
+ case 'storm':noiseBurst(1.5,0.35,1200);break;case 'impact':noiseBurst(1.2,0.6,300);tone(60,1,'sine',0.5,-40);break;
+ case 'lightning':noiseBurst(0.5,0.7,4000);tone(90,0.6,'sawtooth',0.3,-60);break;case 'roar':tone(90,0.6,'sawtooth',0.35,60);noiseBurst(0.5,0.3,500);break;
+ case 'decode':[523,659,784,1046].forEach((f,i)=>tone(f,0.25,'triangle',0.15,0,i*0.09));break;case 'craft':tone(440,0.1,'triangle',0.15);tone(660,0.15,'triangle',0.15,0,0.1);break;
+ case 'activate':[261,329,392,523,659].forEach((f,i)=>tone(f,0.5,'sine',0.18,0,i*0.12));noiseBurst(1,0.15,2000);break;case 'fire':noiseBurst(0.4,0.2,900);break;
+ case 'loop':tone(880,1.2,'sine',0.2,-700);tone(440,1.2,'triangle',0.15,-300,0.1);break;case 'win':[261,329,392,523,659,784,1046].forEach((f,i)=>tone(f,0.8,'sine',0.2,0,i*0.15));break}}
+
+/* =====================================================================
+   بخش ۲۱: ذرات، حلقه‌ی اصلی بازی، شروع
+   ===================================================================== */
+function updateParticles(dt){
+ const b=player.body;pollen.position.set(b.position.x,b.position.y,b.position.z);const pp=polGeo.attributes.position.array;const tt=performance.now()*0.001;
+ for(let i=0;i<POLLEN;i++){const v=polVel[i];pp[i*3]+=(v.x+Math.sin(tt+v.p)*0.2)*dt;pp[i*3+1]+=(v.y+Math.cos(tt*0.7+v.p)*0.15)*dt;pp[i*3+2]+=v.z*dt;
+  if(pp[i*3]>40)pp[i*3]=-40;if(pp[i*3]<-40)pp[i*3]=40;if(pp[i*3+2]>40)pp[i*3+2]=-40;if(pp[i*3+2]<-40)pp[i*3+2]=40;if(pp[i*3+1]>25)pp[i*3+1]=-3;if(pp[i*3+1]<-5)pp[i*3+1]=25}
+ polGeo.attributes.position.needsUpdate=true;
+ if(rain.visible){rain.position.set(b.position.x,b.position.y,b.position.z);const rp=rainGeo.attributes.position.array;for(let i=0;i<RAIN;i++){rp[i*3+1]-=35*dt;if(rp[i*3+1]<-5)rp[i*3+1]=40}rainGeo.attributes.position.needsUpdate=true}}
+let last=performance.now(),hudT=0,exploreT=0,saveT=0;
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(0.05,(now-last)/1000);last=now;
+ if(!S||!player.body){renderer.render(scene,camera);return}
+ if(!paused){
+  S.t+=dt;if(S.t>=LOOP_LEN){banner('⏳ پایان حلقه — زمان به عقب بازگشت',5);resetLoop('time');return}
+  pollKeys();world.step(1/60,dt,3);updatePlayer(dt);
+  S.harvestCd-=dt;S.attackCd-=dt;S.dmgFlash=Math.max(0,S.dmgFlash-dt*1.5);
+  findInteractables();updateSurvival(dt);updateWeather(dt);updateFires(dt);
+  const ctx={isNight:isNight(),anomaly:S.anomaly?S.anomaly.id:null,lightOn:S.light&&electronicsOK(),mode:player.mode,threat:false};
+  for(const c of creatures)c.update(dt,ctx);
+  if(ctx.threat)msg('⚠ موجود درنده در تعقیب شماست!','warn',2);
+  updateParticles(dt);
+  hudT+=dt;if(hudT>0.1){hudT=0;updateHUD();drawMinimap();drawCompass()}
+  exploreT+=dt;if(exploreT>0.5){exploreT=0;updateExploration()}
+  saveT+=dt;if(saveT>30){saveT=0;saveP()}
+  updateSkyLighting(now/1000);portalDisc.material.uniforms.t.value=now/1000;portal.rotation.y+=dt*0.4;
+  obelisks.forEach(o=>{o.holo.position.y=17+Math.sin(now*0.002)*0.3;o.runes.rotation.y+=dt*0.4});
+  if(S.decoyUntil>S.t&&S.decoyPos){/* چراغ فریب فعال */}}
+ updateCamera(dt);composer.render()}
+function startGame(cont){
+ P=cont?loadP():null;if(!P)P=newP();initAudio();
+ $('btnNew').textContent='در حال ساخت سیاره…';$('btnNew').disabled=true;$('btnContinue').disabled=true;
+ setTimeout(()=>{generateWorld();buildPlayer();initLoopState(true);
+  $('start').classList.add('hidden');$('hud').classList.remove('hidden');if(IS_MOBILE)$('mobile').classList.remove('hidden');
+  if($('chkGyro').checked)enableGyro();paused=false;
+  msg(`سیاره‌ی وِلوریس — Seed ${P.seed}. کپسول شما اکسیژن را شارژ می‌کند (تا ۱۰۰ متر).`,'info',8);
+  if(P.won)msg('شما قبلاً از حلقه رها شده‌اید — می‌توانید به کاوش ادامه دهید.','gold',6)},60)}
+const saved=loadP();if(!saved)$('btnContinue').classList.add('hidden');else $('btnContinue').textContent=`ادامه‌ی حلقه‌ی ${fa(saved.loops)} (Seed ${saved.seed})`;
+$('btnNew').onclick=()=>{localStorage.removeItem(SAVE_KEY);startGame(false)};$('btnContinue').onclick=()=>startGame(true);
+if(!IS_MOBILE){$('chkGyro').parentElement.style.display='none'}else{$('startNote').textContent='موبایل: نیمه‌ی چپ صفحه = جوی‌استیک حرکت، نیمه‌ی راست = چرخش دوربین، پینچ = زوم. دکمه‌ی «دویدن» با هر ضربه بین دویدن/آرام/عادی تغییر می‌کند.'}
+$('startNote').textContent+=' (به‌جای Ctrl می‌توانید از C برای راه‌رفتن آرام استفاده کنید.)';
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

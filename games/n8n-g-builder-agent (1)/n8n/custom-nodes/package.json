@@ -1,0 +1,28 @@
+{
+  "name": "n8n-nodes-automation-builder",
+  "version": "1.0.0",
+  "description": "Custom nodes for the Automation Builder Agent",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/nodes/Bale/BaleApi.credentials.js",
+      "dist/nodes/WorkflowBuilder/N8nApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Bale/Bale.node.js",
+      "dist/nodes/WorkflowBuilder/WorkflowBuilder.node.js"
+    ]
+  },
+  "dependencies": {
+    "n8n-workflow": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

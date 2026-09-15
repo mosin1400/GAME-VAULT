@@ -1,0 +1,3 @@
+#gv-theia-theme-toggle{position:fixed;z-index:100000;right:14px;left:auto;bottom:14px;width:34px;height:34px;border:1px solid #49617d;border-radius:9px;background:#182433;color:#e8f4ff;box-shadow:0 8px 22px #0005;font:17px/1 system-ui;cursor:pointer}
+#gv-theia-theme-toggle:hover{border-color:#6ae4ff;background:#243b55}
+html[data-gv-theme="light"] #gv-theia-theme-toggle{background:#fff;color:#1d3654;border-color:#9fb6d2}

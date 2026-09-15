@@ -1,0 +1,45 @@
+{
+  "name": "n8n-nodes-bale",
+  "version": "1.0.0",
+  "description": "Custom n8n nodes: Bale Messenger (Trigger + Actions) and Workflow Builder Tool for the Automation Builder Agent",
+  "keywords": [
+    "n8n-community-node-package",
+    "bale",
+    "workflow-builder",
+    "codex",
+    "agent"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && node scripts/copy-assets.js",
+    "dev": "tsc --watch",
+    "lint": "eslint nodes credentials --ext .ts",
+    "test": "node --test test/*.test.js",
+    "n8n-node-dev": "n8n-node-dev build --destination ~/.n8n/custom"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/BaleApi.credentials.js",
+      "dist/credentials/N8nBuilderApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Bale/Bale.node.js",
+      "dist/nodes/Bale/BaleTrigger.node.js",
+      "dist/nodes/WorkflowBuilder/WorkflowBuilder.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "n8n-node-dev": "^1.0.0",
+    "n8n-workflow": "^2.16.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

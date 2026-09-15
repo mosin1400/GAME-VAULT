@@ -1,0 +1,142 @@
+# ============================================================================
+# FlowForge – Docker Compose (اجرای کامل لوکال، بدون وابستگی به ابر)
+# سرویس‌ها: PostgreSQL، Redis، MinIO (S3)، Mosquitto (MQTT)، Main، Workerها
+# اجرا:  ./setup.sh   یا   docker compose up -d --build
+# Queue Mode: docker compose --profile queue up -d --scale worker=3
+# Multi-Main:  docker compose --profile ha up -d
+# ============================================================================
+name: flowforge
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/flowforge
+  REDIS_URL: redis://redis:6379
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-please-32-chars-minimum!!}
+  FILES_DIR: /files
+  ALLOW_SHELL_NODES: ${ALLOW_SHELL_NODES:-true}
+  NODE_FUNCTION_ALLOW_EXTERNAL: ${NODE_FUNCTION_ALLOW_EXTERNAL:-lodash,dayjs,axios}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+  OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+  CODEX_ACCESS_TOKEN: ${CODEX_ACCESS_TOKEN:-}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-flowforge}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-flowforge123}
+  MQTT_URL: mqtt://mosquitto:1883
+  TZ: Asia/Tehran
+
+services:
+  # ------------------------------ Database --------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flowforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ------------------------------- Cache/Queue ----------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redisdata:/data"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  # ------------------------------ Object Storage --------------------------
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-flowforge}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-flowforge123}
+    volumes: ["miniodata:/data"]
+    ports: ["9000:9000", "9001:9001"]
+
+  # ------------------------------ MQTT Broker -----------------------------
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    command: sh -c "printf 'listener 1883\nallow_anonymous true\nlistener 9002\nprotocol websockets\n' > /mosquitto/config/mosquitto.conf && mosquitto -c /mosquitto/config/mosquitto.conf"
+    ports: ["1883:1883", "9002:9002"]
+
+  # ------------------------------ Main (UI + API + Scheduler) -------------
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      <<: *app-env
+      EXECUTIONS_MODE: ${EXECUTIONS_MODE:-regular}
+      WORKER_COUNT: ${WORKER_COUNT:-2}
+      MULTI_MAIN: ${MULTI_MAIN:-false}
+      NEXT_PUBLIC_BASE_URL: ${BASE_URL:-http://localhost:3000}
+    ports: ["3000:3000"]
+    volumes:
+      - ./files:/files
+      - ./custom-nodes:/app/custom-nodes:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      retries: 10
+
+  # ------------------------------ Workers (Queue Mode) --------------------
+  worker:
+    build: .
+    profiles: ["queue"]
+    restart: unless-stopped
+    command: ["node", "scripts/worker.mjs"]
+    depends_on: [app, redis]
+    environment:
+      <<: *app-env
+      EXECUTIONS_MODE: queue
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-20}
+      MAIN_URL: http://app:3000
+      DISABLE_SCHEDULER: "true"
+    volumes: ["./files:/files"]
+    deploy:
+      replicas: 2
+
+  # ------------------------------ Second Main (HA) ------------------------
+  app-2:
+    build: .
+    profiles: ["ha"]
+    restart: unless-stopped
+    depends_on: [postgres, redis]
+    environment:
+      <<: *app-env
+      MULTI_MAIN: "true"
+      DISABLE_SCHEDULER: "true"   # فقط لیدر زمان‌بند را اجرا می‌کند
+    ports: ["3001:3000"]
+    volumes: ["./files:/files"]
+
+  # ------------------------------ Reverse Proxy (HA) ----------------------
+  proxy:
+    image: nginx:alpine
+    profiles: ["ha"]
+    depends_on: [app, app-2]
+    command: sh -c "printf 'events{}\nhttp{ upstream ff { server app:3000; server app-2:3000; } server { listen 80; location / { proxy_pass http://ff; proxy_set_header Host $$host; proxy_http_version 1.1; proxy_set_header Upgrade $$http_upgrade; proxy_set_header Connection \"upgrade\"; } } }' > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    ports: ["8080:80"]
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

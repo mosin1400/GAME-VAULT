@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ملکه‌ی مرداب — شبیه‌ساز کلونی مورچگان</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+<style>
+  /* ===================== استایل کلی ===================== */
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#06131a;font-family:"Vazirmatn","Segoe UI",Tahoma,Arial,sans-serif;color:#d7f2ea;user-select:none;-webkit-user-select:none;touch-action:none}
+  #c{position:fixed;inset:0;display:block;touch-action:none}
+  .hud{position:fixed;z-index:10;pointer-events:none}
+  .hud *{pointer-events:auto}
+  .glass{background:rgba(5,24,30,.78);border:1px solid rgba(92,214,186,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .bar{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+  .bar>i{display:block;height:100%;border-radius:4px;transition:width .35s}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:8px 14px;border-radius:12px;border:1px solid rgba(124,245,211,.35);background:rgba(20,60,66,.85);color:#e6fff7;font-weight:700;font-size:14px;cursor:pointer;transition:transform .12s,background .15s}
+  .btn:hover{background:rgba(40,110,110,.9)} .btn:active{transform:scale(.95)}
+  .btn.sm{min-height:34px;padding:4px 10px;font-size:12px;border-radius:9px}
+  .btn.warn{border-color:#ff9f2a;color:#ffc46b} .btn.danger{border-color:#ff4d4d;color:#ff8a8a} .btn.good{border-color:#5cf29a;color:#9dffc4} .btn.purple{border-color:#b26cff;color:#d9b8ff}
+  .btn.on{background:rgba(124,245,211,.28);border-color:#7cf5d3}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  #tl{top:10px;left:10px;padding:10px 14px;min-width:250px;font-size:13px}
+  #tl .res{display:flex;align-items:center;gap:8px;margin-top:6px}
+  #tl .res b{width:70px;font-weight:600;font-size:12px;opacity:.9}
+  #tl .res .bar{flex:1}
+  #tl .res span{width:64px;text-align:left;font-size:11px;direction:ltr;opacity:.85}
+  #tr{top:10px;right:10px;padding:10px 14px;min-width:220px;font-size:13px;direction:rtl}
+  #tr #season.warn,.warn{color:#ffb14a} #tr #season.danger,.danger{color:#ff5d5d}
+  #alerts div{margin-top:4px;font-weight:700;font-size:12px;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  #layerlbl{margin-top:6px;font-size:11px;color:#b26cff}
+  #msg{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;text-align:center;width:min(92vw,560px)}
+  .msg{font-weight:800;font-size:17px;padding:8px 18px;border-radius:12px;margin:0 auto 6px;animation:msgIn .4s ease-out;background:rgba(6,28,34,.9);border:1px solid rgba(120,220,200,.35);color:#c9fff0;display:inline-block;max-width:100%;transition:opacity .4s}
+  .msg.good{color:#8dffc0;border-color:#4cd78a} .msg.warn{color:#ffb14a;border-color:#ff9f2a} .msg.danger{color:#ff6a6a;border-color:#ff3b3b;animation:msgIn .4s ease-out,shake .5s} .msg.out{opacity:0}
+  @keyframes msgIn{from{transform:translateY(-20px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  #redflash{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(255,0,0,.6));opacity:0;pointer-events:none;z-index:25;transition:opacity .35s}
+  #selbox{position:fixed;border:1px solid #7cf5d3;background:rgba(124,245,211,.12);display:none;z-index:15;pointer-events:none}
+  #mmwrap{bottom:12px;left:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  #minimap{width:160px;height:160px;border-radius:50%;border:2px solid rgba(124,245,211,.45);background:#05141a;box-shadow:0 0 20px rgba(0,0,0,.5);cursor:crosshair}
+  #joy{width:110px;height:110px;border-radius:50%;background:rgba(10,40,45,.55);border:1px solid rgba(124,245,211,.35);position:relative;display:none}
+  #joy.on{display:block}
+  #joyknob{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(124,245,211,.5);left:33px;top:33px}
+  #br{bottom:12px;right:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  #br .row{display:flex;gap:8px}
+  #br .btn{font-size:20px;width:52px;height:52px;padding:0}
+  #selbar{bottom:12px;left:50%;transform:translateX(-50%);padding:8px 12px;display:none;max-width:min(92vw,720px);flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;font-size:13px}
+  #selbar.show{display:flex}
+  #mbar{bottom:12px;left:50%;transform:translateX(-50%);display:none;gap:8px;padding:8px}
+  #mbar .btn{width:54px;height:54px;font-size:22px;padding:0;flex-direction:column;gap:0}
+  #mbar .btn small{font-size:9px;font-weight:600}
+  body.mobile #mbar{display:flex} body.mobile #br{display:none} body.mobile #selbar{bottom:84px} body.mobile #tl{min-width:200px;font-size:11px;padding:8px 10px} body.mobile #tr{min-width:170px;font-size:11px;padding:8px 10px} body.mobile #minimap{width:120px;height:120px} body.mobile #mmwrap{bottom:84px} body.mobile #joy{width:96px;height:96px} body.mobile #joyknob{left:26px;top:26px}
+  #panel{position:fixed;top:0;bottom:0;right:0;width:min(460px,100%);z-index:40;transform:translateX(105%);transition:transform .25s;display:flex;flex-direction:column;border-radius:0;border-left:1px solid rgba(92,214,186,.28)}
+  #panel.open{transform:none}
+  #panel-head{display:flex;align-items:center;gap:6px;padding:10px;border-bottom:1px solid rgba(124,245,211,.2);flex-wrap:wrap}
+  #panel-head .tab{flex:1;min-width:60px;min-height:40px;padding:6px 4px;font-size:12px;border-radius:10px;border:1px solid transparent;background:transparent;color:#9fd8c8;cursor:pointer;font-weight:700}
+  #panel-head .tab.on{background:rgba(124,245,211,.18);border-color:rgba(124,245,211,.4);color:#fff}
+  #panel-close{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,100,100,.4);background:transparent;color:#ff8a8a;font-size:18px;cursor:pointer}
+  #panel-body{flex:1;overflow-y:auto;padding:12px;font-size:13px;line-height:1.7}
+  .card{background:rgba(255,255,255,.04);border:1px solid rgba(124,245,211,.15);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .card h4{font-size:14px;margin-bottom:4px;color:#aef7e2}
+  .card .cost{font-size:11px;opacity:.85}
+  .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .node{border-radius:10px;padding:6px 8px;font-size:11px;border:1px solid rgba(255,255,255,.12);margin-bottom:6px;background:rgba(0,0,0,.25)}
+  .node.on{border-color:#5cf29a;background:rgba(92,242,154,.12)} .node.next{border-color:#ffc46b;background:rgba(255,196,107,.1)} .node.lost{border-color:#ff5d5d;background:rgba(255,93,93,.12);text-decoration:line-through}
+  .node b{display:block;font-size:12px}
+  input[type=range]{width:100%;accent-color:#7cf5d3}
+  select{background:#0b2a30;color:#e6fff7;border:1px solid rgba(124,245,211,.35);border-radius:8px;padding:6px;font-family:inherit;min-height:36px}
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+  .rep{height:10px;border-radius:5px;background:linear-gradient(90deg,#ff4d4d,#ffc46b 50%,#5cf29a);position:relative;margin:6px 0}
+  .rep i{position:absolute;top:-4px;width:4px;height:18px;background:#fff;border-radius:2px;margin-right:-2px}
+  #overlay,#over{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(8,40,44,.92),rgba(3,12,16,.97))}
+  #over{display:none}
+  .modal{max-width:min(92vw,640px);padding:26px 28px;text-align:center}
+  .modal h1{font-size:30px;color:#9dffd6;margin-bottom:6px;text-shadow:0 0 22px rgba(124,245,211,.5)}
+  .modal h2{font-size:16px;color:#ffb14a;margin-bottom:14px;font-weight:600}
+  .modal p{font-size:13px;line-height:1.9;opacity:.9;text-align:right}
+  .modal .btn{margin-top:14px;font-size:16px;padding:12px 30px}
+  #over.win h1{color:#ffd23a}
+  #demand{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;padding:18px 20px;max-width:min(92vw,420px);display:none;text-align:center}
+  #demand .row{justify-content:center;margin-top:10px}
+  #boss{position:fixed;top:64px;left:50%;transform:translateX(-50%);width:min(80vw,520px);z-index:12;display:none;text-align:center;font-size:12px;color:#ff8a8a}
+  #boss .bar{height:12px;border:1px solid rgba(255,80,80,.5)} #boss .bar i{background:linear-gradient(90deg,#8a1030,#ff3355)}
+  .struct-info{font-size:12px}
+  .cd{font-size:10px;opacity:.7}
+  #speedlbl{font-size:12px;min-width:30px;text-align:center}
+  ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:rgba(124,245,211,.3);border-radius:3px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- ===================== HUD: بالا-راست (جمعیت و منابع) ===================== -->
+<div id="tl" class="hud glass">
+  <div id="pop" style="font-weight:700">کارگر: ۰ / سرباز: ۰ / ملکه: ۱</div>
+  <div class="res"><b>🍖 غذا</b><div class="bar"><i id="bar-food" style="background:#7ee08a;width:0%"></i></div><span id="val-food">0</span></div>
+  <div class="res"><b>🪵 چوب</b><div class="bar"><i id="bar-wood" style="background:#c08a4a;width:0%"></i></div><span id="val-wood">0</span></div>
+  <div class="res"><b>🪨 سنگ</b><div class="bar"><i id="bar-stone" style="background:#a9b4bd;width:0%"></i></div><span id="val-stone">0</span></div>
+  <div class="res"><b>🧪 انرژی زیستی</b><div class="bar"><i id="bar-bio" style="background:#ff8c3a;width:0%"></i></div><span id="val-bio">0</span></div>
+  <div id="crys" style="margin-top:6px;font-size:12px;color:#d9b8ff">💎 ۰  🧬 ۰  🏺 ۰/۵</div>
+</div>
+
+<!-- ===================== HUD: بالا-چپ (زمان و آب‌وهوا) ===================== -->
+<div id="tr" class="hud glass">
+  <div id="clock" style="font-weight:700">☀️ روز ۱</div>
+  <div id="season">وضعیت: عادی</div>
+  <div id="alerts"></div>
+  <div id="layerlbl">سطح سیاره</div>
+</div>
+
+<div id="msg"></div>
+<div id="boss"><div>اهریمن کهن</div><div class="bar"><i id="bossbar" style="width:100%"></i></div></div>
+<div id="redflash"></div>
+<div id="selbox"></div>
+
+<!-- ===================== مینی‌مپ و جوی‌استیک ===================== -->
+<div id="mmwrap" class="hud">
+  <canvas id="minimap" width="160" height="160"></canvas>
+  <div id="joy"><div id="joyknob"></div></div>
+</div>
+
+<!-- ===================== دکمه‌های سریع دسکتاپ ===================== -->
+<div id="br" class="hud">
+  <div class="row">
+    <button class="btn" id="pausebtn" title="توقف (Space)">⏸</button>
+    <button class="btn" id="speedbtn" title="سرعت بازی"><span id="speedlbl">×۱</span></button>
+    <button class="btn" id="qb-home" title="مرکز روی لانه (L)">🏠</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="qb-build" title="ساخت (B)">🔨</button>
+    <button class="btn" id="qb-evo" title="تکامل">🧬</button>
+    <button class="btn" id="qb-diplo" title="دیپلماسی">🤝</button>
+    <button class="btn" id="qb-cave" title="کاوش غار">⛏️</button>
+    <button class="btn" id="qb-panel" title="پنل مدیریت (Tab)">☰</button>
+  </div>
+</div>
+
+<!-- ===================== نوار انتخاب / اطلاعات سازه ===================== -->
+<div id="selbar" class="hud glass"></div>
+
+<!-- ===================== نوار موبایل ===================== -->
+<div id="mbar" class="hud glass">
+  <button class="btn" data-m="soldiers">⚔️<small>سربازان</small></button>
+  <button class="btn" data-m="workers">🐜<small>کارگران</small></button>
+  <button class="btn" data-m="build">🔨<small>ساخت</small></button>
+  <button class="btn" data-m="evo">🧬<small>تکامل</small></button>
+  <button class="btn" data-m="diplo">🤝<small>دیپلماسی</small></button>
+  <button class="btn" data-m="mode" id="modebtn">👆<small>انتخاب</small></button>
+  <button class="btn" data-m="panel">☰<small>مدیریت</small></button>
+</div>
+
+<!-- ===================== پنل مدیریت کلونی ===================== -->
+<div id="panel" class="glass">
+  <div id="panel-head">
+    <button class="tab on" data-tab="colony">🐜 کلونی</button>
+    <button class="tab" data-tab="build">🔨 ساخت</button>
+    <button class="tab" data-tab="evo">🧬 تکامل</button>
+    <button class="tab" data-tab="diplo">🤝 دیپلماسی</button>
+    <button class="tab" data-tab="cave">⛏️ غار</button>
+    <button class="tab" data-tab="settings">⚙️</button>
+    <button id="panel-close">✕</button>
+  </div>
+  <div id="panel-body"></div>
+</div>
+
+<!-- ===================== مودال درخواست باج قبیله‌ی سرخ ===================== -->
+<div id="demand" class="glass">
+  <h4 style="color:#ff8a8a;margin-bottom:6px">پیام قبیله‌ی سرخ</h4>
+  <div id="demand-text"></div>
+  <div class="row"><button class="btn good" id="demand-yes">پرداخت</button><button class="btn danger" id="demand-no">رد کردن</button></div>
+  <div class="cd" id="demand-timer"></div>
+</div>
+
+<!-- ===================== صفحه‌ی شروع ===================== -->
+<div id="overlay">
+  <div class="modal glass">
+    <h1>ملکه‌ی مرداب</h1>
+    <h2>شبیه‌ساز کلونی مورچگان در سیاره‌ی جنگلی‌-باتلاقی</h2>
+    <p id="intro">
+      شما ملکه‌اید. کلونی را از چند مورچه به ابرکلونی مسلط بر سیاره برسانید: منابع را مدیریت کنید، لانه بسازید، ژن‌ها را تکامل دهید (با ریسک جهش معکوس!)، با سه قبیله‌ی رقیب دیپلماسی کنید، از عنکبوت‌های شب‌زی و پرندگان غول‌پیکر جان سالم به در ببرید، با باران اسیدی، خشکسالی و آتش‌سوزی مقابله کنید و در نهایت اهریمن کهن را در عمق ۵۰۰ واحدی بیدار کرده و شکست دهید.
+    </p>
+    <p id="controls-desktop" style="margin-top:8px;font-size:12px">
+      <b>دسکتاپ:</b> کلیک چپ = انتخاب (کشیدن = انتخاب گروهی) • کلیک راست = حرکت/حمله/جمع‌آوری • WASD/جهت‌نما = حرکت دوربین • Q/E یا کلیک وسط/Shift+کشیدن = چرخش • اسکرول = زوم • ۱-۴ = گروه‌ها (Ctrl+عدد = ذخیره) • Space = توقف • Tab = پنل • L = لانه • B = ساخت • Esc = لغو
+    </p>
+    <p id="controls-mobile" style="margin-top:8px;font-size:12px">
+      <b>موبایل:</b> کشیدن یک انگشت = حرکت دوربین • پینچ = زوم/چرخش • ضربه = انتخاب • ضربه‌ی طولانی یا حالت «فرمان» = حرکت/حمله • دکمه‌های پایین صفحه برای دسترسی سریع
+    </p>
+    <div id="seedinfo" style="font-size:11px;opacity:.7;margin-top:8px"></div>
+    <button class="btn good" id="startbtn">🐜 شروع بازی</button>
+  </div>
+</div>
+
+<div id="over">
+  <div class="modal glass">
+    <h1 id="over-title"></h1>
+    <p id="over-text" style="text-align:center"></p>
+    <div id="over-stats" style="font-size:12px;opacity:.85;margin-top:8px"></div>
+    <button class="btn" onclick="location.reload()">🔄 بازی دوباره (نقشه‌ی جدید)</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* =====================================================================
+   بخش ۰: تنظیمات، ابزارهای عمومی، تولید تصادفی با Seed
+   ===================================================================== */
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
+if (isMobile) document.body.classList.add('mobile');
+const $ = id => document.getElementById(id);
+const fa = n => Math.round(n).toLocaleString('fa-IR');          // اعداد فارسی
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const dist2D = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+
+// Seed تصادفی در هر بار اجرا؛ ساختار کلی نقشه (رودخانه‌ها/تپه‌ها) ثابت است ولی جزئیات با seed تغییر می‌کند
+const SEED = (Math.random() * 2 ** 31) | 0;
+function mulberry32(seed) { return function () { let t = seed += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const RNG = mulberry32(SEED);
+const rnd = (a = 0, b = 1) => a + (b - a) * RNG();
+
+// نویز مقداری (Value Noise) برای زمین
+class Noise {
+  constructor(seed) { const r = mulberry32(seed); const perm = []; for (let i = 0; i < 256; i++) perm[i] = i; for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; } this.p = new Uint8Array(512); for (let i = 0; i < 512; i++) this.p[i] = perm[i & 255]; }
+  hash(x, y) { return this.p[(this.p[x & 255] + y) & 255] / 255; }
+  get(x, y) { const xi = Math.floor(x), yi = Math.floor(y); const xf = x - xi, yf = y - yi; const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); const a = this.hash(xi, yi), b = this.hash(xi + 1, yi), c = this.hash(xi, yi + 1), d = this.hash(xi + 1, yi + 1); return lerp(lerp(a, b, u), lerp(c, d, u), v); }
+  fbm(x, y, o = 4) { let s = 0, a = 1, f = 1, n = 0; for (let i = 0; i < o; i++) { s += a * this.get(x * f, y * f); n += a; a *= 0.5; f *= 2; } return s / n; }
+}
+
+// ثابت‌های تعادل بازی (برای شخصی‌سازی این‌جا را تغییر دهید)
+const CFG = {
+  WORLD: 2000, HALF: 1000,
+  DAY: 600,                       // طول شبانه‌روز (ثانیه): ۵ دقیقه روز + ۵ دقیقه شب
+  FOOD_PER_ANT: 0.012,            // مصرف غذا هر مورچه در ثانیه
+  EGG_COST: 2,
+  GRID_N: 10, CELL: 12,           // گرید ساخت ۱۰×۱۰
+  NAV_N: 100, NAV_CS: 20,         // شبکه‌ی مسیریابی
+  LAYER_Y: [0, -50, -150, -300, -500], // ارتفاع طبقات زیرزمینی
+  TREES: isMobile ? 260 : 420,
+  RAIN_EVERY: 600, RAIN_START: 240, RAIN_LEN: 60,
+  DROUGHT_EVERY: 900, DROUGHT_START: 600, DROUGHT_LEN: 180,
+  LIGHTNING_EVERY: 1200, LIGHTNING_AT: 900,
+  BIRD_EVERY: 180,
+  EVO_POINT_EVERY: 300,
+  REVERSE_CHANCE: 0.15,
+};
+
+// وضعیت سراسری بازی
+const G = {
+  time: 0, paused: true, speed: 1, day: 0, over: false,
+  scene: null, camera: null, renderer: null, cam: null,
+  world: null, physics: null, nav: null, res: null, colony: null, build: null, evo: null, weather: null, caves: null, eco: null, diplo: null, ui: null, input: null, game: null,
+  units: [], pickables: [], selected: [], groups: [[], [], [], []],
+  mode: 'normal', buildType: null, viewLayer: 0,
+};
+window.G = G; // برای دیباگ در کنسول
+
+const RES_NAMES = { food: 'غذا', wood: 'چوب', stone: 'سنگ', bio: 'انرژی زیستی' };
+const RES_ICON = { food: '🍖', wood: '🪵', stone: '🪨', bio: '🧪' };
+const matCache = {};
+const mat = (c, e = 0x000000) => { const k = c + '_' + e; if (!matCache[k]) matCache[k] = new THREE.MeshLambertMaterial({ color: c, emissive: e }); return matCache[k]; };
+const SHARED = {
+  hitMat: new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0xff4444 }),
+  eggGeo: new THREE.SphereGeometry(1.2, 8, 6), eggMat: new THREE.MeshLambertMaterial({ color: 0xf5f0d8 }),
+  carryGeo: new THREE.SphereGeometry(0.9, 6, 5),
+  carryMats: { food: mat(0x7ee08a), wood: mat(0xc08a4a), stone: mat(0xa9b4bd), bio: mat(0xff8c3a), mcrystal: mat(0xff4dd2, 0x881177), artifact: mat(0xffc94d, 0x775500) },
+  ringGeo: new THREE.RingGeometry(2.2, 2.9, 20).rotateX(-Math.PI / 2),
+  ringMat: new THREE.MeshBasicMaterial({ color: 0x7cf5d3, side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthWrite: false }),
+};
+function makeDotTexture() { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d'); const g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.4, 'rgba(255,255,255,.6)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); const t = new THREE.CanvasTexture(c); return t; }
+
+/* =====================================================================
+   بخش ۱: فیزیک (Cannon-es) — برخورد واحدها با درختان، سازه‌ها و یکدیگر
+   ===================================================================== */
+class Physics {
+  constructor() {
+    this.world = new CANNON.World(); this.world.gravity.set(0, 0, 0);
+    this.world.broadphase = new CANNON.SAPBroadphase(this.world);
+    this.world.allowSleep = false;
+    this.world.defaultContactMaterial.friction = 0; this.world.defaultContactMaterial.restitution = 0;
+  }
+  // مانع ایستای کروی (درخت، ستون، لانه‌ی قبیله)
+  addStaticSphere(x, y, z, r) { const b = new CANNON.Body({ mass: 0, shape: new CANNON.Sphere(r), collisionFilterGroup: 2, collisionFilterMask: 1 }); b.position.set(x, y, z); this.world.addBody(b); return b; }
+  // مانع ایستای جعبه‌ای (دیوار، برج)
+  addStaticBox(x, y, z, w, h, d) { const b = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2)), collisionFilterGroup: 2, collisionFilterMask: 1 }); b.position.set(x, y, z); this.world.addBody(b); return b; }
+  // بدنه‌ی متحرک واحد
+  addUnit(x, y, z, r) { const b = new CANNON.Body({ mass: 1, shape: new CANNON.Sphere(r), linearDamping: 0.4, fixedRotation: true, collisionFilterGroup: 1, collisionFilterMask: 3 }); b.position.set(x, y, z); this.world.addBody(b); return b; }
+  remove(b) { this.world.removeBody(b); }
+  step(dt) { this.world.step(1 / 30, dt, 4); }
+}
+
+/* =====================================================================
+   بخش ۲: جهان — زمین، بیوم‌ها، رودخانه‌های اسیدی، مرداب‌ها، درختان، غارها، نور و ذرات
+   ===================================================================== */
+class World {
+  constructor() {
+    this.noise = new Noise(1337);   // نویز ثابت: ساختار کلی نقشه همیشه یکسان
+    this.surface = new THREE.Group(); G.scene.add(this.surface);
+    this.layers = [this.surface];
+    // مرداب‌های گازدار (کاهش سرعت) و تپه‌های شنی — ثابت
+    this.swamps = [{ x: -450, z: 350, r: 150 }, { x: 300, z: -520, r: 130 }, { x: 620, z: 520, r: 120 }, { x: -650, z: -600, r: 140 }, { x: 60, z: 140, r: 80 }];
+    this.hills = [{ x: 680, z: -150, r: 220 }, { x: -250, z: -760, r: 200 }, { x: -760, z: 640, r: 180 }];
+    this.trees = []; this.caves = []; this.spiderNests = []; this.flashT = 0;
+    this.buildLights(); this.buildTerrain(); this.pickSites(); this.buildTrees(); this.buildCaves(); this.buildUnderground(); this.buildParticles();
+  }
+  // ---- هندسه‌ی رودخانه‌ها (دو رود اسیدی ثابت) ----
+  river1z(x) { return -250 + 300 * Math.sin(x * 0.004); }
+  river2x(z) { return 380 + 240 * Math.cos(z * 0.005 + 1); }
+  riverDist(x, z) { return Math.min(Math.abs(z - this.river1z(x)) * 0.8, Math.abs(x - this.river2x(z)) * 0.85); }
+  inAcid(x, z) { return this.riverDist(x, z) < 32; }
+  swampAt(x, z) { for (const s of this.swamps) { if (Math.hypot(x - s.x, z - s.z) < s.r) return s; } return null; }
+  hillAt(x, z) { let m = 0; for (const h of this.hills) { const d = Math.hypot(x - h.x, z - h.z) / h.r; if (d < 1) m = Math.max(m, 1 - d * d); } return m; }
+  height(x, z) {
+    let h = this.noise.fbm(x * 0.0012 + 5, z * 0.0012 + 5, 4) * 22 + this.noise.get(x * 0.008, z * 0.008) * 3;
+    h += this.hillAt(x, z) * 30;
+    const r = this.riverDist(x, z); if (r < 60) { const t = 1 - r / 60; h -= t * t * 16; }
+    if (this.swampAt(x, z)) h -= 3;
+    return h;
+  }
+  groundY(x, z, layer = 0) { return layer === 0 ? this.height(x, z) : CFG.LAYER_Y[layer]; }
+  isValidGround(x, z) { return Math.abs(x) < CFG.HALF - 20 && Math.abs(z) < CFG.HALF - 20 && !this.inAcid(x, z); }
+  biome(x, z) {
+    const r = this.riverDist(x, z);
+    if (r < 32) return [0.55, 0.9, 0.15];
+    const h = this.hillAt(x, z); const sw = this.swampAt(x, z); let c;
+    if (h > 0.25) c = [0.70, 0.55, 0.32];
+    else if (sw) c = [0.07, 0.22, 0.22];
+    else { const n = this.noise.get(x * 0.01, z * 0.01); c = [0.09 + 0.05 * n, 0.30 + 0.12 * n, 0.24]; }
+    if (r < 60) { const t = (r - 32) / 28; c = [lerp(0.3, c[0], t), lerp(0.4, c[1], t), lerp(0.12, c[2], t)]; }
+    return c;
+  }
+  buildLights() {
+    this.ambient = new THREE.AmbientLight(0x88aabb, 0.3); G.scene.add(this.ambient);
+    this.hemi = new THREE.HemisphereLight(0xaee6d8, 0x14301f, 0.5); G.scene.add(this.hemi);
+    this.sun = new THREE.DirectionalLight(0xfff0d0, 1.5); this.sun.position.set(300, 500, 200);
+    if (!isMobile) { this.sun.castShadow = true; const s = this.sun.shadow; s.mapSize.set(2048, 2048); s.camera.near = 50; s.camera.far = 1600; s.camera.left = -260; s.camera.right = 260; s.camera.top = 260; s.camera.bottom = -260; s.bias = -0.0006; }
+    G.scene.add(this.sun); G.scene.add(this.sun.target);
+    this.moon = new THREE.DirectionalLight(0x7f9fff, 0.25); this.moon.position.set(-300, 400, -200); G.scene.add(this.moon);
+    G.scene.fog = new THREE.FogExp2(0x0b2a2e, 0.0009); G.scene.background = new THREE.Color(0x0b2a2e);
+  }
+  buildTerrain() {
+    const seg = isMobile ? 120 : 170;
+    const geo = new THREE.PlaneGeometry(CFG.WORLD, CFG.WORLD, seg, seg); geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position; const col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), z = pos.getZ(i); const h = this.height(x, z); pos.setY(i, h); const c = this.biome(x, z); const sh = clamp(0.85 + h * 0.008, 0.7, 1.15); col[i * 3] = c[0] * sh; col[i * 3 + 1] = c[1] * sh; col[i * 3 + 2] = c[2] * sh; }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+    this.terrain = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })); this.terrain.receiveShadow = !isMobile; this.terrain.name = 'terrain'; this.surface.add(this.terrain);
+    // درخشش اسیدی روی رودخانه‌ها
+    const parts = [];
+    for (let x = -1000; x <= 1000; x += 24) { const z = this.river1z(x); const p = new THREE.PlaneGeometry(26, 64).rotateX(-Math.PI / 2); p.translate(x, this.height(x, z) + 0.7, z); parts.push(p); }
+    for (let z = -1000; z <= 1000; z += 24) { const x = this.river2x(z); const p = new THREE.PlaneGeometry(64, 26).rotateX(-Math.PI / 2); p.translate(x, this.height(x, z) + 0.7, z); parts.push(p); }
+    this.acid = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshBasicMaterial({ color: 0xb6ff3a, transparent: true, opacity: 0.28, depthWrite: false })); this.surface.add(this.acid);
+    // مرز نقشه
+    const edge = new THREE.Mesh(new THREE.RingGeometry(1000 * 1.414, 1000 * 1.414 + 400, 4, 1).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), new THREE.MeshBasicMaterial({ color: 0x03080c })); edge.position.y = -5; this.surface.add(edge);
+  }
+  // انتخاب مکان لانه‌ها، قبایل، لانه‌های عنکبوت و ورودی غارها (وابسته به seed)
+  pickSites() {
+    const ok = (x, z, minR) => this.riverDist(x, z) > minR && !this.swampAt(x, z) && this.hillAt(x, z) < 0.3;
+    let p, t = 0; do { p = { x: rnd(-220, 220), z: rnd(-220, 220) }; t++; } while (!ok(p.x, p.z, 140) && t < 200);
+    this.nestPos = p;
+    const corners = { red: [-1, -1], blue: [1, -1], green: [1, 1] }; this.tribeSites = {};
+    for (const k in corners) { let q, tries = 0; do { q = { x: corners[k][0] * rnd(600, 820), z: corners[k][1] * rnd(600, 820) }; tries++; } while (!ok(q.x, q.z, 90) && tries < 80); this.tribeSites[k] = q; }
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4 + rnd(-0.35, 0.35); let q, tr = 0; do { const r = rnd(520, 880); q = { x: Math.cos(a) * r, z: Math.sin(a) * r }; tr++; } while ((!ok(q.x, q.z, 60) || Math.abs(q.x) > 950 || Math.abs(q.z) > 950) && tr < 60); this.spiderNests.push(q); }
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + rnd(0, 1.2); let q, tr = 0; do { const r = rnd(330, 650); q = { x: this.nestPos.x + Math.cos(a) * r, z: this.nestPos.z + Math.sin(a) * r }; tr++; } while ((!ok(q.x, q.z, 70) || Math.abs(q.x) > 900 || Math.abs(q.z) > 900) && tr < 60); this.caves.push(q); }
+  }
+  buildTrees() {
+    const N = CFG.TREES;
+    const trunkG = new THREE.CylinderGeometry(0.6, 1.4, 1, 6); trunkG.translate(0, 0.5, 0);
+    const canG = new THREE.IcosahedronGeometry(1, 1);
+    this.trunks = new THREE.InstancedMesh(trunkG, new THREE.MeshLambertMaterial({ color: 0xffffff }), N);
+    this.canopies = new THREE.InstancedMesh(canG, new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.93 }), N);
+    this.trunks.castShadow = this.canopies.castShadow = !isMobile;
+    const palette = [0x1f6f4a, 0x2a8a5a, 0x3c7a3c, 0x1d5f5a, 0x2f7f6a, 0x246b3f];
+    const avoid = [this.nestPos, ...Object.values(this.tribeSites), ...this.spiderNests, ...this.caves];
+    let i = 0, tries = 0;
+    while (i < N && tries < N * 40) {
+      tries++; const x = rnd(-960, 960), z = rnd(-960, 960);
+      if (this.riverDist(x, z) < 48) continue; if (this.hillAt(x, z) > 0.5) continue;
+      if (this.swampAt(x, z) && rnd() < 0.6) continue;
+      if (avoid.some(a => Math.hypot(a.x - x, a.z - z) < (a === this.nestPos ? 115 : 50))) continue;
+      const t = { x, z, h: rnd(24, 58), r: rnd(9, 18), idx: i, alive: true, burning: false, burnT: 0, color: palette[Math.floor(rnd(0, palette.length))], node: null, body: null };
+      this.trees.push(t); this.setTreeMatrix(t, 1);
+      this.canopies.setColorAt(i, new THREE.Color(t.color)); this.trunks.setColorAt(i, new THREE.Color(0x3b2a1e));
+      t.body = G.physics.addStaticSphere(x, 0, z, 2.2); i++;
+    }
+    this.trunks.count = this.canopies.count = i; this.surface.add(this.trunks, this.canopies);
+  }
+  setTreeMatrix(t, sc) {
+    const y = this.height(t.x, t.z); const m = new THREE.Matrix4(); const q = new THREE.Quaternion();
+    m.compose(new THREE.Vector3(t.x, y, t.z), q, new THREE.Vector3(1.4 * sc, t.h * sc, 1.4 * sc)); this.trunks.setMatrixAt(t.idx, m);
+    m.compose(new THREE.Vector3(t.x, y + t.h * sc, t.z), q, new THREE.Vector3(t.r * sc, t.r * 0.75 * sc, t.r * sc)); this.canopies.setMatrixAt(t.idx, m);
+    this.trunks.instanceMatrix.needsUpdate = true; this.canopies.instanceMatrix.needsUpdate = true;
+  }
+  setTreeColor(t, hex) { this.canopies.setColorAt(t.idx, new THREE.Color(hex)); this.canopies.instanceColor.needsUpdate = true; }
+  hideTree(t) { t.alive = false; this.setTreeMatrix(t, 0.0001); if (t.body) { G.physics.remove(t.body); t.body = null; } if (t.node) { const n = t.node; t.node = null; n.tree = null; n.amount = 0; n.destroy(); } }
+  regrowTree(t) { t.alive = true; t.burning = false; t.burnt = false; this.setTreeMatrix(t, 1); this.setTreeColor(t, t.color); t.body = G.physics.addStaticSphere(t.x, 0, t.z, 2.2); G.res.registerTree(t); }
+  buildCaves() {
+    const cg = new THREE.ConeGeometry(2, 7, 5); const cm = new THREE.MeshLambertMaterial({ color: 0x9b4dff, emissive: 0x5a1fc0, emissiveIntensity: 0.9 });
+    for (const e of this.caves) {
+      const y = this.height(e.x, e.z); const g = new THREE.Group(); g.position.set(e.x, y, e.z);
+      const hole = new THREE.Mesh(new THREE.CircleGeometry(11, 18).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x04060a })); hole.position.y = 0.6; g.add(hole);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(11.5, 1.6, 6, 18).rotateX(Math.PI / 2), mat(0x4a3d5a)); rim.position.y = 0.8; g.add(rim);
+      for (let i = 0; i < 7; i++) { const c = new THREE.Mesh(cg, cm); const a = i / 7 * Math.PI * 2; c.position.set(Math.cos(a) * 13, 2.5, Math.sin(a) * 13); c.rotation.set(rnd(-0.4, 0.4), 0, rnd(-0.4, 0.4)); c.scale.setScalar(rnd(0.6, 1.3)); g.add(c); }
+      const l = new THREE.PointLight(0xa35cff, 1.4, 70, 1.6); l.position.y = 6; g.add(l);
+      g.userData.cave = e; e.mesh = g; this.surface.add(g);
+    }
+  }
+  // طبقات زیرزمینی (۳ طبقه‌ی غار + کنام اهریمن در عمق ۵۰۰)
+  buildUnderground() {
+    const cols = [0, 0x1a2230, 0x241a33, 0x2a1620, 0x1a0810];
+    for (let l = 1; l <= 4; l++) {
+      const g = new THREE.Group(); g.position.y = CFG.LAYER_Y[l]; g.visible = false; G.scene.add(g); this.layers[l] = g;
+      const size = l === 4 ? 500 : 900;
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(size, size, 1, 1).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: cols[l] })); floor.name = 'floor'; g.add(floor);
+      const m = new THREE.Matrix4();
+      const pilN = isMobile ? 14 : 24; const inst = new THREE.InstancedMesh(new THREE.CylinderGeometry(6, 9, 40, 7), new THREE.MeshLambertMaterial({ color: 0x2c2438 }), pilN);
+      for (let i = 0; i < pilN; i++) { const x = rnd(-size / 2 + 30, size / 2 - 30), z = rnd(-size / 2 + 30, size / 2 - 30); if (Math.hypot(x, z) < 70) { m.makeScale(0.001, 0.001, 0.001); } else { m.compose(new THREE.Vector3(x, 20, z), new THREE.Quaternion(), new THREE.Vector3(rnd(0.6, 1.4), 1, rnd(0.6, 1.4))); G.physics.addStaticSphere(x, CFG.LAYER_Y[l], z, 7); } inst.setMatrixAt(i, m); }
+      g.add(inst);
+      const cn = isMobile ? 20 : 40; const ci = new THREE.InstancedMesh(new THREE.ConeGeometry(1.5, 6, 5), new THREE.MeshLambertMaterial({ color: l === 4 ? 0xff3355 : 0x9b4dff, emissive: l === 4 ? 0xaa1133 : 0x6a2ecc, emissiveIntensity: 0.8 }), cn);
+      for (let i = 0; i < cn; i++) { m.compose(new THREE.Vector3(rnd(-size / 2, size / 2), rnd(1, 3), rnd(-size / 2, size / 2)), new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(-0.4, 0.4), rnd(0, 6), rnd(-0.4, 0.4))), new THREE.Vector3(1, rnd(0.6, 1.6), 1)); ci.setMatrixAt(i, m); }
+      g.add(ci);
+      const light = new THREE.PointLight(l === 4 ? 0xff4466 : 0x8a5cff, 1.4, 700, 1.1); light.position.set(0, 40, 0); g.add(light);
+      g.add(new THREE.HemisphereLight(l === 4 ? 0x66203a : 0x3a2a5a, 0x050308, 0.9));
+    }
+  }
+  buildParticles() {
+    const tex = makeDotTexture();
+    const n = isMobile ? 300 : 700; const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { pos[i * 3] = rnd(-250, 250); pos[i * 3 + 1] = rnd(2, 60); pos[i * 3 + 2] = rnd(-250, 250); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.pollen = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xfff2a8, size: 1.6, map: tex, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending })); this.surface.add(this.pollen);
+    const rn = isMobile ? 800 : 2000; const rp = new Float32Array(rn * 3);
+    for (let i = 0; i < rn; i++) { rp[i * 3] = rnd(-200, 200); rp[i * 3 + 1] = rnd(0, 160); rp[i * 3 + 2] = rnd(-200, 200); }
+    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(rp, 3));
+    this.rain = new THREE.Points(rg, new THREE.PointsMaterial({ color: 0xb8ff5a, size: 1.3, transparent: true, opacity: 0.65, depthWrite: false })); this.rain.visible = false; this.surface.add(this.rain);
+    const sm = new THREE.SpriteMaterial({ map: tex, color: 0x63d68a, transparent: true, opacity: 0.16, depthWrite: false });
+    this.gas = [];
+    for (const s of this.swamps) for (let i = 0; i < 4; i++) { const sp = new THREE.Sprite(sm); const x = s.x + rnd(-s.r * 0.6, s.r * 0.6), z = s.z + rnd(-s.r * 0.6, s.r * 0.6); sp.position.set(x, this.height(x, z) + 8, z); sp.scale.set(70, 35, 1); sp.userData.ph = rnd(0, 6); this.gas.push(sp); this.surface.add(sp); }
+  }
+  updateParticles(dt, c) {
+    const p = this.pollen.geometry.attributes.position; const a = p.array; const t = G.time;
+    for (let i = 0; i < p.count; i++) {
+      a[i * 3] += Math.sin(t * 0.5 + i) * dt * 2; a[i * 3 + 1] += Math.cos(t * 0.7 + i * 0.3) * dt * 1.5; a[i * 3 + 2] += dt * 1.2;
+      if (a[i * 3] - c.x > 250) a[i * 3] -= 500; else if (a[i * 3] - c.x < -250) a[i * 3] += 500;
+      if (a[i * 3 + 2] - c.z > 250) a[i * 3 + 2] -= 500; else if (a[i * 3 + 2] - c.z < -250) a[i * 3 + 2] += 500;
+      if (a[i * 3 + 1] > 60) a[i * 3 + 1] = 2;
+    }
+    p.needsUpdate = true;
+    if (this.rain.visible) { const r = this.rain.geometry.attributes.position; const b = r.array; for (let i = 0; i < r.count; i++) { b[i * 3 + 1] -= dt * 130; if (b[i * 3 + 1] < 0) { b[i * 3 + 1] = 160; b[i * 3] = c.x + rnd(-200, 200); b[i * 3 + 2] = c.z + rnd(-200, 200); } } r.needsUpdate = true; }
+    for (const g of this.gas) g.position.y += Math.sin(t * 0.4 + g.userData.ph) * dt * 1.5;
+  }
+  setRain(on) { this.rain.visible = on; }
+  // نورپردازی پویا: frac در بازه‌ی ۰..۱ (۰ سپیده‌دم، ۰.۲۵ ظهر، ۰.۵ غروب، ۰.۷۵ نیمه‌شب)
+  setTimeOfDay(frac, dt) {
+    const ang = frac * Math.PI * 2; const elev = Math.sin(ang); const day = clamp(elev * 1.6 + 0.2, 0, 1);
+    this.sun.intensity = 1.7 * day; this.sun.color.setHSL(0.09 + 0.05 * day, 0.6, 0.55 + 0.3 * day);
+    const c = G.cam.target; this.sun.position.set(c.x + Math.cos(ang) * 600, Math.max(80, elev * 700), c.z + 300); this.sun.target.position.set(c.x, 0, c.z); this.sun.target.updateMatrixWorld();
+    this.moon.intensity = 0.35 * (1 - day); this.hemi.intensity = 0.15 + 0.45 * day; this.ambient.intensity = 0.12 + 0.25 * day;
+    if (this.flashT > 0) { this.ambient.intensity = 2.5; this.flashT -= dt; }
+    const dayCol = new THREE.Color(0x2c6b6a), duskCol = new THREE.Color(0x6a3a2a), nightCol = new THREE.Color(0x050d14);
+    const sky = new THREE.Color();
+    if (elev > 0.3) sky.copy(dayCol); else if (elev > -0.15) { sky.copy(nightCol).lerp(duskCol, clamp((elev + 0.15) / 0.45, 0, 1)); sky.lerp(dayCol, clamp(elev / 0.3, 0, 1)); } else sky.copy(nightCol);
+    if (G.viewLayer > 0) sky.set(G.viewLayer === 4 ? 0x120408 : 0x07050c);
+    G.scene.background.copy(sky); G.scene.fog.color.copy(sky);
+    const morning = frac < 0.08 ? (1 - frac / 0.08) : 0;
+    G.scene.fog.density = G.viewLayer > 0 ? 0.0022 : (0.0007 + 0.0016 * morning + (1 - day) * 0.0004);
+  }
+}
+
+/* =====================================================================
+   بخش ۳: دوربین ایزومتریک قابل چرخش (۳۶۰ درجه) و زوم
+   ===================================================================== */
+class CameraRig {
+  constructor() { this.target = new THREE.Vector3(G.world.nestPos.x, 0, G.world.nestPos.z); this.yaw = Math.PI / 4; this.pitch = 0.78; this.dist = 200; this.minD = 35; this.maxD = 1900; this.gyro = { on: false, dx: 0, dy: 0 }; }
+  update() {
+    this.dist = clamp(this.dist, this.minD, this.maxD); this.pitch = clamp(this.pitch, 0.35, 1.35);
+    const ty = G.viewLayer ? CFG.LAYER_Y[G.viewLayer] : G.world.height(this.target.x, this.target.z); this.target.y = lerp(this.target.y, ty, 0.2);
+    const y = this.yaw + this.gyro.dx, p = this.pitch + this.gyro.dy;
+    G.camera.position.set(this.target.x + Math.sin(y) * Math.cos(p) * this.dist, this.target.y + Math.sin(p) * this.dist, this.target.z + Math.cos(y) * Math.cos(p) * this.dist);
+    G.camera.lookAt(this.target); G.camera.far = this.dist * 4 + 900; G.camera.updateProjectionMatrix();
+  }
+  pan(dx, dz) { const s = this.dist * 0.0016; this.target.x += Math.cos(this.yaw) * dx * s - Math.sin(this.yaw) * dz * s; this.target.z += -Math.sin(this.yaw) * dx * s - Math.cos(this.yaw) * dz * s; this.clampTarget(); }
+  clampTarget() { this.target.x = clamp(this.target.x, -CFG.HALF, CFG.HALF); this.target.z = clamp(this.target.z, -CFG.HALF, CFG.HALF); }
+  zoom(f) { this.dist = clamp(this.dist * f, this.minD, this.maxD); }
+  focus(x, z) { this.target.x = x; this.target.z = z; this.clampTarget(); }
+}
+
+/* =====================================================================
+   بخش ۴: منابع — گره‌های منابع در سطح و زیرزمین، انبار، کریستال‌ها، امتیاز تکامل
+   ===================================================================== */
+const NODE_DEFS = {
+  fruit: { res: 'food', amount: 30, regen: 0.05, gt: 2.5 }, mushroom: { res: 'food', amount: 20, regen: 0.1, gt: 2 },
+  branch: { res: 'wood', amount: 15, regen: 0, gt: 2 }, tree: { res: 'wood', amount: 60, regen: 0, gt: 3 },
+  rock: { res: 'stone', amount: 40, regen: 0, gt: 3.5 }, corpse: { res: 'bio', amount: 10, regen: 0, gt: 2 },
+  crystal: { res: 'stone', amount: 30, regen: 0, gt: 2 }, metal: { res: 'bio', amount: 20, regen: 0, gt: 2.5 },
+  mcrystal: { res: 'mcrystal', amount: 1, regen: 0, gt: 6 }, artifact: { res: 'artifact', amount: 1, regen: 0, gt: 8 },
+  glowfungus: { res: 'food', amount: 40, regen: 0.05, gt: 2 }, biopool: { res: 'bio', amount: 50, regen: 0, gt: 3 },
+};
+function makeNodeMesh(kind) {
+  let m;
+  switch (kind) {
+    case 'fruit': m = new THREE.Mesh(new THREE.DodecahedronGeometry(2.4, 0), mat(0xd8642a, 0x3a1200)); m.position.y = 1.6; break;
+    case 'mushroom': m = new THREE.Mesh(new THREE.ConeGeometry(2.4, 3.2, 7), mat(0xb26cff, 0x2a0a4a)); m.position.y = 1.8; break;
+    case 'branch': m = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 1.2), mat(0x6b4a2b)); m.rotation.y = rnd(0, 3); m.position.y = 0.5; break;
+    case 'rock': m = new THREE.Mesh(new THREE.DodecahedronGeometry(3.2, 0), mat(0x8a8f94)); m.scale.y = 0.65; m.position.y = 1.2; break;
+    case 'corpse': m = new THREE.Mesh(new THREE.SphereGeometry(2, 7, 5), mat(0x7a1f2f)); m.scale.y = 0.45; m.position.y = 0.6; break;
+    case 'crystal': m = new THREE.Mesh(new THREE.OctahedronGeometry(2.4), mat(0x4de3ff, 0x0a6a88)); m.position.y = 2.4; break;
+    case 'metal': m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.6, 2.6), mat(0xd9c26a, 0x4a3a00)); m.rotation.set(0.5, 0.7, 0.2); m.position.y = 1.6; break;
+    case 'mcrystal': m = new THREE.Mesh(new THREE.OctahedronGeometry(2.8), mat(0xff4dd2, 0xaa1a88)); m.position.y = 2.8; break;
+    case 'artifact': m = new THREE.Mesh(new THREE.TorusKnotGeometry(1.7, 0.5, 40, 6), mat(0xffc94d, 0x8a5a00)); m.position.y = 2.5; break;
+    case 'glowfungus': m = new THREE.Mesh(new THREE.ConeGeometry(2.6, 4, 7), mat(0x7dffb0, 0x1a7a40)); m.position.y = 2; break;
+    case 'biopool': m = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 1, 10), mat(0xff8a3a, 0x8a2a00)); m.position.y = 0.5; break;
+  }
+  m.castShadow = !isMobile; const g = new THREE.Group(); g.add(m); return g;
+}
+class ResourceNode {
+  constructor(kind, x, z, layer = 0, tree = null) {
+    const d = NODE_DEFS[kind]; this.kind = kind; this.type = d.res; this.x = x; this.z = z; this.layer = layer; this.amount = d.amount; this.max = d.amount; this.regen = d.regen; this.gt = d.gt; this.tree = tree; this.reservers = 0; this.alive = true; this.pos = new THREE.Vector3(x, 0, z); this.mesh = null; this.big = false; this.acc = 0;
+    if (!tree) { this.mesh = makeNodeMesh(kind); this.mesh.position.set(x, G.world.groundY(x, z, layer), z); this.mesh.userData.node = this; G.world.layers[layer].add(this.mesh); G.pickables.push(this.mesh); }
+  }
+  get isSurfaceFood() { return this.layer === 0 && this.type === 'food'; }
+  get name() { return { fruit: 'بوته‌ی میوه', mushroom: 'قارچ', branch: 'شاخه', tree: 'درخت', rock: 'سنگ', corpse: 'لاشه', crystal: 'کریستال', metal: 'قطعه‌ی فلزی', mcrystal: 'کریستال جهش', artifact: 'اثر کهن', glowfungus: 'قارچ درخشان', biopool: 'حوضچه‌ی زیستی' }[this.kind]; }
+  // زمان جمع‌آوری هر واحد (خشکسالی و باران اسیدی آن را کند می‌کنند)
+  gatherTime() { let t = this.gt; if (this.isSurfaceFood) { if (G.weather.drought) t *= 2; if (G.weather.acidFood > 0) t *= 1.4; } return t; }
+  take() { if (this.amount <= 0) return null; this.amount--; if (this.amount <= 0) this.deplete(); return this.type; }
+  deplete() { if (this.regen > 0 && this.mesh) { this.mesh.scale.setScalar(0.3); return; } this.destroy(); }
+  destroy() {
+    if (!this.alive) return; this.alive = false;
+    if (this.tree) { const t = this.tree; this.tree = null; t.node = null; G.world.hideTree(t); }
+    if (this.mesh) { G.world.layers[this.layer].remove(this.mesh); const i = G.pickables.indexOf(this.mesh); if (i >= 0) G.pickables.splice(i, 1); }
+    G.res.removeNode(this);
+  }
+}
+class Resources {
+  constructor() { this.store = { food: 60, wood: 25, stone: 15, bio: 8 }; this.crystals = 3; this.artifacts = 0; this.evoPoints = 2; this.nodes = []; this.priority = { food: 2, wood: 1, stone: 1, bio: 1 }; this.evoTimer = 0; this.generate(); }
+  cap() { return 50 + G.build.storageBonus(); }
+  add(type, n) {
+    if (type === 'mcrystal') { this.crystals += n; G.ui.msg('💎 کریستال جهش به دست آمد!', 'good'); return n; }
+    if (type === 'artifact') { this.artifacts += n; G.ui.msg(`🏺 اثر کهن یافت شد (${fa(this.artifacts)}/۵)`, 'good'); G.evo.checkArtifacts(); return n; }
+    const c = this.cap(); const b = this.store[type]; this.store[type] = Math.min(c, b + n); return this.store[type] - b;
+  }
+  has(cost) { for (const k in cost) if ((this.store[k] || 0) < cost[k]) return false; return true; }
+  pay(cost) { if (!this.has(cost)) return false; for (const k in cost) this.store[k] -= cost[k]; return true; }
+  refund(cost, frac) { for (const k in cost) this.add(k, cost[k] * frac); }
+  registerTree(t) { if (t.node) return; const n = new ResourceNode('tree', t.x, t.z, 0, t); t.node = n; this.nodes.push(n); }
+  spawn(kind, x, z, layer = 0) { const n = new ResourceNode(kind, x, z, layer); this.nodes.push(n); return n; }
+  removeNode(n) { const i = this.nodes.indexOf(n); if (i >= 0) this.nodes.splice(i, 1); }
+  generate() {
+    const W = G.world; for (const t of W.trees) this.registerTree(t);
+    const place = (kind, count, test) => { let c = 0, tries = 0; while (c < count && tries < count * 40) { tries++; const x = rnd(-950, 950), z = rnd(-950, 950); if (!W.isValidGround(x, z) || W.riverDist(x, z) < 40) continue; if (test && !test(x, z)) continue; if (Math.hypot(x - W.nestPos.x, z - W.nestPos.z) < 70) continue; this.spawn(kind, x, z); c++; } };
+    place('fruit', isMobile ? 90 : 130, (x, z) => !W.swampAt(x, z)); place('mushroom', 45, (x, z) => !!W.swampAt(x, z)); place('branch', isMobile ? 60 : 90); place('rock', isMobile ? 45 : 65, (x, z) => W.hillAt(x, z) > 0.15 || rnd() < 0.35);
+    for (let i = 0; i < 8; i++) { const a = rnd(0, 6.28), r = rnd(45, 95); const x = W.nestPos.x + Math.cos(a) * r, z = W.nestPos.z + Math.sin(a) * r; if (W.isValidGround(x, z)) this.spawn(['branch', 'fruit', 'rock', 'fruit'][i % 4], x, z); }
+    for (const n of this.nodes) if (!n.tree && n.max >= 30) n.big = true;
+    const L = (l, kind, count, rad) => { for (let i = 0; i < count; i++) { const a = rnd(0, 6.28), r = rnd(40, rad); this.spawn(kind, Math.cos(a) * r, Math.sin(a) * r, l); } };
+    L(1, 'crystal', 16, 400); L(1, 'metal', 10, 400); L(2, 'mcrystal', 10, 400); L(2, 'artifact', 5, 380); L(2, 'crystal', 8, 400); L(3, 'mcrystal', 14, 400); L(3, 'biopool', 8, 400); L(3, 'glowfungus', 8, 400); L(4, 'mcrystal', 6, 200);
+  }
+  update(dt) {
+    for (const n of this.nodes) { if (n.regen > 0 && n.amount < n.max && !(G.weather.drought && n.isSurfaceFood)) { n.acc += n.regen * dt; if (n.acc >= 1) { n.acc -= 1; n.amount++; if (n.mesh) n.mesh.scale.setScalar(0.3 + 0.7 * n.amount / n.max); } } }
+    this.evoTimer += dt; if (this.evoTimer >= CFG.EVO_POINT_EVERY) { this.evoTimer -= CFG.EVO_POINT_EVERY; this.evoPoints++; G.ui.msg('🧬 ۱ امتیاز تکامل دریافت شد', 'good'); }
+  }
+  // یافتن بهترین گره بر اساس فاصله و اولویت تعیین‌شده توسط کاربر
+  findNode(pos, layer, pri, maxD = 600) {
+    let best = null, bs = Infinity;
+    for (const n of this.nodes) {
+      if (n.layer !== layer || n.amount <= 0 || n.reservers >= 3) continue;
+      const w = n.type === 'mcrystal' ? 3 : (n.type === 'artifact' ? 3 : (pri[n.type] || 0)); if (w <= 0) continue;
+      if (n.tree && (!n.tree.alive || n.tree.burning)) continue;
+      const d = dist2D(pos, n.pos); if (d > maxD) continue; const s = d / w; if (s < bs) { bs = s; best = n; }
+    }
+    return best;
+  }
+}
+
+/* =====================================================================
+   بخش ۵: مسیریابی هوشمند (A* روی شبکه‌ی ۱۰۰×۱۰۰) — رود اسیدی پرهزینه، دیوارها مسدود
+   ===================================================================== */
+class NavGrid {
+  constructor() {
+    this.n = CFG.NAV_N; this.cs = CFG.NAV_CS; const N = this.n * this.n; this.cost = new Float32Array(N); this.block = new Uint8Array(N);
+    for (let j = 0; j < this.n; j++) for (let i = 0; i < this.n; i++) { const x = -CFG.HALF + (i + 0.5) * this.cs, z = -CFG.HALF + (j + 0.5) * this.cs; let c = 1; if (G.world.riverDist(x, z) < 34) c = 30; else if (G.world.swampAt(x, z)) c = 2; this.cost[j * this.n + i] = c; }
+  }
+  ci(x) { return clamp(Math.floor((x + CFG.HALF) / this.cs), 0, this.n - 1); }
+  setBlocked(x, z, v) { this.block[this.ci(z) * this.n + this.ci(x)] = v ? 1 : 0; }
+  lineClear(ax, az, bx, bz) { const d = Math.hypot(bx - ax, bz - az); const steps = Math.max(1, Math.ceil(d / 8)); for (let s = 0; s <= steps; s++) { const t = s / steps; const k = this.ci(az + (bz - az) * t) * this.n + this.ci(ax + (bx - ax) * t); if (this.block[k] || this.cost[k] >= 30) return false; } return true; }
+  findPath(ax, az, bx, bz) {
+    const n = this.n; const si = this.ci(ax) + this.ci(az) * n, gi = this.ci(bx) + this.ci(bz) * n; if (si === gi) return [{ x: bx, z: bz }];
+    const g = new Float32Array(n * n).fill(Infinity); const came = new Int32Array(n * n).fill(-1); const closed = new Uint8Array(n * n);
+    const heap = [];
+    const push = (f, i) => { heap.push([f, i]); let k = heap.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; } };
+    const pop = () => { const top = heap[0]; const last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0; for (; ;) { const l = k * 2 + 1, r = l + 1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; } } return top; };
+    const gx = gi % n, gz = (gi / n) | 0; const h = i => Math.hypot(i % n - gx, ((i / n) | 0) - gz);
+    g[si] = 0; push(h(si), si); let expanded = 0;
+    while (heap.length && expanded < 9000) {
+      const [, i] = pop(); if (i === gi) break; if (closed[i]) continue; closed[i] = 1; expanded++;
+      const x = i % n, z = (i / n) | 0;
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dz) continue; const nx = x + dx, nz = z + dz; if (nx < 0 || nz < 0 || nx >= n || nz >= n) continue; const ni = nz * n + nx;
+        if (this.block[ni] || closed[ni]) continue; if (dx && dz && (this.block[z * n + nx] || this.block[nz * n + x])) continue;
+        const ng = g[i] + this.cost[ni] * (dx && dz ? 1.414 : 1); if (ng < g[ni]) { g[ni] = ng; came[ni] = i; push(ng + h(ni), ni); }
+      }
+    }
+    if (came[gi] < 0) return null;
+    const cells = []; let c = gi; while (c !== si && c >= 0) { cells.push(c); c = came[c]; } cells.reverse();
+    const pts = cells.map(i => ({ x: -CFG.HALF + (i % n + 0.5) * this.cs, z: -CFG.HALF + (((i / n) | 0) + 0.5) * this.cs })); pts[pts.length - 1] = { x: bx, z: bz };
+    // ساده‌سازی مسیر
+    const out = []; let cur = { x: ax, z: az }, k = 0;
+    while (k < pts.length) { let j = pts.length - 1; while (j > k && !this.lineClear(cur.x, cur.z, pts[j].x, pts[j].z)) j--; out.push(pts[j]); cur = pts[j]; k = j + 1; }
+    return out;
+  }
+}
+
+/* =====================================================================
+   بخش ۶: واحدها — هندسه‌ی حشرات، آمار، هوش مصنوعی (کارگر/سرباز/ملکه/عنکبوت/قبیله/کرم/اهریمن)
+   ===================================================================== */
+const STATS = {
+  worker: { hp: 30, dmg: 3, spd: 15, r: 1.2, range: 3, vision: 60 }, soldier: { hp: 80, dmg: 10, spd: 17, r: 1.6, range: 3.5, vision: 70 },
+  queen: { hp: 400, dmg: 15, spd: 9, r: 3, range: 4.5, vision: 100 }, critter: { hp: 15, dmg: 1, spd: 11, r: 1, range: 2, vision: 30 },
+  spider: { hp: 150, dmg: 12, spd: 14, r: 3, range: 5, vision: 90 }, tsoldier: { hp: 70, dmg: 9, spd: 16, r: 1.6, range: 3.5, vision: 60 },
+  tworker: { hp: 30, dmg: 2, spd: 16, r: 1.2, range: 3, vision: 40 }, worm: { hp: 1600, dmg: 40, spd: 9, r: 6, range: 9, vision: 60 },
+  demon: { hp: 6000, dmg: 70, spd: 6, r: 12, range: 16, vision: 80 }, minion: { hp: 120, dmg: 14, spd: 15, r: 2.5, range: 4, vision: 80 },
+};
+const KIND_NAMES = { worker: 'کارگر', soldier: 'سرباز', queen: 'ملکه', critter: 'حشره‌ی کوچک', spider: 'عنکبوت غول‌پیکر', tsoldier: 'سرباز قبیله', tworker: 'دزد قبیله', worm: 'کرم باستانی', demon: 'اهریمن کهن', minion: 'خادم اهریمن' };
+const GEO = {};
+function part(g, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) { g.scale(sx, sy, sz); g.rotateX(rx); g.rotateY(ry); g.rotateZ(rz); g.translate(x, y, z); return g; }
+function antGeometry(scale, soldier, queen) {
+  const P = [];
+  P.push(part(new THREE.SphereGeometry(1, 8, 6), 0, 1.2, -1.7, queen ? 1.4 : 1.1, queen ? 1.1 : 0.9, queen ? 2.2 : 1.5));
+  P.push(part(new THREE.SphereGeometry(1, 8, 6), 0, 1.2, 0.2, 0.7, 0.7, 0.9));
+  P.push(part(new THREE.SphereGeometry(1, 8, 6), 0, 1.3, 1.5, soldier ? 0.9 : 0.7, 0.65, 0.8));
+  if (soldier) { P.push(part(new THREE.ConeGeometry(0.16, 1, 4), -0.4, 1.2, 2.3, 1, 1, 1, Math.PI / 2, 0, -0.3)); P.push(part(new THREE.ConeGeometry(0.16, 1, 4), 0.4, 1.2, 2.3, 1, 1, 1, Math.PI / 2, 0, 0.3)); }
+  for (let i = 0; i < 3; i++) P.push(part(new THREE.BoxGeometry(3.4, 0.14, 0.14), 0, 0.75, 0.7 - i * 0.7, 1, 1, 1, 0, (i - 1) * 0.35, 0));
+  P.push(part(new THREE.BoxGeometry(0.1, 0.1, 1.3), -0.3, 1.8, 2.3, 1, 1, 1, -0.6, 0.3, 0)); P.push(part(new THREE.BoxGeometry(0.1, 0.1, 1.3), 0.3, 1.8, 2.3, 1, 1, 1, -0.6, -0.3, 0));
+  const g = mergeGeometries(P); g.scale(scale, scale, scale); return g;
+}
+function spiderGeometry(scale) {
+  const P = [part(new THREE.SphereGeometry(1, 8, 6), 0, 2.2, -1.2, 2.2, 1.6, 2.4), part(new THREE.SphereGeometry(1, 8, 6), 0, 2, 1.4, 1.3, 1.1, 1.3)];
+  for (let i = 0; i < 4; i++) { const zz = 1.2 - i * 0.9; const a = (i - 1.5) * 0.35; P.push(part(new THREE.BoxGeometry(7, 0.22, 0.22), 0, 1.8, zz, 1, 1, 1, 0, a, 0.35)); }
+  P.push(part(new THREE.ConeGeometry(0.2, 1, 4), -0.5, 1.7, 2.3, 1, 1, 1, Math.PI / 2)); P.push(part(new THREE.ConeGeometry(0.2, 1, 4), 0.5, 1.7, 2.3, 1, 1, 1, Math.PI / 2));
+  const g = mergeGeometries(P); g.scale(scale, scale, scale); return g;
+}
+function wormGeometry() { const P = []; for (let i = 0; i < 6; i++) P.push(part(new THREE.SphereGeometry(1, 10, 8), 0, 4 - i * 0.3, 4 - i * 3.2, 4 - i * 0.4, 4 - i * 0.4, 2.2)); P.push(part(new THREE.TorusGeometry(2.6, 0.7, 8, 12), 0, 4, 6, 1, 1, 1)); return mergeGeometries(P); }
+function demonGeometry() { const P = [part(new THREE.SphereGeometry(1, 14, 10), 0, 8, 0, 9, 8, 11), part(new THREE.SphereGeometry(1, 10, 8), 0, 12, 8, 5, 4.5, 5), part(new THREE.ConeGeometry(1.2, 7, 6), -4, 17, 8, 1, 1, 1, 0, 0, 0.5), part(new THREE.ConeGeometry(1.2, 7, 6), 4, 17, 8, 1, 1, 1, 0, 0, -0.5)]; for (let i = 0; i < 3; i++) P.push(part(new THREE.BoxGeometry(26, 0.9, 0.9), 0, 5, 4 - i * 4, 1, 1, 1, 0, (i - 1) * 0.4, 0.3)); return mergeGeometries(P); }
+function critterGeometry() { const P = [part(new THREE.SphereGeometry(1, 7, 5), 0, 1, 0, 0.8, 0.6, 1.3), part(new THREE.BoxGeometry(3, 0.05, 1.2), 0, 1.4, 0, 1, 1, 1, 0, 0, 0)]; return mergeGeometries(P); }
+function getGeo(kind) {
+  if (GEO[kind]) return GEO[kind];
+  let g; switch (kind) {
+    case 'worker': case 'tworker': g = antGeometry(1, false, false); break; case 'soldier': case 'tsoldier': g = antGeometry(1.35, true, false); break;
+    case 'queen': g = antGeometry(2.4, false, true); break; case 'critter': g = critterGeometry(); break; case 'spider': g = spiderGeometry(1); break;
+    case 'minion': g = spiderGeometry(0.8); break; case 'worm': g = wormGeometry(); break; case 'demon': g = demonGeometry(); break;
+  }
+  GEO[kind] = g; return g;
+}
+const FACTION_COLORS = { player: { worker: 0xd8a544, soldier: 0xb8742a, queen: 0xf0c050 }, red: 0xd23c2c, blue: 0x3a86e0, green: 0x7cc23a, spider: 0x4a3560, critter: 0x9fc7d8, worm: 0xb07a5a, demon: 0x8a1030, minion: 0x5a2a6a };
+function matFor(faction, kind) { let c = FACTION_COLORS[faction]; if (typeof c === 'object') c = c[kind] || 0xd8a544; if (kind === 'minion') c = FACTION_COLORS.minion; const e = faction === 'demon' ? 0x550018 : (faction === 'spider' ? 0x1a0a22 : 0); return mat(c, e); }
+
+class Unit {
+  constructor(kind, faction, x, z, layer = 0) {
+    const s = STATS[kind]; Object.assign(this, { kind, faction, layer, maxHp: s.hp, hp: s.hp, baseDmg: s.dmg, baseSpd: s.spd, radius: s.r, range: s.range, baseVision: s.vision });
+    this.pos = new THREE.Vector3(x, 0, z); this.alive = true; this.state = 'idle'; this.order = 'guard'; this.baseOrder = 'guard'; this.target = null; this.node = null; this.path = null; this.pi = 0; this.dest = null; this.arriveR = 3; this.slow = 1;
+    this.carry = { type: null, amount: 0 }; this.timer = 0; this.scanT = Math.random() * 0.4; this.repathT = 0; this.guardPos = { x, z }; this.sheltered = false; this.buried = false; this.venom = null; this.cd = Math.random() * 0.5; this.stuckT = 0; this.stuckCount = 0; this.lastX = x; this.lastZ = z; this.idleT = 0; this.flash = 0; this.surprise = false; this.site = null; this.shaft = null; this.wanderT = 0; this.lifetime = Infinity; this.attackedBy = null; this.hitT = -99; this.silent = false; this.bob = 0; this.asleep = false; this.role = null; this.home = null; this.keepGuard = false;
+    this.mesh = new THREE.Mesh(getGeo(kind), matFor(faction, kind)); this.mesh.castShadow = !isMobile; this.mesh.userData.unit = this; this.mesh.position.set(x, G.world.groundY(x, z, layer), z);
+    G.scene.add(this.mesh); G.pickables.push(this.mesh);
+    this.body = G.physics.addUnit(x, CFG.LAYER_Y[layer], z, this.radius); G.units.push(this);
+    if (faction === 'player' && kind === 'worker') { this.carryMesh = new THREE.Mesh(SHARED.carryGeo, SHARED.carryMats.food); this.carryMesh.visible = false; this.carryMesh.position.set(0, 2.6, 1.2); this.mesh.add(this.carryMesh); }
+    this.mesh.visible = layer === G.viewLayer;
+  }
+  get isPlayer() { return this.faction === 'player'; }
+  get name() { return KIND_NAMES[this.kind]; }
+  // ---------- آمار مشتق‌شده (تحت تأثیر تکامل، مرداب، سم) ----------
+  speed() { let s = this.baseSpd * this.slow; if (this.isPlayer) s *= G.evo.psy(); if (this.layer === 0 && G.world.swampAt(this.pos.x, this.pos.z)) s *= 0.5; if (this.carry.amount > 0) s *= 0.9; if (this.venom) s *= 0.85; return s; }
+  dmg() { let d = this.baseDmg; if (this.isPlayer && this.kind === 'soldier') { d *= G.evo.dmgMult(); if (G.evo.press > 0) d *= 3; if (G.evo.coord.t > 0 && this.target === G.evo.coord.target) d *= 1.5; } if (this.surprise) { d *= 2; this.surprise = false; } if (!this.isPlayer && (this.kind === 'tsoldier' || this.kind === 'spider')) d *= 1 + 0.08 * G.day; return d; }
+  armor() { return this.isPlayer && this.kind === 'soldier' ? G.evo.armor() : 0; }
+  vision() { return this.baseVision * (this.isPlayer ? G.evo.visionMult() : 1); }
+  carryCap() { return G.evo.carryCap(); }
+  atkInterval() { return (this.kind === 'queen' ? 1.4 : 1) / (this.isPlayer ? G.evo.atkSpeed() : 1); }
+  // ---------- حرکت و مسیریابی ----------
+  setPath(x, z, arriveR = 3) {
+    x = clamp(x, -CFG.HALF + 5, CFG.HALF - 5); z = clamp(z, -CFG.HALF + 5, CFG.HALF - 5); this.arriveR = arriveR; this.pi = 0; this.slow = 1;
+    if (this.layer > 0 || G.nav.lineClear(this.pos.x, this.pos.z, x, z)) this.path = [{ x, z }];
+    else { const p = G.nav.findPath(this.pos.x, this.pos.z, x, z); if (p) { this.path = p; this.slow = 0.8; } else this.path = [{ x, z }]; }
+  }
+  moveTo(x, z, arriveR = 3) { this.dest = { x, z }; this.setPath(x, z, arriveR); }
+  stop() { this.path = null; this.dest = null; this.body.velocity.set(0, 0, 0); }
+  stepMove(dt) {
+    if (!this.path) return; const wp = this.path[this.pi]; const last = this.pi === this.path.length - 1;
+    const dx = wp.x - this.pos.x, dz = wp.z - this.pos.z; const d = Math.hypot(dx, dz); const r = last ? this.arriveR : 9;
+    if (d <= r) { this.pi++; if (this.pi >= this.path.length) { this.path = null; this.body.velocity.set(0, 0, 0); } return; }
+    const sp = this.speed(); this.body.velocity.set(dx / d * sp, 0, dz / d * sp);
+  }
+  checkStuck(dt) {
+    if (!this.path) { this.stuckT = 0; return; } this.stuckT += dt; if (this.stuckT < 1.5) return;
+    const moved = Math.hypot(this.pos.x - this.lastX, this.pos.z - this.lastZ); this.lastX = this.pos.x; this.lastZ = this.pos.z; this.stuckT = 0;
+    if (moved > 2.5) { this.stuckCount = 0; return; } this.stuckCount++;
+    if (!this.isPlayer && this.kind !== 'critter' && this.kind !== 'tworker' && this.layer === 0) { const s = G.build.nearestStructure(this.pos, 16); if (s && G.eco.isHostile(this, s)) { this.engage(s, false); return; } }
+    const a = Math.random() * 6.28; this.body.velocity.set(Math.cos(a) * 25, 0, Math.sin(a) * 25);
+    if (this.stuckCount > 2 && this.path) { this.stuckCount = 0; const wp = this.path[this.path.length - 1]; const p = G.nav.findPath(this.pos.x, this.pos.z, wp.x, wp.z); if (p) { this.path = p; this.pi = 0; this.slow = 0.8; } }
+  }
+  sync() {
+    const b = this.body; b.position.y = CFG.LAYER_Y[this.layer]; b.velocity.y = 0;
+    b.position.x = clamp(b.position.x, -CFG.HALF + 3, CFG.HALF - 3); b.position.z = clamp(b.position.z, -CFG.HALF + 3, CFG.HALF - 3);
+    this.pos.x = b.position.x; this.pos.z = b.position.z;
+    const m = this.mesh; m.visible = this.layer === G.viewLayer && !this.sheltered;
+    if (!m.visible) return;
+    const y = G.world.groundY(this.pos.x, this.pos.z, this.layer); m.position.set(this.pos.x, y + (this.buried ? -2.6 : 0), this.pos.z);
+    const vx = b.velocity.x, vz = b.velocity.z; const sp = Math.hypot(vx, vz);
+    if (sp > 1) { m.rotation.y = Math.atan2(vx, vz); this.bob += sp * 0.05; m.position.y += Math.abs(Math.sin(this.bob)) * 0.25; m.rotation.z = Math.sin(this.bob) * 0.08; } else m.rotation.x *= 0.8;
+    if (this.flash > 0) { this.flash -= 0.05; m.material = SHARED.hitMat; } else if (m.material === SHARED.hitMat) m.material = matFor(this.faction, this.kind);
+    if (this.carryMesh) { const c = this.carry.amount > 0; this.carryMesh.visible = c; if (c) this.carryMesh.material = SHARED.carryMats[this.carry.type] || SHARED.carryMats.food; }
+  }
+  // ---------- آسیب و مرگ ----------
+  takeDamage(d, from) {
+    if (!this.alive || this.sheltered) return; d *= 1 - this.armor(); this.hp -= d; this.flash = 0.3; this.hitT = G.time; if (from) this.attackedBy = from;
+    if (this.isPlayer) { if (from) G.colony.raiseAlarm(this.pos, from); }
+    else if (from && from.isPlayer && G.diplo.tribes[this.faction]) G.diplo.onPlayerAggression(G.diplo.tribes[this.faction]);
+    if (this.kind === 'critter' && from) this.fleeFrom(from);
+    if (this.buried) this.buried = false;
+    if (this.hp <= 0) this.die(from);
+  }
+  die(killer) {
+    if (!this.alive) return; this.alive = false;
+    G.scene.remove(this.mesh); const pi = G.pickables.indexOf(this.mesh); if (pi >= 0) G.pickables.splice(pi, 1);
+    G.physics.remove(this.body); const ui = G.units.indexOf(this); if (ui >= 0) G.units.splice(ui, 1);
+    this.releaseNode(); if (this.site) { this.site.builders--; this.site = null; }
+    G.eco.onUnitDied(this, killer);
+  }
+  remove() { this.silent = true; this.die(null); }
+  attack(t, dt) {
+    this.cd -= dt; if (this.cd > 0) return; this.cd = this.atkInterval(); const d = this.dmg(); t.takeDamage(d, this);
+    if (this.isPlayer && this.kind === 'soldier' && G.evo.has('combat', 3) && t.alive && !t.isStructure) t.venom = { t: 4, dps: d * 0.12 };
+    this.mesh.position.y += 0.6; this.mesh.rotation.x = -0.3;
+  }
+  findEnemy(range) {
+    let best = null, bd = range;
+    for (const u of G.units) { if (u === this || !u.alive || u.layer !== this.layer || u.buried || u.sheltered || u.asleep) continue; if (!G.eco.isHostile(this, u)) continue; const d = dist2D(this.pos, u.pos) - u.radius; if (d < bd) { bd = d; best = u; } }
+    if (!best && this.layer === 0) {
+      if (!this.isPlayer) { for (const s of G.build.allTargets()) { if (!G.eco.isHostile(this, s)) continue; const d = dist2D(this.pos, s.pos) - s.radius; if (d < bd) { bd = d; best = s; } } }
+      else { for (const k in G.diplo.tribes) { const tr = G.diplo.tribes[k]; if (tr.destroyed || tr.state !== 'war') continue; const d = dist2D(this.pos, tr.nest.pos) - tr.nest.radius; if (d < bd) { bd = d; best = tr.nest; } } }
+    }
+    return best;
+  }
+  findCritter(range) { let best = null, bd = range; for (const u of G.units) { if (u.kind !== 'critter' || !u.alive || u.layer !== this.layer) continue; const d = dist2D(this.pos, u.pos); if (d < bd) { bd = d; best = u; } } return best; }
+  releaseNode() { if (this.node) { this.node.reservers = Math.max(0, this.node.reservers - 1); this.node = null; } }
+  fleeFrom(u) { const dx = this.pos.x - u.pos.x, dz = this.pos.z - u.pos.z; const d = Math.hypot(dx, dz) || 1; this.setPath(this.pos.x + dx / d * 80, this.pos.z + dz / d * 80, 4); this.slow = 1.3; }
+  // ---------- حلقه‌ی به‌روزرسانی ----------
+  update(dt) {
+    if (!this.alive) return;
+    if (this.venom) { this.hp -= this.venom.dps * dt; this.venom.t -= dt; if (this.venom.t <= 0) this.venom = null; if (this.hp <= 0) { this.die(this.attackedBy); return; } }
+    if (this.lifetime !== Infinity) { this.lifetime -= dt; if (this.lifetime <= 0) { this.remove(); return; } }
+    if (this.sheltered) { this.body.velocity.set(0, 0, 0); return; }
+    this.ai(dt); if (!this.alive) return; this.stepMove(dt); this.checkStuck(dt);
+    if (this.layer === 0 && G.world.inAcid(this.pos.x, this.pos.z)) { this.hp -= 6 * dt; this.flash = 0.1; if (this.hp <= 0) this.die(null); }
+  }
+  ai(dt) {
+    switch (this.kind) {
+      case 'worker': return this.aiWorker(dt); case 'soldier': return this.aiSoldier(dt); case 'queen': return this.aiQueen(dt); case 'critter': return this.aiCritter(dt);
+      case 'spider': case 'minion': return this.aiSpider(dt); case 'tsoldier': return this.aiTribe(dt); case 'tworker': return this.aiThief(dt); case 'worm': return this.aiWorm(dt); case 'demon': return this.aiDemon(dt);
+    }
+  }
+  // حالت‌های جابه‌جایی مشترک (غار، پناهگاه، فرار، دنبال کردن ملکه)
+  aiTransit(dt) {
+    switch (this.state) {
+      case 'moving': if (!this.path) { this.state = 'idle'; if (this.kind === 'soldier') this.guardPos = { x: this.pos.x, z: this.pos.z }; } break;
+      case 'toCave': if (!this.path) { const e = this.shaft; if (dist2D(this.pos, e) < 16) G.caves.transfer(this, this.caveTarget, e); else this.setPath(e.x, e.z, 12); } break;
+      case 'toSurface': if (!this.path) { const a = G.caves.arrival(this.shaft); if (dist2D(this.pos, a) < 14) G.caves.transfer(this, 0, this.shaft); else this.setPath(a.x, a.z, 10); } break;
+      case 'toShelter': if (!this.path) { const n = G.colony.nestPos; if (dist2D(this.pos, n) < 14) { this.sheltered = true; this.state = 'idle'; this.body.velocity.set(0, 0, 0); } else this.setPath(n.x, n.z, 10); } break;
+      case 'flee': if (!this.path) this.remove(); break;
+      case 'follow': { const q = G.colony.queen; if (!G.colony.migrating) { this.state = 'idle'; break; } if (q && q.alive && !this.path && dist2D(this.pos, q.pos) > 18) this.setPath(q.pos.x + rnd(-10, 10), q.pos.z + rnd(-10, 10), 4); break; }
+      case 'migrate': if (!this.path) this.state = 'idle'; break;
+    }
+  }
+  aiWorker(dt) {
+    switch (this.state) {
+      case 'idle': this.idleT += dt; if (this.idleT > 0.6) { this.idleT = 0; this.findWork(); } break;
+      case 'toNode': { const n = this.node; if (!n || !n.alive || n.amount <= 0) { this.releaseNode(); this.goDeliver(); break; } if (!this.path) { if (dist2D(this.pos, n.pos) < (n.tree ? 8 : 6)) { this.state = 'gather'; this.timer = 0; } else this.setPath(n.pos.x, n.pos.z, n.tree ? 6 : 4.5); } break; }
+      case 'gather': { const n = this.node; if (!n || !n.alive || n.amount <= 0) { this.releaseNode(); this.goDeliver(); break; } this.timer += dt * G.evo.gatherMult(); this.mesh.rotation.x = Math.sin(G.time * 12) * 0.15; if (this.timer >= n.gatherTime()) { this.timer = 0; const t = n.take(); if (t) { this.carry.type = t; this.carry.amount++; } if (this.carry.amount >= this.carryCap() || !n.alive || n.amount <= 0) { this.releaseNode(); this.goDeliver(); } } break; }
+      case 'toDeliver': { const dp = G.colony.deliverPoint(this); if (!dp) { this.state = 'follow'; break; } if (!this.path) { if (dist2D(this.pos, dp) < 11) { G.colony.deposit(this); this.state = 'idle'; } else this.setPath(dp.x, dp.z, 8); } break; }
+      case 'toBuild': { const s = this.site; if (!s || !s.alive || s.built) { if (s) s.builders--; this.site = null; this.state = 'idle'; break; } if (!this.path) { if (dist2D(this.pos, s.pos) < 10) this.state = 'building'; else this.setPath(s.pos.x, s.pos.z, 7); } break; }
+      case 'building': { const s = this.site; if (!s || !s.alive || s.built) { if (s) s.builders--; this.site = null; this.state = 'idle'; break; } s.progress += dt / s.buildTime * G.evo.buildMult(); this.mesh.rotation.x = Math.sin(G.time * 10) * 0.2; break; }
+      case 'toDig': { if (!G.caves.dig) { this.state = 'idle'; break; } const e = G.caves.dig.entrance; if (!this.path) { if (dist2D(this.pos, e) < 16) this.state = 'digging'; else this.setPath(e.x, e.z, 12); } break; }
+      case 'digging': if (!G.caves.dig) this.state = 'idle'; this.mesh.rotation.x = Math.sin(G.time * 14) * 0.25; break;
+      default: this.aiTransit(dt);
+    }
+    // دفاع شخصی
+    if (this.attackedBy && this.attackedBy.alive && dist2D(this.pos, this.attackedBy.pos) < this.range + 2 && this.state !== 'flee') this.attack(this.attackedBy, dt);
+  }
+  findWork() {
+    if (this.layer === 0 && G.colony.migrating) { this.state = 'follow'; return; }
+    if (this.carry.amount > 0) { this.goDeliver(); return; }
+    if (this.layer === 0) { const s = G.build.needBuilder(this.pos); if (s) { this.site = s; s.builders++; this.state = 'toBuild'; return; } }
+    const n = G.res.findNode(this.pos, this.layer, G.res.priority, this.layer ? 900 : 700);
+    if (n) { this.node = n; n.reservers++; this.state = 'toNode'; return; }
+    if (Math.random() < 0.3) { const a = rnd(0, 6.28); this.setPath(this.pos.x + Math.cos(a) * 15, this.pos.z + Math.sin(a) * 15, 3); this.state = 'moving'; }
+  }
+  goDeliver() { this.path = null; this.timer = 0; this.state = this.carry.amount > 0 ? 'toDeliver' : 'idle'; }
+  // ---------- هوش مصنوعی رزمی مشترک ----------
+  combatAI(dt, aggro) {
+    const t = this.target;
+    if (t && (!t.alive || t.layer !== this.layer || t.sheltered || (t.buried && dist2D(this.pos, t.pos) > 6))) { this.target = null; this.order = this.baseOrder; if (this.order === 'attackMove' && this.dest) this.setPath(this.dest.x, this.dest.z, 6); }
+    this.scanT -= dt;
+    if (this.order === 'attackTarget' && this.target) { this.pursue(dt); return; }
+    if (this.scanT <= 0 && aggro > 0) { this.scanT = 0.35 + Math.random() * 0.2; const e = this.findEnemy(aggro); if (e) { if (this.buried) this.surprise = true; this.engage(e, false); return; } }
+    if (this.order === 'attackMove' && !this.path) {
+      if (this.dest && dist2D(this.pos, this.dest) > 8) this.setPath(this.dest.x, this.dest.z, 6);
+      else { this.order = 'guard'; this.baseOrder = 'guard'; if (!this.keepGuard) this.guardPos = { x: this.pos.x, z: this.pos.z }; this.keepGuard = false; }
+    }
+  }
+  engage(t, explicit) { if (explicit) { this.baseOrder = 'guard'; this.dest = null; } else if (this.order !== 'attackTarget') this.baseOrder = this.order; this.target = t; this.order = 'attackTarget'; this.path = null; this.buried = false; this.repathT = 0; }
+  pursue(dt) {
+    const t = this.target; const d = dist2D(this.pos, t.pos) - (t.radius || 1);
+    if (d <= this.range) { this.path = null; this.body.velocity.set(0, 0, 0); this.mesh.rotation.y = Math.atan2(t.pos.x - this.pos.x, t.pos.z - this.pos.z); this.attack(t, dt); }
+    else { this.repathT -= dt; if (!this.path || this.repathT <= 0) { this.setPath(t.pos.x, t.pos.z, Math.max(1, this.range + (t.radius || 1) - 0.8)); this.repathT = 0.6; } }
+  }
+  aiSoldier(dt) {
+    if (this.state !== 'idle') { this.aiTransit(dt); if (this.state !== 'idle') return; }
+    const canAmbush = G.evo.has('psyche', 1) && G.colony.ambush && this.order === 'guard' && !this.path && !this.target;
+    this.buried = canAmbush;
+    this.combatAI(dt, this.buried ? 15 : 45);
+    if (this.order === 'guard' && !this.target) {
+      const al = G.colony.alarm;
+      if (al && G.time - al.t < 8 && dist2D(this.pos, al.pos) < 320 && dist2D(this.pos, al.pos) > 25 && !this.path) { this.order = 'attackMove'; this.baseOrder = 'guard'; this.keepGuard = true; this.dest = { x: al.pos.x, z: al.pos.z }; this.setPath(al.pos.x, al.pos.z, 10); }
+      else if (!this.path) {
+        if (this.scanT <= 0.05 && this.layer === 0) { const c = this.findCritter(30); if (c) { this.engage(c, false); return; } }
+        if (this.guardPos && dist2D(this.pos, this.guardPos) > 25) this.setPath(this.guardPos.x + rnd(-8, 8), this.guardPos.z + rnd(-8, 8), 4);
+      }
+    }
+  }
+  aiQueen(dt) {
+    if (G.colony.migrating) { this.aiTransit(dt); return; }
+    if (this.attackedBy && this.attackedBy.alive && dist2D(this.pos, this.attackedBy.pos) < this.range + 3) { this.attack(this.attackedBy, dt); return; }
+    if (!this.path) { const n = G.colony.nestPos; if (dist2D(this.pos, n) > 14) this.setPath(n.x + rnd(-6, 6), n.z + rnd(-6, 6), 3); }
+  }
+  aiCritter(dt) { this.wanderT -= dt; if (!this.path && this.wanderT <= 0) { this.wanderT = rnd(2, 6); this.slow = 1; const a = rnd(0, 6.28), r = rnd(20, 60); const x = this.pos.x + Math.cos(a) * r, z = this.pos.z + Math.sin(a) * r; if (G.world.isValidGround(x, z)) this.setPath(x, z, 3); } }
+  aiSpider(dt) {
+    if (this.kind === 'minion') { this.combatAI(dt, 220); return; }
+    if (!G.weather.isNight && this.order !== 'retreat') { this.order = 'retreat'; this.baseOrder = 'retreat'; this.target = null; this.moveTo(this.home.x, this.home.z, 10); }
+    if (this.order === 'retreat') { if (!this.path) this.remove(); else if (this.attackedBy && this.attackedBy.alive && dist2D(this.pos, this.attackedBy.pos) < 8) this.attack(this.attackedBy, dt); return; }
+    this.lampT = (this.lampT || 0) - dt;
+    if (this.lampT <= 0) {
+      this.lampT = 3; const lamp = G.build.nearestLitLamp(this.pos);
+      if (lamp) { this.lamp = lamp; if (this.order !== 'attackTarget') { this.order = 'lamp'; this.baseOrder = 'lamp'; } }
+      else { this.lamp = null; if (this.order === 'lamp' || this.order === 'guard') { this.order = 'attackMove'; this.baseOrder = 'attackMove'; const n = G.colony.nestPos; this.moveTo(n.x, n.z, 10); } }
+    }
+    if (this.order === 'lamp') {
+      if (this.target && this.target.alive && dist2D(this.pos, this.target.pos) < 14) { this.pursue(dt); return; } this.target = null;
+      if (this.attackedBy && this.attackedBy.alive && dist2D(this.pos, this.attackedBy.pos) < 16) { this.target = this.attackedBy; return; }
+      const L = this.lamp; if (!L || !L.alive) { this.order = 'guard'; return; }
+      if (!this.path) { const d = dist2D(this.pos, L.pos); if (d > L.lampRadius() * 0.6) this.setPath(L.pos.x, L.pos.z, 8); else { this.wanderT -= dt; if (this.wanderT <= 0) { this.wanderT = rnd(1, 3); const a = rnd(0, 6.28), r = rnd(6, L.lampRadius() * 0.5); this.setPath(L.pos.x + Math.cos(a) * r, L.pos.z + Math.sin(a) * r, 3); } } }
+      return;
+    }
+    this.combatAI(dt, 40);
+  }
+  aiTribe(dt) {
+    if (this.role === 'raid') this.combatAI(dt, this.order === 'guard' ? 140 : 45);
+    else if (this.role === 'helper') this.combatAI(dt, 90);
+    else { this.combatAI(dt, 70); if (this.order === 'guard' && !this.target && !this.path && this.home && dist2D(this.pos, this.home) > 45) this.setPath(this.home.x + rnd(-15, 15), this.home.z + rnd(-15, 15), 6); }
+  }
+  aiThief(dt) {
+    if (this.order === 'steal') {
+      if (this.attackedBy && this.attackedBy.alive) { this.order = 'return'; this.moveTo(this.home.x, this.home.z, 10); return; }
+      if (!this.path) { const n = G.colony.nestPos; if (dist2D(this.pos, n) < 14) { const took = Math.min(10, Math.floor(G.res.store.food)); G.res.store.food -= took; G.ui.msg(`دزدان قبیله‌ی سرخ ${fa(took)} غذا دزدیدند!`, 'warn'); this.order = 'return'; this.moveTo(this.home.x, this.home.z, 10); } else this.moveTo(n.x, n.z, 10); }
+    } else if (this.order === 'return') { if (!this.path) this.remove(); }
+  }
+  aiWorm(dt) {
+    if (this.asleep) { this.body.velocity.set(0, 0, 0); for (const u of G.units) { if (u.isPlayer && u.alive && u.layer === this.layer && dist2D(u.pos, this.pos) < 20) { this.asleep = false; G.ui.msg('🐛 کرم غول‌پیکر باستانی بیدار شد!', 'danger'); G.world.flashT = 0.2; break; } } return; }
+    this.combatAI(dt, 240);
+    if (!this.target) { this.idleT += dt; if (this.idleT > 25 && this.layer > 0) { this.idleT = 0; const e = G.caves.nearestEntrance(G.colony.nestPos); G.caves.transfer(this, 0, e); this.order = 'attackMove'; this.baseOrder = 'attackMove'; const n = G.colony.nestPos; this.moveTo(n.x, n.z, 10); G.ui.msg('کرم باستانی از غار بیرون آمد و به سوی لانه می‌خزد!', 'danger'); } } else this.idleT = 0;
+  }
+  aiDemon(dt) {
+    if (this.asleep) { for (const u of G.units) { if (u.isPlayer && u.alive && u.layer === 4 && dist2D(u.pos, this.pos) < 45) { this.asleep = false; G.ui.msg('👹 اهریمن کهن بیدار شد! نبرد نهایی آغاز می‌شود', 'danger'); G.ui.redFlash(); break; } } return; }
+    this.combatAI(dt, 280);
+    this.spawnT = (this.spawnT === undefined ? 12 : this.spawnT) - dt;
+    if (this.spawnT <= 0) { this.spawnT = 18; for (let i = 0; i < 3; i++) { const m = new Unit('minion', 'demon', this.pos.x + rnd(-15, 15), this.pos.z + rnd(-15, 15), 4); m.order = 'guard'; m.baseOrder = 'guard'; } G.ui.msg('اهریمن خادمانش را فراخواند!', 'warn'); }
+  }
+}
+
+/* =====================================================================
+   بخش ۷: سازه‌ها و سیستم ساخت‌وساز (گرید ۱۰×۱۰، سه سطح ارتقا، سقف چوبی، کمربند آتش‌شکن)
+   ===================================================================== */
+const STRUCTS = {
+  nest: { name: 'لانه‌ی اصلی', icon: '🏠', ug: false, cost: [{}], hp: [1200], time: 1, desc: 'قلب کلونی — اگر ویران شود بازی تمام است' },
+  brood: { name: 'اتاق تخم‌گذاری', icon: '🥚', ug: true, cost: [{ food: 20, wood: 10 }, { food: 40, wood: 30, stone: 10 }, { food: 80, wood: 60, stone: 30 }], hp: [200, 320, 450], time: 20, desc: 'تخم‌گذاری: ۱ تخم/۱۰ث → ۱ تخم/۵ث → ۲ تخم/۵ث؛ +ظرفیت جمعیت' },
+  storage: { name: 'انبار ذخیره‌سازی', icon: '📦', ug: true, cost: [{ wood: 15, stone: 5 }, { wood: 40, stone: 20 }, { wood: 80, stone: 50 }], hp: [200, 320, 450], time: 15, desc: 'ظرفیت هر منبع: +۵۰ / +۱۵۰ / +۳۰۰؛ +ظرفیت جمعیت' },
+  barracks: { name: 'پادگان سربازان', icon: '🛡️', ug: true, cost: [{ wood: 20, stone: 15, food: 10 }, { wood: 45, stone: 35, food: 20 }, { wood: 90, stone: 70, food: 40 }], hp: [250, 400, 600], time: 20, desc: 'سقف سربازان +۶/+۱۴/+۲۵ و بازیابی سلامت سریع‌تر' },
+  tower: { name: 'برج دیده‌بانی', icon: '🗼', ug: false, cost: [{ wood: 25, stone: 15 }, { wood: 50, stone: 40 }, { wood: 90, stone: 80 }], hp: [150, 300, 500], time: 18, desc: 'برد ۵۰/۱۰۰/۱۵۰؛ شلیک خودکار به پرندگان و دشمنان' },
+  wall: { name: 'دیوار دفاعی', icon: '🧱', ug: false, cost: [{ stone: 10 }, { stone: 25 }, { stone: 50 }], hp: [100, 300, 700], time: 8, desc: 'مانع فیزیکی؛ دشمن باید آن را خراب کند (۱۰۰/۳۰۰/۷۰۰ سلامت)' },
+  lamp: { name: 'چراغ زیستی', icon: '💡', ug: false, cost: [{ bio: 10 }, { bio: 25, wood: 10 }, { bio: 50, wood: 20 }], hp: [60, 120, 200], time: 8, desc: 'عنکبوت‌های شب‌زی را جذب می‌کند؛ انرژی زیستی مصرف می‌کند (اگر انرژی صفر شود خاموش می‌شود!)' },
+  firebreak: { name: 'کمربند آتش‌شکن', icon: '🪨', ug: false, cost: [{ stone: 100 }], hp: [9999], time: 25, desc: 'حلقه‌ای سنگی دور لانه؛ آتش‌سوزی به سازه‌ها نمی‌رسد', unique: true },
+};
+function makeStructMesh(s, ghost = false) {
+  const g = new THREE.Group(); const L = s.level; const M = (c, e) => new THREE.MeshLambertMaterial({ color: c, emissive: e || 0x000000 });
+  const add = (geo, m, x, y, z) => { const mesh = new THREE.Mesh(geo, m); mesh.position.set(x, y, z); mesh.castShadow = !isMobile; g.add(mesh); return mesh; };
+  const sc = 1 + 0.15 * (L - 1);
+  switch (s.type) {
+    case 'nest': add(new THREE.ConeGeometry(9, 7, 10), M(0x6b4a2e), 0, 3.5, 0); add(new THREE.CylinderGeometry(3, 3.5, 1, 10), M(0x0a0806), 0, 7.3, 0); add(new THREE.TorusGeometry(10, 1, 6, 16).rotateX(Math.PI / 2), M(0x5a3d25), 0, 0.6, 0); break;
+    case 'brood': add(new THREE.SphereGeometry(4 * sc, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), M(0xc9b48a), 0, 0, 0); for (let i = 0; i < 3; i++) add(new THREE.SphereGeometry(0.9, 6, 5), M(0xf5f0d8), Math.cos(i * 2.1) * 3 * sc, 1, Math.sin(i * 2.1) * 3 * sc); break;
+    case 'storage': add(new THREE.CylinderGeometry(3.5 * sc, 4 * sc, 3.5, 6), M(0x8a6a3a), 0, 1.7, 0); add(new THREE.ConeGeometry(4.2 * sc, 2, 6), M(0x6b4a2e), 0, 4.4, 0); break;
+    case 'barracks': add(new THREE.BoxGeometry(7 * sc, 3.5, 7 * sc), M(0x4a3a4a), 0, 1.7, 0); add(new THREE.BoxGeometry(2, 5, 2), M(0xc0392b), 0, 2.5, 0); break;
+    case 'tower': add(new THREE.CylinderGeometry(1.6, 2.4, 12 * sc, 7), M(0x7a6a52), 0, 6 * sc, 0); add(new THREE.CylinderGeometry(3, 2, 2, 7), M(0x5a4a3a), 0, 12.5 * sc, 0); add(new THREE.ConeGeometry(3.2, 2.5, 7), M(0xd9772a), 0, 14.5 * sc, 0); break;
+    case 'wall': add(new THREE.BoxGeometry(11, 5 + 2 * L, 11), M(0x6f7a80), 0, (5 + 2 * L) / 2, 0); break;
+    case 'lamp': add(new THREE.CylinderGeometry(0.4, 0.6, 7, 6), M(0x3b2a1e), 0, 3.5, 0); add(new THREE.SphereGeometry(1.8 * sc, 10, 8), M(0xffb347, 0xff8c1a), 0, 8, 0); if (!ghost && G.build.lampLights < 4) { const l = new THREE.PointLight(0xffa040, 1.2, 60 * sc, 1.5); l.position.set(0, 8, 0); g.add(l); s.light = l; G.build.lampLights++; } break;
+    case 'firebreak': { const R = CFG.GRID_N * CFG.CELL / 2 + 8; const geo = new THREE.DodecahedronGeometry(2.2, 0); const parts = []; const oy = G.world.height(s.pos ? s.pos.x : 0, s.pos ? s.pos.z : 0); for (let i = 0; i < 44; i++) { const a = i / 44 * Math.PI * 2; const gg = geo.clone(); gg.scale(1, 0.7, 1); const x = Math.cos(a) * R, z = Math.sin(a) * R; gg.translate(x, (s.pos ? G.world.height(s.pos.x + x, s.pos.z + z) - oy : 0) + 1, z); parts.push(gg); } add(mergeGeometries(parts), M(0x8e959a), 0, 0, 0); break; }
+  }
+  if (s.roofed) add(new THREE.BoxGeometry(11, 0.6, 11), M(0x8a5a2a), 0, s.type === 'tower' ? 16 * sc : (s.type === 'wall' ? 5.5 + 2 * L : 7), 0);
+  if (s.type !== 'nest' && s.type !== 'firebreak') { const ring = new THREE.Mesh(new THREE.RingGeometry(5.2, 5.8, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: s.underground ? 0x9b4dff : 0xffa040, side: THREE.DoubleSide })); ring.position.y = 0.3; g.add(ring); }
+  return g;
+}
+class Structure {
+  constructor(type, x, z) {
+    const d = STRUCTS[type]; this.type = type; this.def = d; this.level = 1; this.pos = new THREE.Vector3(x, 0, z); this.layer = 0; this.faction = 'player'; this.isStructure = true; this.underground = d.ug;
+    this.radius = type === 'nest' ? 8 : (type === 'firebreak' ? 0 : 5); this.maxHp = d.hp[0]; this.hp = type === 'nest' ? this.maxHp : 1; this.built = false; this.progress = 0; this.builders = 0; this.buildTime = d.time; this.roofed = false; this.alive = true; this.mesh = null; this.body = null; this.cell = null; this.light = null; this.hitT = -99; this.towerT = 0;
+    G.build.structures.push(this); this.refreshMesh();
+    if (type === 'wall' || type === 'tower' || type === 'nest') this.body = G.physics.addStaticBox(x, 0, z, type === 'nest' ? 14 : 11, 10, type === 'nest' ? 14 : 11);
+    if (type === 'wall') G.nav.setBlocked(x, z, 1);
+  }
+  get name() { return this.def.name; }
+  get lit() { return this.type === 'lamp' && this.built && G.res.store.bio > 0; }
+  lampRadius() { return [40, 80, 120][this.level - 1]; }
+  towerRange() { return [50, 100, 150][this.level - 1]; }
+  refreshMesh() {
+    if (this.mesh) { G.world.surface.remove(this.mesh); const i = G.pickables.indexOf(this.mesh); if (i >= 0) G.pickables.splice(i, 1); if (this.light) { G.build.lampLights--; this.light = null; } }
+    this.mesh = makeStructMesh(this); this.mesh.position.set(this.pos.x, G.world.height(this.pos.x, this.pos.z), this.pos.z); this.mesh.userData.structure = this; G.world.surface.add(this.mesh); G.pickables.push(this.mesh); this.applyBuildVisual();
+  }
+  applyBuildVisual() { const t = this.built ? 1 : 0.25 + 0.75 * this.progress; this.mesh.scale.set(1, Math.max(0.05, t), 1); this.mesh.traverse(o => { if (o.isMesh && o.material) { o.material.transparent = !this.built; o.material.opacity = this.built ? 1 : 0.55; } }); }
+  update(dt) {
+    if (!this.built) { if (this.progress >= 1) { this.built = true; this.hp = this.maxHp; this.applyBuildVisual(); G.ui.msg(`${this.def.name} ساخته شد`, 'good'); G.ui.refreshPanel(); } else this.applyBuildVisual(); return; }
+    if (this.type === 'tower') {
+      this.towerT -= dt;
+      if (this.towerT <= 0) {
+        this.towerT = 0.8; const r = this.towerRange(); const dmg = [8, 14, 22][this.level - 1]; let best = null, bd = r;
+        for (const u of G.units) { if (!u.alive || u.layer !== 0 || u.kind === 'critter' || u.asleep || !G.eco.isHostile(this, u)) continue; const d = dist2D(this.pos, u.pos); if (d < bd) { bd = d; best = u; } }
+        if (best) { best.takeDamage(dmg, this); G.ui.fx.shot(this.pos, best.pos, 12 * (1 + 0.15 * (this.level - 1))); }
+        const b = G.eco.bird; if (b && b.alive && dist2D(this.pos, b.pos) < r) { b.hit(dmg); G.ui.fx.shot(this.pos, b.pos, 12); }
+      }
+    }
+    if (this.type === 'lamp') { if (this.lit) { G.res.store.bio = Math.max(0, G.res.store.bio - 0.03 * this.level * dt); if (this.light) this.light.intensity = 1.2 + Math.sin(G.time * 3) * 0.2; } else if (this.light) this.light.intensity = 0; }
+  }
+  takeDamage(d, from) { if (!this.alive) return; this.hp -= d; this.hitT = G.time; if (from && !from.isStructure) G.colony.alarm = { pos: { x: this.pos.x, z: this.pos.z }, t: G.time }; if (this.hp <= 0) this.destroy(from); }
+  destroy() { if (!this.alive) return; this.alive = false; if (G.evo.has('labor', 3) && this.type !== 'nest') G.res.refund(this.def.cost[this.level - 1], 0.3); G.ui.msg(`${this.def.name} ویران شد!`, 'danger'); this.cleanup(); G.ui.refreshPanel(); }
+  destroyQuiet() { this.alive = false; this.cleanup(); }
+  cleanup() {
+    if (this.mesh) { G.world.surface.remove(this.mesh); const i = G.pickables.indexOf(this.mesh); if (i >= 0) G.pickables.splice(i, 1); }
+    if (this.light) { G.build.lampLights--; this.light = null; }
+    if (this.body) { G.physics.remove(this.body); this.body = null; }
+    if (this.type === 'wall') G.nav.setBlocked(this.pos.x, this.pos.z, 0);
+    const i = G.build.structures.indexOf(this); if (i >= 0) G.build.structures.splice(i, 1);
+    if (this.cell) G.build.occ.delete(this.cell); if (this.type === 'firebreak') G.build.firebreak = null;
+    if (G.ui && G.ui.selStruct === this) G.ui.selStruct = null;
+  }
+  upgradeCost() { return this.level < 3 ? this.def.cost[this.level] : null; }
+}
+class BuildSystem {
+  constructor() { this.structures = []; this.occ = new Map(); this.origin = { x: G.world.nestPos.x, z: G.world.nestPos.z }; this.firebreak = null; this.ghost = null; this.ghostType = null; this.gridHelper = null; this.lampLights = 0; this.makeGrid(); }
+  makeGrid() { if (this.gridHelper) G.world.surface.remove(this.gridHelper); const size = CFG.GRID_N * CFG.CELL; const g = new THREE.GridHelper(size, CFG.GRID_N, 0x7cf5d3, 0x2a6a5a); g.position.set(this.origin.x, G.world.height(this.origin.x, this.origin.z) + 0.6, this.origin.z); g.material.transparent = true; g.material.opacity = 0.35; g.visible = false; this.gridHelper = g; G.world.surface.add(g); }
+  cellOf(x, z) { const half = CFG.GRID_N * CFG.CELL / 2; const i = Math.floor((x - this.origin.x + half) / CFG.CELL), j = Math.floor((z - this.origin.z + half) / CFG.CELL); if (i < 0 || j < 0 || i >= CFG.GRID_N || j >= CFG.GRID_N) return null; return { i, j, key: i + ',' + j, x: this.origin.x - half + (i + 0.5) * CFG.CELL, z: this.origin.z - half + (j + 0.5) * CFG.CELL }; }
+  canPlace(type, c) { if (!c) return false; if (this.occ.has(c.key)) return false; if (dist2D(c, G.colony.nestPos) < 13) return false; if (G.world.inAcid(c.x, c.z)) return false; return true; }
+  place(type, x, z) {
+    const d = STRUCTS[type];
+    if (type === 'firebreak') { if (this.firebreak) { G.ui.msg('کمربند آتش‌شکن قبلاً ساخته شده', 'warn'); return false; } if (!G.res.pay(d.cost[0])) { G.ui.msg('سنگ کافی نیست (۱۰۰ سنگ لازم است)', 'warn'); return false; } this.firebreak = new Structure('firebreak', this.origin.x, this.origin.z); G.ui.msg('ساخت کمربند آتش‌شکن آغاز شد', 'good'); return true; }
+    const c = this.cellOf(x, z); if (!this.canPlace(type, c)) { G.ui.msg('این خانه قابل ساخت نیست (باید داخل گرید لانه و خالی باشد)', 'warn'); return false; }
+    if (!G.res.pay(d.cost[0])) { G.ui.msg('منابع کافی نیست', 'warn'); return false; }
+    const s = new Structure(type, c.x, c.z); s.cell = c.key; this.occ.set(c.key, s); return true;
+  }
+  upgrade(s) { const cost = s.upgradeCost(); if (!cost) { G.ui.msg('این سازه در حداکثر سطح است', 'warn'); return; } if (!s.built) { G.ui.msg('ابتدا ساخت باید تمام شود', 'warn'); return; } if (!G.res.pay(cost)) { G.ui.msg('منابع کافی نیست', 'warn'); return; } s.level++; s.maxHp = s.def.hp[s.level - 1]; s.hp = s.maxHp; s.refreshMesh(); G.ui.msg(`${s.def.name} به سطح ${fa(s.level)} ارتقا یافت`, 'good'); G.ui.refreshPanel(); }
+  addRoof(s) { if (s.roofed || s.underground) return; const cost = { wood: 15 * s.level }; if (!G.res.pay(cost)) { G.ui.msg(`چوب کافی نیست (${fa(15 * s.level)} چوب)`, 'warn'); return; } s.roofed = true; s.refreshMesh(); G.ui.msg('سقف چوبی نصب شد؛ این سازه از باران اسیدی در امان است', 'good'); G.ui.refreshPanel(); }
+  demolish(s) { if (s.type === 'nest') return; G.res.refund(s.def.cost[s.level - 1], G.evo.has('labor', 3) ? 0.3 : 0.1); s.destroyQuiet(); G.ui.msg(`${s.def.name} برچیده شد`, 'info'); G.ui.refreshPanel(); }
+  dismantleAll(frac) { for (const s of [...this.structures]) { if (s.type === 'nest') continue; G.res.refund(s.def.cost[s.level - 1], frac); s.destroyQuiet(); } this.occ.clear(); this.firebreak = null; }
+  relocate(p) { this.origin = { x: p.x, z: p.z }; this.makeGrid(); }
+  sum(type, arr) { let s = 0; for (const st of this.structures) if (st.type === type && st.built && st.alive) s += arr[st.level - 1]; return s; }
+  bestLevel(type) { let b = 0; for (const st of this.structures) if (st.type === type && st.built && st.alive) b = Math.max(b, st.level); return b; }
+  storageBonus() { return this.sum('storage', [50, 150, 300]); }
+  needBuilder(pos) { let best = null, bd = Infinity; for (const s of this.structures) { if (s.built || !s.alive || s.builders >= 3) continue; const d = dist2D(pos, s.pos) * (s.builders + 1); if (d < bd) { bd = d; best = s; } } return best; }
+  nearestLitLamp(pos) { let best = null, bd = Infinity; for (const s of this.structures) { if (s.type !== 'lamp' || !s.lit) continue; const d = dist2D(pos, s.pos); if (d < bd) { bd = d; best = s; } } return best; }
+  nearestStructure(pos, r) { let best = null, bd = r; for (const s of this.structures) { if (!s.alive || s.type === 'firebreak') continue; const d = dist2D(pos, s.pos) - s.radius; if (d < bd) { bd = d; best = s; } } return best; }
+  allTargets() { return this.structures.filter(s => s.alive && s.type !== 'firebreak'); }
+  update(dt) { for (const s of [...this.structures]) s.update(dt); }
+  setGhost(type) { this.clearGhost(); if (!type) return; this.ghostType = type; const fake = { type, def: STRUCTS[type], level: 1, roofed: false, built: true, underground: STRUCTS[type].ug, pos: type === 'firebreak' ? { x: this.origin.x, z: this.origin.z } : null }; this.ghost = makeStructMesh(fake, true); this.ghost.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.5; } }); G.world.surface.add(this.ghost); this.gridHelper.visible = true; if (type === 'firebreak') this.ghost.position.set(this.origin.x, G.world.height(this.origin.x, this.origin.z), this.origin.z); }
+  moveGhost(x, z) { if (!this.ghost || this.ghostType === 'firebreak') return; const c = this.cellOf(x, z); if (c) { this.ghost.visible = true; this.ghost.position.set(c.x, G.world.height(c.x, c.z), c.z); const ok = this.canPlace(this.ghostType, c); this.ghost.traverse(o => { if (o.isMesh) o.material.color.set(ok ? 0x7cf5d3 : 0xff4444); }); } else this.ghost.visible = false; }
+  clearGhost() { if (this.ghost) { G.world.surface.remove(this.ghost); this.ghost = null; } this.ghostType = null; if (this.gridHelper) this.gridHelper.visible = false; }
+}
+
+/* =====================================================================
+   بخش ۸: کلونی — ملکه، تخم‌گذاری، مصرف غذا، ظرفیت جمعیت، فرمان‌ها، کوچ‌سازی
+   ===================================================================== */
+class Colony {
+  constructor() {
+    const p = G.world.nestPos; this.nestPos = { x: p.x, z: p.z }; this.queen = null; this.eggs = []; this.eggT = 0; this.soldierRatio = 0.3; this.layingPaused = false; this.shelter = false; this.ambush = false; this.overflowT = 0; this.fleeT = 0; this.starveT = 0; this.alarm = null; this.migrating = false; this.migTarget = null; this.stats = { born: 0, lost: 0, kills: 0 }; this.discT = 0;
+    this.eggGroup = new THREE.Group(); G.world.surface.add(this.eggGroup);
+    this.nest = new Structure('nest', this.nestPos.x, this.nestPos.z); this.nest.built = true; this.nest.progress = 1; this.nest.applyBuildVisual();
+    this.queen = new Unit('queen', 'player', p.x + 5, p.z + 5);
+    for (let i = 0; i < 8; i++) this.spawn('worker'); for (let i = 0; i < 3; i++) this.spawn('soldier');
+  }
+  get units() { return G.units.filter(u => u.isPlayer); }
+  count(kind) { let c = 0; for (const u of G.units) if (u.isPlayer && u.kind === kind) c++; return c; }
+  pop() { let c = 0; for (const u of G.units) if (u.isPlayer) c++; return c; }
+  spawn(kind) { const a = rnd(0, 6.28), r = rnd(8, 16); const u = new Unit(kind, 'player', this.nestPos.x + Math.cos(a) * r, this.nestPos.z + Math.sin(a) * r); u.guardPos = { x: this.nestPos.x + Math.cos(a) * 28, z: this.nestPos.z + Math.sin(a) * 28 }; this.stats.born++; return u; }
+  popCap() { return 10 + G.build.sum('brood', [8, 14, 22]) + G.build.sum('storage', [4, 8, 12]); }
+  soldierCap() { return 5 + G.build.sum('barracks', [6, 14, 25]); }
+  // فاصله‌ی تخم‌گذاری: به سطح اتاق تخم‌گذاری و میزان غذای ذخیره‌شده وابسته است
+  eggInterval() { const lvl = G.build.bestLevel('brood'); let base = [20, 10, 5, 2.5][lvl]; const f = G.res.store.food / G.res.cap(); return base * clamp(1.5 - f, 0.5, 1.5); }
+  deliverPoint(u) { if (u.layer > 0) return G.caves.arrival(u.shaft || G.world.caves[0]); if (this.migrating) return null; return this.nestPos; }
+  deposit(u) { if (u.carry.amount > 0) { const got = G.res.add(u.carry.type, u.carry.amount); if (got < u.carry.amount && ['food', 'wood', 'stone', 'bio'].includes(u.carry.type)) G.ui.hint('انبار پر است! انبار بسازید یا ارتقا دهید'); } u.carry.amount = 0; u.carry.type = null; }
+  raiseAlarm(pos, from) { if (from && !from.isStructure) this.alarm = { pos: { x: pos.x, z: pos.z }, t: G.time }; }
+  update(dt) {
+    const units = this.units; const n = units.length;
+    // مصرف غذا و گرسنگی
+    G.res.store.food -= n * CFG.FOOD_PER_ANT * dt;
+    if (G.res.store.food <= 0) { G.res.store.food = 0; this.starveT += dt; if (this.starveT > 6) { this.starveT = 0; const v = units.find(u => u.kind === 'worker') || units.find(u => u.kind === 'soldier'); if (v) { v.die(null); G.ui.msg('یک مورچه از گرسنگی مرد! غذا جمع کنید', 'danger'); } } } else this.starveT = 0;
+    // تخم‌گذاری ملکه
+    const cap = this.popCap();
+    if (!this.layingPaused && !this.migrating && this.queen && this.queen.alive && G.res.store.food > CFG.EGG_COST + 3 && n + this.eggs.length < cap) { this.eggT += dt; if (this.eggT >= this.eggInterval()) { this.eggT = 0; this.layEgg(); if (G.build.bestLevel('brood') === 3 && n + this.eggs.length + 1 < cap) this.layEgg(); } }
+    for (let i = this.eggs.length - 1; i >= 0; i--) { const e = this.eggs[i]; e.t += dt; e.mesh.scale.setScalar(0.6 + 0.5 * Math.min(1, e.t / 6)); if (e.t >= 6) { this.eggGroup.remove(e.mesh); this.eggs.splice(i, 1); this.spawn(e.kind); } }
+    // سرریز جمعیت → فرار کارگران → فروپاشی
+    if (n > cap) { this.overflowT += dt; this.fleeT += dt; if (this.fleeT > 3) { this.fleeT = 0; const w = units.find(u => u.kind === 'worker' && u.state !== 'flee' && u.layer === 0); if (w) { w.state = 'flee'; w.releaseNode(); w.sheltered = false; const a = rnd(0, 6.28); w.moveTo(w.pos.x + Math.cos(a) * 300, w.pos.z + Math.sin(a) * 300, 5); G.ui.msg('لانه بیش از حد شلوغ است! کارگران فرار می‌کنند', 'danger'); this.stats.lost++; } } if (this.overflowT > 45) G.game.gameOver('کلونی از هم پاشید: جمعیت از ظرفیت لانه فراتر رفت و کارگران گریختند'); } else this.overflowT = Math.max(0, this.overflowT - dt);
+    // بازیابی سلامت نزدیک لانه (پادگان آن را سریع‌تر می‌کند)
+    const regen = 0.5 + G.build.sum('barracks', [0.5, 1, 2]);
+    for (const u of units) if (u.hp < u.maxHp && u.layer === 0 && G.time - u.hitT > 5 && dist2D(u.pos, this.nestPos) < 90) u.hp = Math.min(u.maxHp, u.hp + regen * dt);
+    if (this.migrating) this.updateMigration(dt);
+    // کشف لانه‌ی قبایل با برد دید
+    this.discT += dt; if (this.discT > 1) { this.discT = 0; for (const k in G.diplo.tribes) { const t = G.diplo.tribes[k]; if (t.discovered) continue; for (const u of units) { if (u.layer === 0 && dist2D(u.pos, t.nest.pos) < u.vision() + 40) { t.discovered = true; G.ui.msg(`لانه‌ی ${t.name} (${t.persona}) کشف شد! برای دیپلماسی روی آن کلیک کنید`, 'info'); break; } } } }
+    if (this.queen && !this.queen.alive) G.game.gameOver('ملکه کشته شد. کلونی بدون ملکه محکوم به نابودی است');
+    if (!this.nest.alive && !this.migrating) G.game.gameOver('لانه‌ی اصلی ویران شد');
+  }
+  layEgg() { G.res.store.food -= CFG.EGG_COST; const kind = (Math.random() < this.soldierRatio && this.count('soldier') < this.soldierCap()) ? 'soldier' : 'worker'; const m = new THREE.Mesh(SHARED.eggGeo, SHARED.eggMat); const a = rnd(0, 6.28), r = rnd(6, 11); const x = this.nestPos.x + Math.cos(a) * r, z = this.nestPos.z + Math.sin(a) * r; m.position.set(x, G.world.height(x, z) + 0.8, z); this.eggGroup.add(m); this.eggs.push({ t: 0, kind, mesh: m }); }
+  // ---------- فرمان‌های کاربر ----------
+  commandMove(units, x, z) {
+    let i = 0; for (const u of units) {
+      if (u.kind === 'queen') { G.ui.hint('ملکه فقط هنگام کوچ‌سازی لانه را ترک می‌کند'); continue; }
+      const ox = (i % 4 - 1.5) * 4.5, oz = (Math.floor(i / 4) - 1) * 4.5; i++; u.sheltered = false; u.target = null; u.releaseNode(); if (u.site) { u.site.builders--; u.site = null; }
+      if (u.kind === 'worker') { u.state = 'moving'; u.moveTo(x + ox, z + oz, 3); }
+      else { u.state = 'idle'; u.order = 'attackMove'; u.baseOrder = 'attackMove'; u.buried = false; u.keepGuard = false; u.moveTo(x + ox, z + oz, 5); }
+    }
+  }
+  commandAttack(units, target) { for (const u of units) { if (u.kind === 'soldier') { u.state = 'idle'; u.sheltered = false; u.engage(target, true); } else if (u.kind === 'worker') { u.releaseNode(); u.state = 'moving'; u.moveTo(target.pos.x, target.pos.z, 8); } } }
+  commandGather(units, node) { let n = 0; for (const u of units) { if (u.kind !== 'worker' || u.layer !== node.layer) continue; u.sheltered = false; u.releaseNode(); if (u.site) { u.site.builders--; u.site = null; } u.node = node; node.reservers++; u.state = 'toNode'; u.path = null; n++; } if (n) G.ui.msg(`${fa(n)} کارگر به جمع‌آوری ${node.name} فرستاده شدند`, 'info'); }
+  commandStop(units) { for (const u of units) { u.stop(); u.target = null; if (u.kind === 'soldier') { u.order = 'guard'; u.baseOrder = 'guard'; u.guardPos = { x: u.pos.x, z: u.pos.z }; } else if (u.kind === 'worker') { u.releaseNode(); u.state = 'idle'; } } }
+  setShelter(on) { this.shelter = on; for (const u of this.units) { if (u.kind === 'worker' && u.layer === 0 && u.state !== 'flee') { if (on) { u.releaseNode(); if (u.site) { u.site.builders--; u.site = null; } u.state = 'toShelter'; u.path = null; } else if (u.sheltered || u.state === 'toShelter') { u.sheltered = false; u.state = 'idle'; } } } G.ui.msg(on ? 'کارگران به داخل لانه پناه می‌برند' : 'کارگران به کار بازگشتند', 'info'); }
+  // ---------- کوچ‌سازی کلونی ----------
+  startMigration(x, z) {
+    if (this.migrating) return;
+    if (!G.world.isValidGround(x, z) || G.world.riverDist(x, z) < 75) { G.ui.msg('این مکان برای لانه مناسب نیست (دور از رود اسیدی و داخل نقشه باشد)', 'warn'); return; }
+    for (const k in G.diplo.tribes) if (dist2D({ x, z }, G.diplo.tribes[k].nest.pos) < 220) { G.ui.msg('خیلی نزدیک به قبیله‌ی رقیب است', 'warn'); return; }
+    this.migrating = true; this.migTarget = { x, z }; G.ui.msg('🐜 کوچ کلونی آغاز شد! کارگران لانه را جمع می‌کنند و ملکه با سربازان حرکت می‌کند (۵۰٪ منابع سازه‌ها بازمی‌گردد)', 'warn');
+    G.build.dismantleAll(0.5); this.nest.destroyQuiet(); for (const e of this.eggs) this.eggGroup.remove(e.mesh); this.eggs.length = 0;
+    const q = this.queen; q.state = 'migrate'; q.moveTo(x, z, 6);
+    for (const u of this.units) { if (u === q) continue; u.sheltered = false; u.releaseNode(); if (u.site) { u.site.builders--; u.site = null; } u.target = null; u.order = 'guard'; u.baseOrder = 'guard'; u.state = 'follow'; }
+    G.mode = 'normal';
+  }
+  updateMigration() {
+    const q = this.queen; if (!q.alive) return;
+    if (!q.path && dist2D(q.pos, this.migTarget) < 14) {
+      this.nestPos = { x: this.migTarget.x, z: this.migTarget.z }; this.nest = new Structure('nest', this.nestPos.x, this.nestPos.z); this.nest.built = true; this.nest.progress = 1; this.nest.applyBuildVisual(); G.build.relocate(this.nestPos); this.migrating = false;
+      for (const u of this.units) { if (u.kind === 'soldier') u.guardPos = { x: this.nestPos.x + rnd(-28, 28), z: this.nestPos.z + rnd(-28, 28) }; u.state = 'idle'; }
+      G.ui.msg('🏠 لانه‌ی جدید بنا شد! کلونی مستقر شد', 'good'); G.cam.focus(this.nestPos.x, this.nestPos.z);
+    } else if (!q.path) q.moveTo(this.migTarget.x, this.migTarget.z, 6);
+  }
+}
+
+/* =====================================================================
+   بخش ۹: تکامل ژنتیکی — ۳ شاخه × ۶ سطح، قابلیت‌های ویژه، جهش معکوس (۱۵٪)
+   ===================================================================== */
+const EVO_TREE = {
+  combat: { name: 'جنگ', icon: '⚔️', color: '#ff6b4a', nodes: [
+    { n: 'زره کیتینی', d: '+۵٪ زره سربازان (تجمعی با هر سطح شاخه)' }, { n: 'آرواره‌های سریع', d: '+۱۰٪ سرعت حمله' }, { n: 'نیش سنگین', d: '+۱۵٪ آسیب' },
+    { n: 'غده‌ی سم', d: 'حملات سربازان سم تدریجی وارد می‌کنند' }, { n: 'سربازان بالدار', d: 'سربازان از پرندگان مصون‌اند و به آن‌ها حمله می‌کنند' }, { n: 'فشار مرگبار', d: 'قابلیت: ۳ برابر آسیب برای ۱۰ ثانیه، −۵۰٪ سلامت موقت' }] },
+  labor: { name: 'کار', icon: '🔧', color: '#ffc46b', nodes: [
+    { n: 'پاهای چابک', d: '+۱۰٪ سرعت جمع‌آوری (تجمعی)' }, { n: 'آرواره‌ی حمل', d: 'ظرفیت حمل +۱ (تا ۵)' }, { n: 'معماران', d: '−۲۰٪ زمان ساخت سازه‌ها' },
+    { n: 'بازیافت', d: '۳۰٪ منابع سازه‌های تخریب‌شده بازمی‌گردد' }, { n: 'حفر سریع', d: '۲ برابر سرعت حفر تونل‌های زیرزمینی' }, { n: 'کارگران فولادی', d: 'ظرفیت حمل ۵ و +۱۰٪ سرعت' }] },
+  psyche: { name: 'روان', icon: '🧠', color: '#b26cff', nodes: [
+    { n: 'ادراک', d: '+۲۵٪ برد دید (تجمعی)' }, { n: 'کمین', d: 'سربازان نگهبان زیر خاک پنهان می‌شوند و غافلگیرانه با ۲ برابر آسیب حمله می‌کنند' }, { n: 'فریب', d: 'قابلیت: دشمنان نزدیک لانه را به نقطه‌ای دور می‌کشاند' },
+    { n: 'هماهنگی حمله', d: 'قابلیت: همه‌ی سربازان همزمان به یک هدف با +۵۰٪ آسیب' }, { n: 'ارتباط دوربرد', d: 'برد دید ۲ برابر' }, { n: 'ذهن کندو', d: '+۱۰٪ به همه‌ی توانایی‌ها' }] },
+};
+class Evolution {
+  constructor() { this.active = { combat: [0, 0, 0, 0, 0, 0], labor: [0, 0, 0, 0, 0, 0], psyche: [0, 0, 0, 0, 0, 0] }; this.press = 0; this.pressCd = 0; this.coord = { t: 0, target: null, cd: 0 }; this.decoyCd = 0; this.secret = false; }
+  has(b, i) { return this.active[b][i] === 1; }
+  count(b) { return this.active[b].reduce((a, c) => a + c, 0); }
+  nextIndex(b) { return this.active[b].indexOf(0); }
+  cost(i) { return { crystals: i + 1, points: i >= 3 ? 2 : 1 }; }
+  canBuy(b) { const i = this.nextIndex(b); if (i < 0) return false; const c = this.cost(i); return G.res.crystals >= c.crystals && G.res.evoPoints >= c.points; }
+  buy(b) {
+    const i = this.nextIndex(b); if (i < 0) return; const c = this.cost(i);
+    if (!this.canBuy(b)) { G.ui.msg('کریستال جهش یا امتیاز تکامل کافی نیست', 'warn'); return; }
+    G.res.crystals -= c.crystals; G.res.evoPoints -= c.points; this.active[b][i] = 1; G.ui.msg(`🧬 تکامل: ${EVO_TREE[b].nodes[i].n}`, 'good');
+    // مکانیک ریسک: جهش معکوس
+    if (Math.random() < CFG.REVERSE_CHANCE) { const prev = []; for (let k = 0; k < i; k++) if (this.active[b][k]) prev.push(k); if (prev.length) { const k = prev[Math.floor(Math.random() * prev.length)]; this.active[b][k] = 0; G.ui.msg(`⚠ جهش معکوس رخ داد! صفت «${EVO_TREE[b].nodes[k].n}» از دست رفت`, 'danger'); G.ui.redFlash(); } }
+    G.ui.refreshPanel();
+  }
+  psy() { return this.has('psyche', 5) ? 1.1 : 1; }
+  armor() { return Math.min(0.5, 0.05 * this.count('combat') * this.psy()); }
+  atkSpeed() { return (1 + 0.10 * this.count('combat')) * this.psy(); }
+  dmgMult() { return (1 + 0.15 * this.count('combat')) * this.psy(); }
+  gatherMult() { return (1 + 0.10 * this.count('labor') + (this.has('labor', 5) ? 0.1 : 0)) * this.psy(); }
+  carryCap() { return this.has('labor', 5) ? 5 : Math.min(5, 1 + this.count('labor')); }
+  buildMult() { return (1 + 0.2 * this.count('labor')) * this.psy(); }
+  digMult() { return this.has('labor', 4) ? 2 : 1; }
+  visionMult() { let m = 1 + 0.25 * this.count('psyche'); if (this.has('psyche', 4)) m *= 2; return m; }
+  get flying() { return this.has('combat', 4); }
+  usePress() { if (!this.has('combat', 5)) return; if (this.pressCd > 0) { G.ui.msg('فشار مرگبار هنوز آماده نیست', 'warn'); return; } this.press = 10; this.pressCd = 60; for (const u of G.units) if (u.isPlayer && u.kind === 'soldier') u.hp = Math.max(1, u.hp * 0.5); G.ui.msg('💢 فشار مرگبار فعال شد! ۳ برابر آسیب برای ۱۰ ثانیه (سلامت سربازان نصف شد)', 'warn'); G.ui.redFlash(); }
+  useDecoy(x, z) { if (!this.has('psyche', 2)) return; if (this.decoyCd > 0) { G.ui.msg('فریب آماده نیست', 'warn'); return; } this.decoyCd = 45; let n = 0; for (const u of G.units) { if (u.isPlayer || u.kind === 'critter' || u.layer !== 0 || u.asleep) continue; if (dist2D(u.pos, G.colony.nestPos) < 240) { u.target = null; u.order = 'attackMove'; u.baseOrder = 'attackMove'; u.moveTo(x + rnd(-10, 10), z + rnd(-10, 10), 8); u.scanT = 14; n++; } } G.ui.msg(`🎭 فریب: ${fa(n)} دشمن به دام افتادند`, 'good'); }
+  useCoord(target) { if (!this.has('psyche', 3)) return; if (this.coord.cd > 0) { G.ui.msg('هماهنگی حمله آماده نیست', 'warn'); return; } this.coord = { t: 12, target, cd: 60 }; for (const u of G.units) if (u.isPlayer && u.kind === 'soldier' && u.layer === target.layer) { u.state = 'idle'; u.sheltered = false; u.engage(target, true); } G.ui.msg('🎯 حمله‌ی هماهنگ! همه‌ی سربازان به یک هدف (+۵۰٪ آسیب)', 'warn'); }
+  checkArtifacts() { if (!this.secret && G.res.artifacts >= 5) { this.secret = true; G.res.evoPoints += 3; for (const k in G.diplo.tribes) G.diplo.tribes[k].discovered = true; G.ui.msg('🏺 ارتقای مخفی «حافظه‌ی باستانی» باز شد! +۳ امتیاز تکامل، همه‌ی قبایل آشکار شدند', 'good'); } }
+  update(dt) { if (this.press > 0) this.press -= dt; if (this.pressCd > 0) this.pressCd -= dt; if (this.decoyCd > 0) this.decoyCd -= dt; if (this.coord.cd > 0) this.coord.cd -= dt; if (this.coord.t > 0) this.coord.t -= dt; }
+}
+
+/* =====================================================================
+   بخش ۱۰: آب‌وهوای پویا — چرخه‌ی روز/شب، باران اسیدی، خشکسالی، صاعقه و آتش‌سوزی جنگل
+   ===================================================================== */
+class FireSystem {
+  constructor() { this.burning = []; this.spreadT = 0; this.regrowT = 0; const g = new THREE.ConeGeometry(4, 14, 6); const m = new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.85 }); this.pool = []; for (let i = 0; i < (isMobile ? 30 : 70); i++) { const f = new THREE.Mesh(g, m); f.visible = false; G.world.surface.add(f); this.pool.push(f); } }
+  ignite(t) { if (!t.alive || t.burning) return; t.burning = true; t.burnT = 0; this.burning.push(t); G.world.setTreeColor(t, 0xff6a1a); }
+  update(dt) {
+    const W = G.world;
+    if (this.burning.length) {
+      this.spreadT += dt;
+      if (this.spreadT > 1.5) { this.spreadT = 0; const cand = W.trees; for (const b of this.burning) for (const t of cand) { if (!t.alive || t.burning) continue; const d = Math.hypot(t.x - b.x, t.z - b.z); if (d < 55 && W.riverDist(t.x, t.z) > 60 && Math.random() < 0.6) this.ignite(t); } }
+      const fb = G.build.firebreak && G.build.firebreak.built;
+      for (let i = this.burning.length - 1; i >= 0; i--) {
+        const t = this.burning[i]; t.burnT += dt;
+        if (t.burnT > 20) { this.burning.splice(i, 1); t.burning = false; t.burnt = true; W.setTreeColor(t, 0x1a1210); W.hideTree(t); continue; }
+        for (const u of G.units) { if (u.layer === 0 && u.alive && Math.hypot(u.pos.x - t.x, u.pos.z - t.z) < 14) { u.hp -= 4 * dt; u.flash = 0.1; if (u.hp <= 0) u.die(null); } }
+        if (!fb) for (const s of G.build.structures) { if (s.alive && !s.underground && s.type !== 'firebreak' && Math.hypot(s.pos.x - t.x, s.pos.z - t.z) < 26) s.takeDamage(s.maxHp * 0.03 * dt, null); }
+      }
+      let k = 0; for (const t of this.burning) { if (k >= this.pool.length) break; const f = this.pool[k++]; f.visible = true; f.position.set(t.x, W.height(t.x, t.z) + t.h * 0.6 + Math.sin(G.time * 8 + k) * 2, t.z); f.scale.set(1 + Math.sin(G.time * 10 + k) * 0.2, 1 + t.r / 12, 1); }
+      for (; k < this.pool.length; k++) this.pool[k].visible = false;
+      if (!this.burning.length) G.ui.msg('🔥 آتش‌سوزی خاموش شد', 'info');
+    }
+    this.regrowT += dt;
+    if (this.regrowT > 25) { this.regrowT = 0; const dead = W.trees.filter(t => !t.alive && !t.burning); if (dead.length && Math.random() < 0.6) { const t = dead[Math.floor(Math.random() * dead.length)]; if (!G.units.some(u => u.layer === 0 && dist2D(u.pos, t) < 6)) W.regrowTree(t); } }
+  }
+}
+class Weather {
+  constructor() { this.rain = false; this.drought = false; this.acidFood = 0; this.warned = {}; this.fire = new FireSystem(); this.lightIdx = -1; this.lightOffset = rnd(0, 200); }
+  get cycleT() { return G.time % CFG.DAY; }
+  get isNight() { return this.cycleT >= CFG.DAY / 2; }
+  get dayFrac() { return this.cycleT / CFG.DAY; }
+  intensity() { return 1 + 0.15 * G.day; }   // مقیاس‌پذیری دشواری با گذر روزها
+  update(dt) {
+    G.day = Math.floor(G.time / CFG.DAY);
+    // باران اسیدی
+    const rt = G.time % CFG.RAIN_EVERY; const rainOn = rt >= CFG.RAIN_START && rt < CFG.RAIN_START + CFG.RAIN_LEN; const key = 'r' + Math.floor(G.time / CFG.RAIN_EVERY);
+    if (rt >= CFG.RAIN_START - 10 && rt < CFG.RAIN_START && !this.warned[key]) { this.warned[key] = 1; G.ui.msg('⚠ باران اسیدی تا ۱۰ ثانیه دیگر! کارگران را به لانه ببرید و سقف نصب کنید', 'warn'); }
+    if (rainOn !== this.rain) { this.rain = rainOn; G.world.setRain(rainOn); if (rainOn) G.ui.msg('☔ باران اسیدی آغاز شد! سازه‌های سطحی بدون سقف آسیب می‌بینند', 'danger'); else { G.ui.msg('باران اسیدی تمام شد؛ میوه‌ها تا یک دقیقه اسیدی‌اند', 'info'); this.acidFood = 60; } }
+    if (this.acidFood > 0) this.acidFood -= dt;
+    if (this.rain) {
+      const k = this.intensity();
+      for (const s of [...G.build.structures]) { if (!s.alive || !s.built || s.underground || s.roofed || s.type === 'firebreak' || s.type === 'nest') continue; s.takeDamage(s.maxHp * 0.02 * k * dt, null); }
+      for (const u of [...G.units]) { if (u.isPlayer && u.layer === 0 && !u.sheltered && u.kind !== 'queen') { u.hp -= 1 * k * dt; if (u.hp <= 0) u.die(null); } }
+    }
+    // خشکسالی
+    const dtm = G.time % CFG.DROUGHT_EVERY; const dr = dtm >= CFG.DROUGHT_START && dtm < CFG.DROUGHT_START + CFG.DROUGHT_LEN;
+    if (dr !== this.drought) { this.drought = dr; G.ui.msg(dr ? '🏜 خشکسالی آغاز شد! منابع غذایی سطحی نصف می‌شوند (۳ دقیقه) — کوچ به منطقه‌ی جدید را در نظر بگیرید' : 'خشکسالی پایان یافت', 'warn'); }
+    // صاعقه و آتش‌سوزی
+    const li = Math.floor((G.time + this.lightOffset) / CFG.LIGHTNING_EVERY); const lt = (G.time + this.lightOffset) % CFG.LIGHTNING_EVERY;
+    if (li > this.lightIdx && lt >= CFG.LIGHTNING_AT && G.time > 60) { this.lightIdx = li; this.strike(); }
+    this.fire.update(dt);
+  }
+  strike() { const alive = G.world.trees.filter(t => t.alive && !t.burning); if (!alive.length) return; const t = alive[Math.floor(Math.random() * alive.length)]; G.world.flashT = 0.3; G.ui.msg('⚡ صاعقه به جنگل برخورد کرد! آتش‌سوزی آغاز شد — کمربند آتش‌شکن بسازید یا کوچ کنید', 'danger'); G.ui.redFlash(); this.fire.ignite(t); for (const o of alive) if (o !== t && Math.hypot(o.x - t.x, o.z - t.z) < 40) this.fire.ignite(o); }
+}
+
+/* =====================================================================
+   بخش ۱۱: غارهای زیرزمینی — ۳ طبقه + کنام اهریمن، حفر راهرو، انتقال واحدها، کرم‌های خفته
+   ===================================================================== */
+class CaveSystem {
+  constructor() { this.unlocked = [true, false, false, false, false]; this.dig = null; this.worms = []; this.demon = null; this.spawnDwellers(); }
+  spawnDwellers() {
+    for (let i = 0; i < 3; i++) { const a = rnd(0, 6.28), r = rnd(150, 380); const w = new Unit('worm', 'worm', Math.cos(a) * r, Math.sin(a) * r, 3); w.asleep = true; this.worms.push(w); }
+    const d = new Unit('demon', 'demon', 0, -40, 4); d.asleep = true; this.demon = d;
+  }
+  arrival(e) { return { x: e.x * 0.35, z: e.z * 0.35 }; }
+  nearestEntrance(pos) { let b = null, bd = Infinity; for (const e of G.world.caves) { const d = dist2D(pos, e); if (d < bd) { bd = d; b = e; } } return b; }
+  digCost(f) { return f === 4 ? { food: 100 } : { food: 50 }; }
+  finalReady() { return Object.values(G.diplo.tribes).every(t => t.destroyed || t.state === 'allied'); }
+  canDig(f) { if (this.unlocked[f] || this.dig) return false; if (!this.unlocked[f - 1]) return false; if (f === 4 && !this.finalReady()) return false; return true; }
+  requestDig(f) {
+    if (this.dig) { G.ui.msg('یک حفاری در حال انجام است', 'warn'); return; }
+    if (!this.canDig(f)) { G.ui.msg(f === 4 ? 'برای رسیدن به اهریمن باید هر ۳ قبیله شکست خورده یا متحد باشند' : 'ابتدا طبقه‌ی قبلی را باز کنید', 'warn'); return; }
+    const workers = G.units.filter(u => u.isPlayer && u.kind === 'worker' && u.layer === 0 && !u.sheltered && u.state !== 'flee');
+    if (workers.length < 20) { G.ui.msg(`حداقل ۲۰ کارگر سطحی لازم است (${fa(workers.length)} موجود)`, 'warn'); return; }
+    if (!G.res.pay(this.digCost(f))) { G.ui.msg(`غذای کافی نیست (${fa(this.digCost(f).food)} غذا)`, 'warn'); return; }
+    const e = this.nearestEntrance(G.colony.nestPos); this.dig = { floor: f, entrance: e, progress: 0, need: f === 4 ? 60 : 30 };
+    workers.sort((a, b) => dist2D(a.pos, e) - dist2D(b.pos, e)); for (const w of workers.slice(0, 20)) { w.releaseNode(); if (w.site) { w.site.builders--; w.site = null; } w.state = 'toDig'; w.path = null; }
+    G.ui.msg(`⛏ حفر راهرو به طبقه‌ی ${fa(f)} آغاز شد (۲۰ کارگر، ${fa(this.dig.need)} ثانیه)`, 'info'); G.cam.focus(e.x, e.z); G.ui.refreshPanel();
+  }
+  update(dt) {
+    if (!this.dig) return; let n = 0; for (const u of G.units) if (u.isPlayer && u.state === 'digging') n++;
+    this.dig.progress += dt * (n / 20) * G.evo.digMult();
+    if (this.dig.progress >= this.dig.need) { this.unlocked[this.dig.floor] = true; G.ui.msg(`طبقه‌ی ${fa(this.dig.floor)} غار باز شد! واحدها را انتخاب کنید و «ورود به غار» بزنید`, 'good'); for (const u of G.units) if (u.isPlayer && (u.state === 'digging' || u.state === 'toDig')) u.state = 'idle'; this.dig = null; G.ui.refreshPanel(); }
+  }
+  sendUnits(units, floor) {
+    if (!this.unlocked[floor]) { G.ui.msg('این طبقه هنوز باز نشده', 'warn'); return; } let n = 0;
+    for (const u of units) {
+      if (u.kind === 'queen' || u.layer === floor) continue; u.releaseNode(); if (u.site) { u.site.builders--; u.site = null; } u.target = null; u.order = 'guard'; u.baseOrder = 'guard'; u.sheltered = false; u.path = null;
+      if (floor === 0) u.state = 'toSurface';
+      else if (u.layer === 0) { u.shaft = this.nearestEntrance(u.pos); u.caveTarget = floor; u.state = 'toCave'; }
+      else this.transfer(u, floor, u.shaft || G.world.caves[0]);
+      n++;
+    }
+    if (n) G.ui.msg(floor === 0 ? `${fa(n)} واحد به سطح بازمی‌گردند` : `${fa(n)} واحد به طبقه‌ی ${fa(floor)} می‌روند`, 'info');
+  }
+  transfer(u, layer, e) {
+    u.layer = layer; u.shaft = e; u.path = null; u.state = 'idle'; u.target = null;
+    let p; if (layer === 0) p = { x: e.x + rnd(-10, 10), z: e.z + rnd(-10, 10) }; else { const a = this.arrival(e); p = { x: a.x + rnd(-8, 8), z: a.z + rnd(-8, 8) }; }
+    u.body.position.set(p.x, CFG.LAYER_Y[layer], p.z); u.body.velocity.set(0, 0, 0); u.pos.x = p.x; u.pos.z = p.z; u.guardPos = { x: p.x, z: p.z }; u.sync();
+  }
+  setView(l) {
+    if (l > 0 && !this.unlocked[l]) { G.ui.msg('این طبقه هنوز حفر نشده', 'warn'); return; }
+    G.viewLayer = l; G.world.surface.visible = l === 0; for (let i = 1; i <= 4; i++) G.world.layers[i].visible = i === l;
+    G.world.sun.visible = G.world.hemi.visible = G.world.moon.visible = l === 0;
+    if (l === 0) G.cam.focus(G.colony.nestPos.x, G.colony.nestPos.z); else G.cam.focus(0, 0);
+    G.selected = G.selected.filter(u => u.layer === l); G.ui.refreshPanel();
+  }
+}
+
+/* =====================================================================
+   بخش ۱۲: اکوسیستم — عنکبوت‌های شب‌زی، پرندگان غول‌پیکر، حشرات کوچک، مرگ واحدها و اجساد
+   ===================================================================== */
+function makeBirdMesh() {
+  const g = new THREE.Group(); const m = mat(0x2a2a3a);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), m); body.scale.set(3, 2.2, 7); g.add(body);
+  const lw = new THREE.Mesh(new THREE.BoxGeometry(18, 0.4, 5), m); lw.position.set(-9, 0.5, 0); g.add(lw);
+  const rw = new THREE.Mesh(new THREE.BoxGeometry(18, 0.4, 5), m); rw.position.set(9, 0.5, 0); g.add(rw);
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.5, 5).rotateX(Math.PI / 2), mat(0xd9772a)); beak.position.set(0, 0, 8); g.add(beak);
+  return g;
+}
+class Bird {
+  constructor() {
+    const s = CFG.HALF - 20; const side = Math.floor(rnd(0, 4));
+    this.pos = new THREE.Vector3(side === 0 ? -s : side === 1 ? s : rnd(-s, s), 80, side < 2 ? rnd(-s, s) : (side === 2 ? -s : s));
+    this.hp = 40; this.alive = true; this.state = 'hunt'; this.target = null; this.exit = null; this.wing = 0; this.speed = 55; this.layer = 0;
+    this.mesh = makeBirdMesh(); G.world.surface.add(this.mesh); this.pickTarget();
+  }
+  pickTarget() { const c = G.units.filter(u => u.isPlayer && u.layer === 0 && !u.sheltered && u.kind !== 'queen' && !(u.kind === 'soldier' && G.evo.flying)); if (!c.length) { this.state = 'leave'; return; } this.target = c[Math.floor(Math.random() * c.length)]; G.ui.msg('🦅 پرنده‌ی غول‌پیکر در آسمان! واحدهای سطحی خارج از برد برج‌ها در خطرند', 'warn'); }
+  hit(d) { if (!this.alive) return; this.hp -= d; if (this.state === 'hunt') { this.state = 'leave'; G.ui.msg('برج‌ها/سربازان بالدار پرنده را فراری دادند!', 'good'); } if (this.hp <= 0) { const n = G.res.spawn('corpse', this.pos.x, this.pos.z); n.amount = n.max = 30; G.ui.msg('پرنده‌ی غول‌پیکر سقوط کرد! +۱ امتیاز تکامل', 'good'); G.res.evoPoints++; this.remove(); } }
+  remove() { this.alive = false; G.world.surface.remove(this.mesh); if (G.eco.bird === this) G.eco.bird = null; }
+  update(dt) {
+    if (!this.alive) return; let goal;
+    if (this.state === 'hunt') {
+      const t = this.target; if (!t || !t.alive || t.layer !== 0 || t.sheltered) { this.pickTarget(); return; } goal = t.pos;
+      if (dist2D(this.pos, goal) < 8) {
+        const guarded = G.build.structures.some(s => s.type === 'tower' && s.built && dist2D(s.pos, t.pos) < s.towerRange());
+        if (guarded) this.state = 'leave'; else { t.remove(); G.colony.stats.lost++; G.ui.msg(`🦅 پرنده یک ${t.name} را ربود!`, 'danger'); this.state = 'leave'; }
+      }
+    } else { if (!this.exit) this.exit = { x: this.pos.x > 0 ? CFG.HALF + 120 : -CFG.HALF - 120, z: clamp(this.pos.z * 1.3, -1100, 1100) }; goal = this.exit; if (Math.abs(this.pos.x) > CFG.HALF + 60) { this.remove(); return; } }
+    const dx = goal.x - this.pos.x, dz = goal.z - this.pos.z; const d = Math.hypot(dx, dz) || 1;
+    this.pos.x += dx / d * this.speed * dt; this.pos.z += dz / d * this.speed * dt;
+    const gy = G.world.height(clamp(this.pos.x, -999, 999), clamp(this.pos.z, -999, 999)); const ty = (this.state === 'hunt' && d < 60) ? gy + 6 + d * 0.7 : gy + 60; this.pos.y = lerp(this.pos.y, ty, 0.08);
+    this.mesh.position.copy(this.pos); this.mesh.rotation.y = Math.atan2(dx, dz); this.wing += dt * 8; this.mesh.children[1].rotation.z = Math.sin(this.wing) * 0.6; this.mesh.children[2].rotation.z = -Math.sin(this.wing) * 0.6;
+  }
+}
+class Ecosystem {
+  constructor() { this.bird = null; this.birdT = CFG.BIRD_EVERY * 0.8; this.spiderNight = -1; this.critterT = 0; this.critterCap = isMobile ? 22 : 34; for (let i = 0; i < this.critterCap; i++) this.spawnCritter(); }
+  spawnCritter() { for (let t = 0; t < 20; t++) { const x = rnd(-900, 900), z = rnd(-900, 900); if (!G.world.isValidGround(x, z)) continue; if (dist2D({ x, z }, G.world.nestPos) < 40) continue; new Unit('critter', 'critter', x, z); return; } }
+  // قواعد خصومت بین جناح‌ها
+  isHostile(a, b) {
+    const fa_ = a.faction, fb = b.faction; if (fa_ === fb) return false; if (fa_ === 'critter' || fb === 'critter') return false;
+    const mon = f => f === 'spider' || f === 'worm' || f === 'demon'; if (mon(fa_) || mon(fb)) return true;
+    const T = G.diplo.tribes; if (fa_ === 'player') return !!(T[fb] && T[fb].state === 'war'); if (fb === 'player') return !!(T[fa_] && T[fa_].state === 'war');
+    return !!(T[fa_] && T[fb]);
+  }
+  onUnitDied(u, killer) {
+    const si = G.selected.indexOf(u); if (si >= 0) G.selected.splice(si, 1); for (const g of G.groups) { const i = g.indexOf(u); if (i >= 0) g.splice(i, 1); }
+    if (u.silent) return;
+    if (u.isPlayer) { G.colony.stats.lost++; if (killer && killer.faction !== 'player' && u.kind !== 'queen') { const n = G.res.spawn('corpse', u.pos.x, u.pos.z, u.layer); n.amount = n.max = 3; } return; }
+    const bio = { critter: 4, spider: 18, tsoldier: 10, tworker: 5, worm: 80, minion: 15, demon: 0 }[u.kind] || 5;
+    if (u.kind === 'critter') { const n = G.res.spawn('corpse', u.pos.x, u.pos.z, u.layer); n.type = 'food'; n.amount = n.max = 6; const b = G.res.spawn('corpse', u.pos.x + 2.5, u.pos.z, u.layer); b.amount = b.max = bio; }
+    else if (bio > 0) { const n = G.res.spawn('corpse', u.pos.x, u.pos.z, u.layer); n.amount = n.max = bio; }
+    if (killer && killer.faction === 'player') {
+      G.colony.stats.kills++;
+      if (u.kind === 'spider') { G.res.evoPoints += 1; if (Math.random() < 0.25) { G.res.crystals++; G.ui.msg('عنکبوت یک کریستال جهش انداخت!', 'good'); } }
+      if (u.kind === 'worm') { G.res.evoPoints += 3; G.res.crystals += 3; G.ui.msg('کرم باستانی کشته شد! +۳ امتیاز تکامل، +۳ کریستال جهش', 'good'); }
+      if (u.kind === 'tsoldier' && Math.random() < 0.15) G.res.evoPoints++;
+    }
+    if (u.kind === 'demon') G.game.victory();
+    if (G.diplo.tribes[u.faction]) G.diplo.tribes[u.faction].onUnitLost(u, killer);
+  }
+  update(dt) {
+    // عنکبوت‌ها با فرارسیدن شب بیرون می‌آیند (تعداد با روزها بیشتر می‌شود)
+    if (G.weather.isNight && this.spiderNight !== G.day) {
+      this.spiderNight = G.day; const per = Math.min(6, 1 + Math.floor(G.day * 0.7)); let total = 0;
+      for (const n of G.world.spiderNests) for (let i = 0; i < per; i++) { const s = new Unit('spider', 'spider', n.x + rnd(-10, 10), n.z + rnd(-10, 10)); s.home = n; total++; }
+      G.ui.msg(`🕷 شب فرا رسید؛ ${fa(total)} عنکبوت شب‌زی بیرون آمدند — چراغ زیستی روشن آن‌ها را از لانه دور می‌کند`, 'warn');
+    }
+    this.birdT -= dt; if (this.birdT <= 0 && G.time > 90) { this.birdT = CFG.BIRD_EVERY * Math.max(0.5, 1 - G.day * 0.05); if (!this.bird) this.bird = new Bird(); }
+    if (this.bird) { this.bird.update(dt); if (this.bird && G.evo.flying) for (const u of G.units) { if (u.isPlayer && u.kind === 'soldier' && u.layer === 0 && dist2D(u.pos, this.bird.pos) < 16) { this.bird.hit(12 * dt); if (!this.bird) break; } } }
+    this.critterT += dt; if (this.critterT > 8) { this.critterT = 0; let n = 0; for (const u of G.units) if (u.kind === 'critter') n++; if (n < this.critterCap * (G.weather.drought ? 0.5 : 1)) this.spawnCritter(); }
+  }
+}
+
+/* =====================================================================
+   بخش ۱۳: دیپلماسی — سه قبیله‌ی رقیب با شخصیت‌های متفاوت، اعتبار، تجارت، هدیه، اتحاد، خیانت
+   ===================================================================== */
+function makeTribeNestMesh(hex) { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.ConeGeometry(13, 11, 12), mat(hex)); m.position.y = 5.5; m.castShadow = !isMobile; g.add(m); const h = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 4, 1, 10), mat(0x0a0806)); h.position.y = 11.2; g.add(h); for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(4, 4, 8), mat(hex)); const a = i * 1.57 + 0.5; s.position.set(Math.cos(a) * 16, 2, Math.sin(a) * 16); g.add(s); } return g; }
+class TribeNest {
+  constructor(tribe) { this.tribe = tribe; this.pos = new THREE.Vector3(tribe.site.x, 0, tribe.site.z); this.layer = 0; this.faction = tribe.id; this.isStructure = true; this.radius = 14; this.maxHp = 1500; this.hp = 1500; this.alive = true; this.hitT = -99; this.mesh = makeTribeNestMesh(tribe.colorHex); this.mesh.position.set(this.pos.x, G.world.height(this.pos.x, this.pos.z), this.pos.z); this.mesh.userData.tribe = tribe; G.world.surface.add(this.mesh); G.pickables.push(this.mesh); this.body = G.physics.addStaticSphere(this.pos.x, 0, this.pos.z, 14); }
+  get name() { return 'لانه‌ی ' + this.tribe.name; }
+  takeDamage(d, from) { if (!this.alive) return; this.hp -= d; this.hitT = G.time; if (from && from.isPlayer && this.tribe.state !== 'war') G.diplo.declareWar(this.tribe, true); if (this.hp <= 0) { this.alive = false; G.world.surface.remove(this.mesh); const i = G.pickables.indexOf(this.mesh); if (i >= 0) G.pickables.splice(i, 1); G.physics.remove(this.body); this.tribe.destroyed = true; G.diplo.onTribeDestroyed(this.tribe); } }
+}
+const TRIBE_DEFS = {
+  red: { name: 'قبیله‌ی سرخ', color: '#e04a3a', hex: 0xd23c2c, persona: 'طمع‌کار', trust: 30, desc: 'منابع شما را می‌دزدد و باج می‌خواهد؛ رد درخواستش یعنی جنگ' },
+  blue: { name: 'قبیله‌ی آبی', color: '#3f8fe8', hex: 0x3a86e0, persona: 'صلح‌جو', trust: 50, desc: 'عاشق هدیه است؛ با اعتماد بالا متحد می‌شود، اما اگر به او حمله کنید هرگز نمی‌بخشد' },
+  green: { name: 'قبیله‌ی سبز', color: '#c9d83a', hex: 0x7cc23a, persona: 'خیانت‌کار', trust: 60, desc: 'ظاهراً دوستانه؛ ممکن است در بحبوحه‌ی جنگ از پشت خنجر بزند' },
+};
+class Tribe {
+  constructor(id) { const d = TRIBE_DEFS[id]; this.id = id; this.name = d.name; this.color = d.color; this.colorHex = d.hex; this.persona = d.persona; this.desc = d.desc; this.trust = d.trust; this.state = 'peace'; this.site = G.world.tribeSites[id]; this.nest = new TribeNest(this); this.pool = 8; this.poolT = 0; this.raidT = rnd(60, 120); this.thiefT = 110; this.demandT = 210; this.discovered = false; this.destroyed = false; this.allianceT = 0; this.betrayedByPlayer = false; this.defT = 0; this.helpT = 0; }
+  get maxPool() { return 10 + G.day * 3; }
+  stateName() { return this.destroyed ? 'نابودشده' : { peace: 'صلح', war: '⚔ جنگ', allied: '🤝 متحد' }[this.state]; }
+  onUnitLost(u, killer) { if (killer && killer.isPlayer && this.state !== 'war' && u.kind !== 'tworker') G.diplo.declareWar(this, true); }
+  spawnSoldiers(n, role, dest) { for (let i = 0; i < n; i++) { const u = new Unit('tsoldier', this.id, this.site.x + rnd(-15, 15), this.site.z + rnd(-15, 15)); u.role = role; u.home = this.site; u.order = 'attackMove'; u.baseOrder = 'attackMove'; u.moveTo(dest.x + rnd(-12, 12), dest.z + rnd(-12, 12), 8); } }
+  update(dt) {
+    if (this.destroyed) return;
+    this.poolT += dt; if (this.poolT > 20) { this.poolT = 0; this.pool = Math.min(this.maxPool, this.pool + 1); }
+    // دفاع از لانه هنگام حمله
+    if (G.time - this.nest.hitT < 3) { this.defT -= dt; if (this.defT <= 0 && this.pool > 0) { this.defT = 15; const n = Math.min(this.pool, 6); this.pool -= n; for (let i = 0; i < n; i++) { const u = new Unit('tsoldier', this.id, this.site.x + rnd(-20, 20), this.site.z + rnd(-20, 20)); u.role = 'defend'; u.home = this.site; u.guardPos = { x: this.site.x, z: this.site.z }; } } }
+    if (this.state === 'allied') {
+      this.allianceT -= dt; if (this.allianceT <= 0) { this.state = 'peace'; G.diplo.changeRep(3, 'وفای به پیمان'); G.ui.msg(`پیمان اتحاد با ${this.name} به پایان رسید`, 'info'); G.ui.refreshPanel(); }
+      const enemy = G.diplo.warTribes().find(t => t !== this);
+      if (enemy) {
+        this.helpT -= dt;
+        if (this.helpT <= 0) { this.helpT = 120; const near = G.units.some(u => u.faction === enemy.id && u.role === 'raid' && dist2D(u.pos, G.colony.nestPos) < 260); if (near) { for (let i = 0; i < 4; i++) { const u = new Unit('tsoldier', this.id, G.colony.nestPos.x + rnd(-30, 30), G.colony.nestPos.z + rnd(-30, 30)); u.role = 'helper'; u.home = this.site; u.guardPos = { x: G.colony.nestPos.x, z: G.colony.nestPos.z }; u.lifetime = 90; } G.ui.msg(`${this.name} نیروی کمکی فرستاد!`, 'good'); } }
+        if (this.id === 'green' && Math.random() < dt * 0.006) this.betray();
+      }
+    }
+    if (this.state === 'war') { this.raidT -= dt; if (this.raidT <= 0) { const size = Math.min(this.pool, 3 + G.day * 2 + (G.diplo.coalition ? 2 : 0)); this.raidT = G.diplo.coalition ? 100 : 90; if (size >= 2) { this.pool -= size; this.spawnSoldiers(size, 'raid', G.colony.nestPos); G.ui.msg(`⚔ گروه مهاجم ${this.name} (${fa(size)} سرباز) به سوی لانه در حرکت است!`, 'danger'); } } }
+    if (this.state === 'peace' && this.id === 'red') {
+      this.thiefT -= dt; if (this.thiefT <= 0) { this.thiefT = 150; for (let i = 0; i < 3; i++) { const u = new Unit('tworker', this.id, this.site.x + rnd(-10, 10), this.site.z + rnd(-10, 10)); u.home = this.site; u.order = 'steal'; u.role = 'thief'; } G.ui.msg('دزدان قبیله‌ی سرخ به سمت انبار شما می‌آیند!', 'warn'); }
+      this.demandT -= dt; if (this.demandT <= 0 && !G.ui.demandOpen) { this.demandT = 240; G.diplo.makeDemand(this); }
+    }
+  }
+  betray() {
+    this.state = 'war'; this.trust = 0; this.allianceT = 0; G.ui.msg(`🗡 خیانت! ${this.name} پیمان را شکست و از پشت به لانه حمله می‌کند!`, 'danger'); G.ui.redFlash();
+    const n = G.colony.nestPos; const e = G.diplo.warTribes().find(t => t !== this); const dir = e ? { x: n.x - e.site.x, z: n.z - e.site.z } : { x: 1, z: 0 }; const L = Math.hypot(dir.x, dir.z) || 1;
+    const sp = { x: clamp(n.x + dir.x / L * 150, -950, 950), z: clamp(n.z + dir.z / L * 150, -950, 950) }; const size = Math.min(this.pool, 4 + G.day * 2); this.pool -= size;
+    for (let i = 0; i < size; i++) { const u = new Unit('tsoldier', this.id, sp.x + rnd(-10, 10), sp.z + rnd(-10, 10)); u.role = 'raid'; u.home = this.site; u.order = 'attackMove'; u.baseOrder = 'attackMove'; u.moveTo(n.x, n.z, 8); }
+    this.raidT = 90; G.ui.refreshPanel();
+  }
+}
+class Diplomacy {
+  constructor() { this.rep = 50; this.tribes = { red: new Tribe('red'), blue: new Tribe('blue'), green: new Tribe('green') }; this.coalition = false; this.finalMsg = false; this.checkT = 0; }
+  level() { return this.rep >= 75 ? 'trusted' : (this.rep < 25 ? 'infamous' : 'neutral'); }
+  levelName() { return { trusted: 'قابل اعتماد', neutral: 'خنثی', infamous: 'بی‌اعتبار' }[this.level()]; }
+  changeRep(d, why) { this.rep = clamp(this.rep + d, 0, 100); if (why) G.ui.msg(`اعتبار ${d > 0 ? '+' : ''}${fa(d)} (${why})`, d > 0 ? 'good' : 'warn'); }
+  warTribes() { return Object.values(this.tribes).filter(t => t.state === 'war' && !t.destroyed); }
+  ratio() { return this.level() === 'trusted' ? 1 : 2; }
+  onPlayerAggression(t) { if (t.state !== 'war' && !t.destroyed) this.declareWar(t, true); }
+  trade(t, give, get, amount) {
+    if (this.level() === 'infamous') { G.ui.msg('هیچ قبیله‌ای با شما تجارت نمی‌کند (بی‌اعتبار)', 'warn'); return; } if (t.state === 'war') { G.ui.msg('در حال جنگ تجارت ممکن نیست', 'warn'); return; }
+    const r = this.ratio(); const cost = {}; cost[give] = get === 'crystal' ? 15 * r : amount * r; if (!G.res.pay(cost)) { G.ui.msg('منابع کافی نیست', 'warn'); return; }
+    if (get === 'crystal') G.res.crystals += 1; else G.res.add(get, amount);
+    t.trust = clamp(t.trust + 2, 0, 100); this.changeRep(1, null); G.ui.msg(`تجارت: ${fa(cost[give])} ${RES_NAMES[give]} ⇄ ${get === 'crystal' ? '۱ کریستال جهش' : fa(amount) + ' ' + RES_NAMES[get]}`, 'good'); G.ui.refreshPanel();
+  }
+  gift(t, type) { if (t.state === 'war') { G.ui.msg('در حال جنگ هدیه پذیرفته نمی‌شود', 'warn'); return; } const cost = {}; cost[type] = 10; if (!G.res.pay(cost)) { G.ui.msg('منابع کافی نیست', 'warn'); return; } const g = t.id === 'blue' ? 15 : (t.id === 'red' ? 6 : 10); t.trust = clamp(t.trust + g, 0, 100); this.changeRep(2, 'هدیه'); G.ui.msg(`${t.name} هدیه را پذیرفت (اعتماد ${fa(t.trust)})`, 'good'); if (t.id === 'blue' && t.trust >= 70 && t.state !== 'allied') G.ui.msg('قبیله‌ی آبی اکنون آماده‌ی اتحاد است', 'info'); G.ui.refreshPanel(); }
+  alliance(t) {
+    if (t.state === 'war') { G.ui.msg('ابتدا باید صلح برقرار شود', 'warn'); return; } if (t.state === 'allied') { G.ui.msg('هم‌اکنون متحد هستید', 'info'); return; }
+    if (t.betrayedByPlayer) { G.ui.msg(`${t.name} هرگز دوباره به شما اعتماد نمی‌کند`, 'warn'); return; }
+    const need = { red: 80, blue: 70, green: 40 }[t.id];
+    if (t.trust >= need && this.level() !== 'infamous') { t.state = 'allied'; t.allianceT = 300; t.helpT = 10; G.ui.msg(`🤝 پیمان اتحاد با ${t.name} بسته شد (۵ دقیقه) — در جنگ به شما کمک می‌کند`, 'good'); this.checkFinal(); }
+    else G.ui.msg(`${t.name} پیشنهاد اتحاد را رد کرد (اعتماد ${fa(t.trust)}/${fa(need)})`, 'warn');
+    G.ui.refreshPanel();
+  }
+  declareWar(t, provoked = false) {
+    if (t.destroyed || t.state === 'war') return; const was = t.state; t.state = 'war'; t.allianceT = 0; t.raidT = provoked ? 35 : 60; if (t.id === 'blue') t.betrayedByPlayer = true; t.trust = 0;
+    if (!provoked) this.changeRep(was === 'allied' ? -20 : -10, was === 'allied' ? 'خیانت به متحد' : 'اعلان جنگ'); else this.changeRep(-8, 'حمله‌ی غیرمنتظره');
+    G.ui.msg(`⚔ ${t.name} به شما اعلان جنگ داد!`, 'danger'); G.ui.redFlash(); G.ui.refreshPanel();
+  }
+  makePeace(t) { if (t.state !== 'war') return; if (t.betrayedByPlayer) { G.ui.msg(`${t.name} صلح را نمی‌پذیرد`, 'warn'); return; } if (!G.res.pay({ food: 40 })) { G.ui.msg('۴۰ غذا برای غرامت لازم است', 'warn'); return; } if (this.level() === 'infamous' || Math.random() < 0.35) { G.ui.msg(`${t.name} غرامت را گرفت اما صلح را نپذیرفت!`, 'warn'); return; } t.state = 'peace'; t.trust = 20; G.ui.msg(`☮ صلح با ${t.name} برقرار شد`, 'good'); G.ui.refreshPanel(); }
+  makeDemand(t) { const types = ['food', 'wood', 'stone']; const type = types[Math.floor(Math.random() * 3)]; const amt = clamp(Math.floor(G.res.store[type] * 0.5), 10, 60); G.ui.showDemand(t, type, amt); }
+  resolveDemand(t, type, amt, accept) {
+    if (accept) { const c = {}; c[type] = amt; if (G.res.pay(c)) { t.trust = clamp(t.trust + 8, 0, 100); G.ui.msg(`باج پرداخت شد؛ ${t.name} فعلاً راضی است`, 'info'); } else { G.ui.msg('منابع کافی نداشتید! قبیله‌ی سرخ خشمگین شد', 'danger'); this.declareWar(t, true); } }
+    else { G.ui.msg('درخواست باج رد شد!', 'warn'); this.declareWar(t, true); }
+  }
+  onTribeDestroyed(t) { G.ui.msg(`🏴 ${t.name} نابود شد! +۳ امتیاز تکامل، +۴ کریستال جهش`, 'good'); G.res.evoPoints += 3; G.res.crystals += 4; for (let i = 0; i < 6; i++) { const n = G.res.spawn('corpse', t.site.x + rnd(-20, 20), t.site.z + rnd(-20, 20)); n.amount = n.max = 20; } for (const u of [...G.units]) if (u.faction === t.id) u.remove(); G.ui.refreshPanel(); this.checkFinal(); }
+  checkFinal() { if (!this.finalMsg && Object.values(this.tribes).every(t => t.destroyed || t.state === 'allied')) { this.finalMsg = true; G.ui.msg('🏆 همه‌ی قبایل شکست خورده یا متحدند! راه اهریمن کهن (عمق ۵۰۰) از پنل غار باز شد', 'good'); } }
+  update(dt) {
+    for (const k in this.tribes) this.tribes[k].update(dt);
+    const inf = this.level() === 'infamous';
+    if (inf && !this.coalition) { this.coalition = true; G.ui.msg('☠ اعتبار شما نابود شد! همه‌ی قبایل علیه شما ائتلاف کردند و حمله‌ی هماهنگ ترتیب می‌دهند', 'danger'); G.ui.redFlash(); for (const k in this.tribes) { const t = this.tribes[k]; if (!t.destroyed && t.state !== 'war') { t.state = 'war'; t.trust = 0; } t.raidT = 25 + Math.random() * 8; } G.ui.refreshPanel(); }
+    else if (!inf && this.coalition && this.rep >= 35) this.coalition = false;
+  }
+}
+
+/* =====================================================================
+   بخش ۱۴: رابط کاربری — HUD، پیام‌ها، مینی‌مپ دایره‌ای، پنل مدیریت (۶ تب)، نوار انتخاب
+   ===================================================================== */
+const costStr = c => Object.keys(c).map(k => `${RES_ICON[k]} ${fa(c[k])}`).join(' ') || 'رایگان';
+class FX {
+  constructor() { this.items = []; this.lineMat = new THREE.LineBasicMaterial({ color: 0xffc46b, transparent: true, opacity: 0.9 }); this.markMat = new THREE.MeshBasicMaterial({ color: 0x7cf5d3, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }); this.markGeo = new THREE.RingGeometry(2, 3, 20).rotateX(-Math.PI / 2); }
+  shot(a, b, h = 12) { const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a.x, G.world.height(a.x, a.z) + h, a.z), new THREE.Vector3(b.x, (b.y > 1 ? b.y : G.world.height(b.x, b.z)) + 2, b.z)]); const l = new THREE.Line(g, this.lineMat); G.world.surface.add(l); this.items.push({ o: l, t: 0.15, kind: 'line' }); }
+  marker(x, z, layer = 0) { const m = new THREE.Mesh(this.markGeo, this.markMat.clone()); m.position.set(x, G.world.groundY(x, z, layer) + 0.4, z); G.world.layers[layer].add(m); this.items.push({ o: m, t: 0.6, kind: 'mark', layer }); }
+  update(dt) { for (let i = this.items.length - 1; i >= 0; i--) { const it = this.items[i]; it.t -= dt; if (it.kind === 'mark') { it.o.scale.setScalar(1 + (0.6 - it.t) * 3); it.o.material.opacity = it.t / 0.6; } if (it.t <= 0) { it.o.parent.remove(it.o); if (it.kind === 'line') it.o.geometry.dispose(); this.items.splice(i, 1); } } }
+}
+class UI {
+  constructor() {
+    this.tab = 'colony'; this.panelOpen = false; this.mm = $('minimap'); this.mmc = this.mm.getContext('2d'); this.mmBg = this.makeMinimapBg(); this.fx = new FX(); this.demandOpen = false; this.selStruct = null; this.hudT = 0; this.panelT = 0; this.lastHint = -99;
+    this.rings = []; for (let i = 0; i < 60; i++) { const r = new THREE.Mesh(SHARED.ringGeo, SHARED.ringMat); r.visible = false; G.scene.add(r); this.rings.push(r); }
+    this.bind();
+  }
+  msg(text, type = 'info') { const el = document.createElement('div'); el.className = 'msg ' + type; el.textContent = text; const box = $('msg'); box.prepend(el); while (box.children.length > 4) box.lastChild.remove(); setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, type === 'danger' ? 6500 : 4200); }
+  hint(t) { if (G.time - this.lastHint > 10) { this.lastHint = G.time; this.msg(t, 'warn'); } }
+  redFlash() { const f = $('redflash'); f.style.opacity = 1; setTimeout(() => f.style.opacity = 0, 550); }
+  refreshPanel() { if (this.panelOpen) this.renderTab(); }
+  openPanel(tab) { this.tab = tab || this.tab; this.panelOpen = true; $('panel').classList.add('open'); document.querySelectorAll('#panel-head .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === this.tab)); this.renderTab(); }
+  closePanel() { this.panelOpen = false; $('panel').classList.remove('open'); }
+  togglePanel(tab) { if (this.panelOpen && (!tab || tab === this.tab)) this.closePanel(); else this.openPanel(tab); }
+  bind() {
+    document.querySelectorAll('#panel-head .tab').forEach(b => b.onclick = () => this.openPanel(b.dataset.tab));
+    $('panel-close').onclick = () => this.closePanel();
+    $('panel-body').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b && !b.disabled) this.action(b.dataset.a, b.dataset.p); });
+    $('panel-body').addEventListener('input', e => { if (e.target.id === 'ratio') { G.colony.soldierRatio = e.target.value / 100; const l = $('ratio-lbl'); if (l) l.textContent = `سرباز: ${fa(G.colony.soldierRatio * 100)}٪`; } });
+    $('selbar').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b && !b.disabled) this.action(b.dataset.a, b.dataset.p); });
+    $('qb-build').onclick = () => this.togglePanel('build'); $('qb-evo').onclick = () => this.togglePanel('evo'); $('qb-diplo').onclick = () => this.togglePanel('diplo'); $('qb-cave').onclick = () => this.togglePanel('cave'); $('qb-panel').onclick = () => this.togglePanel(); $('qb-home').onclick = () => this.action('homeCam');
+    $('pausebtn').onclick = () => G.game.togglePause(); $('speedbtn').onclick = () => G.game.setSpeed(G.speed >= 3 ? 1 : G.speed + 1);
+    document.querySelectorAll('#mbar [data-m]').forEach(b => b.onclick = () => this.mobileAction(b.dataset.m));
+    $('demand-yes').onclick = () => this.resolveDemand(true); $('demand-no').onclick = () => this.resolveDemand(false);
+    this.mm.addEventListener('pointerdown', e => { const r = this.mm.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; G.cam.focus(-CFG.HALF + x * CFG.WORLD, -CFG.HALF + y * CFG.WORLD); e.stopPropagation(); });
+  }
+  mobileAction(m) {
+    switch (m) {
+      case 'soldiers': G.selected = G.units.filter(u => u.isPlayer && u.kind === 'soldier' && u.layer === G.viewLayer); this.msg(`${fa(G.selected.length)} سرباز انتخاب شد`, 'info'); break;
+      case 'workers': G.selected = G.units.filter(u => u.isPlayer && u.kind === 'worker' && u.layer === G.viewLayer && !u.sheltered); this.msg(`${fa(G.selected.length)} کارگر انتخاب شد`, 'info'); break;
+      case 'build': this.togglePanel('build'); break; case 'evo': this.togglePanel('evo'); break; case 'diplo': this.togglePanel('diplo'); break; case 'panel': this.togglePanel(); break;
+      case 'mode': { const I = G.input; I.touchMode = I.touchMode === 'select' ? 'command' : 'select'; $('modebtn').innerHTML = I.touchMode === 'select' ? '👆<small>انتخاب</small>' : '🎯<small>فرمان</small>'; $('modebtn').classList.toggle('on', I.touchMode === 'command'); break; }
+    }
+  }
+  findStruct(p) { const [x, z] = p.split(',').map(Number); return G.build.structures.find(s => Math.abs(s.pos.x - x) < 1 && Math.abs(s.pos.z - z) < 1); }
+  action(a, p) {
+    const C = G.colony, sel = G.selected.filter(u => u.alive);
+    switch (a) {
+      case 'pri': { const [k, v] = p.split(':'); G.res.priority[k] = +v; this.renderTab(); break; }
+      case 'laying': C.layingPaused = !C.layingPaused; this.msg(C.layingPaused ? 'تخم‌گذاری متوقف شد' : 'تخم‌گذاری ادامه یافت', 'info'); this.renderTab(); break;
+      case 'shelter': C.setShelter(!C.shelter); this.renderTab(); break;
+      case 'shelterSel': for (const u of sel) if (u.kind === 'worker' && u.layer === 0) { u.releaseNode(); u.state = 'toShelter'; u.path = null; } this.msg('کارگران انتخاب‌شده به لانه پناه می‌برند', 'info'); break;
+      case 'ambush': C.ambush = !C.ambush; this.msg(C.ambush ? 'سربازان نگهبان زیر خاک کمین می‌کنند' : 'کمین غیرفعال شد', 'info'); this.renderTab(); break;
+      case 'migrate': G.mode = 'migrate'; this.closePanel(); this.msg('مکان لانه‌ی جدید را روی زمین انتخاب کنید (Esc = لغو)', 'warn'); break;
+      case 'selall': G.selected = G.units.filter(u => u.isPlayer && u.kind === 'soldier' && u.layer === G.viewLayer); this.closePanel(); break;
+      case 'build': if (p === 'firebreak') { G.build.place('firebreak'); this.renderTab(); } else { G.mode = 'build'; G.buildType = p; G.build.setGhost(p); this.closePanel(); this.msg(`مکان ${STRUCTS[p].name} را در گرید لانه انتخاب کنید`, 'info'); if (G.viewLayer !== 0) G.caves.setView(0); G.cam.focus(C.nestPos.x, C.nestPos.z); } break;
+      case 'upg': { const s = this.findStruct(p); if (s) G.build.upgrade(s); break; } case 'roof': { const s = this.findStruct(p); if (s) G.build.addRoof(s); break; } case 'demo': { const s = this.findStruct(p); if (s) G.build.demolish(s); break; }
+      case 'upgSel': if (this.selStruct) G.build.upgrade(this.selStruct); break; case 'roofSel': if (this.selStruct) G.build.addRoof(this.selStruct); break; case 'demoSel': if (this.selStruct) { G.build.demolish(this.selStruct); this.selStruct = null; } break; case 'closeInfo': this.selStruct = null; break;
+      case 'focus': { const [x, z] = p.split(',').map(Number); if (G.viewLayer !== 0) G.caves.setView(0); G.cam.focus(x, z); this.closePanel(); break; }
+      case 'homeCam': if (G.viewLayer !== 0) G.caves.setView(0); G.cam.focus(C.nestPos.x, C.nestPos.z); break;
+      case 'evo': G.evo.buy(p); break;
+      case 'press': G.evo.usePress(); break;
+      case 'decoy': G.mode = 'decoy'; this.closePanel(); this.msg('نقطه‌ای را برای کشاندن دشمنان انتخاب کنید', 'info'); break;
+      case 'coord': G.mode = 'coord'; this.closePanel(); this.msg('هدف حمله‌ی هماهنگ را انتخاب کنید (دشمن یا لانه‌ی قبیله)', 'info'); break;
+      case 'trade': { const t = G.diplo.tribes[p]; G.diplo.trade(t, $('tg-' + p).value, $('tr-' + p).value, 10); break; }
+      case 'gift': { const [id, k] = p.split(':'); G.diplo.gift(G.diplo.tribes[id], k); break; }
+      case 'ally': G.diplo.alliance(G.diplo.tribes[p]); break; case 'peace': G.diplo.makePeace(G.diplo.tribes[p]); break;
+      case 'war': if (confirm('اعلان جنگ اعتبار شما را کاهش می‌دهد. مطمئنید؟')) G.diplo.declareWar(G.diplo.tribes[p], false); break;
+      case 'dig': G.caves.requestDig(+p); break; case 'view': G.caves.setView(+p); break;
+      case 'send': G.caves.sendUnits(sel, +p); break;
+      case 'stop': C.commandStop(sel); break;
+      case 'home': C.commandMove(sel, C.nestPos.x + 12, C.nestPos.z + 12); break;
+      case 'cmdmode': this.mobileAction('mode'); break;
+      case 'joy': G.input.joyOn = !G.input.joyOn; $('joy').classList.toggle('on', G.input.joyOn); this.renderTab(); break;
+      case 'gyro': G.input.toggleGyro(); break;
+      case 'shadow': G.renderer.shadowMap.enabled = !G.renderer.shadowMap.enabled; G.world.sun.castShadow = G.renderer.shadowMap.enabled; G.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); this.renderTab(); break;
+      case 'speed': G.game.setSpeed(+p); this.renderTab(); break;
+    }
+  }
+  // ---------- تب‌های پنل ----------
+  renderTab() {
+    const b = $('panel-body'); const fn = { colony: this.tabColony, build: this.tabBuild, evo: this.tabEvo, diplo: this.tabDiplo, cave: this.tabCave, settings: this.tabSettings }[this.tab];
+    const scroll = b.scrollTop; const saved = {}; b.querySelectorAll('select').forEach(s => saved[s.id] = s.value);   // حفظ انتخاب‌های کاربر
+    b.innerHTML = fn.call(this); b.scrollTop = scroll; for (const id in saved) { const s = $(id); if (s) s.value = saved[id]; }
+  }
+  tabColony() {
+    const C = G.colony, pri = G.res.priority;
+    const priRow = k => `<div class="kv"><span>${RES_ICON[k]} ${RES_NAMES[k]}</span><span class="row">${[0, 1, 2, 3].map(v => `<button class="btn sm ${pri[k] === v ? 'on' : ''}" data-a="pri" data-p="${k}:${v}">${['خاموش', 'کم', 'عادی', 'زیاد'][v]}</button>`).join('')}</span></div>`;
+    return `<div class="card"><h4>وضعیت کلونی</h4>
+      <div class="kv"><span>جمعیت / ظرفیت لانه</span><span>${fa(C.pop())} / ${fa(C.popCap())}</span></div>
+      <div class="kv"><span>سربازان / سقف پادگان</span><span>${fa(C.count('soldier'))} / ${fa(C.soldierCap())}</span></div>
+      <div class="kv"><span>تخم‌های در حال رشد</span><span>${fa(C.eggs.length)}</span></div>
+      <div class="kv"><span>فاصله‌ی تخم‌گذاری (وابسته به غذا)</span><span>${C.eggInterval().toFixed(1)} ثانیه</span></div>
+      <div class="kv"><span>مصرف غذا</span><span>${(C.pop() * CFG.FOOD_PER_ANT * 60).toFixed(1)} در دقیقه</span></div>
+      <div class="kv"><span>ظرفیت انبار هر منبع</span><span>${fa(G.res.cap())}</span></div>
+      <div class="kv"><span>متولد / از دست رفته / کشته‌ی دشمن</span><span>${fa(C.stats.born)} / ${fa(C.stats.lost)} / ${fa(C.stats.kills)}</span></div></div>
+      <div class="card"><h4>ملکه — نسبت تخم‌گذاری</h4><div class="row" style="justify-content:space-between;font-size:11px"><span>کارگر بیشتر</span><span>سرباز بیشتر</span></div><input type="range" id="ratio" min="0" max="100" value="${Math.round(C.soldierRatio * 100)}"><div id="ratio-lbl" style="font-size:11px">سرباز: ${fa(C.soldierRatio * 100)}٪</div>
+      <div class="row" style="margin-top:6px"><button class="btn sm ${C.layingPaused ? 'on warn' : ''}" data-a="laying">${C.layingPaused ? '▶ ادامه‌ی تخم‌گذاری' : '⏸ توقف تخم‌گذاری (ذخیره‌ی غذا)'}</button></div></div>
+      <div class="card"><h4>اولویت جمع‌آوری کارگران</h4>${['food', 'wood', 'stone', 'bio'].map(priRow).join('')}</div>
+      <div class="card"><h4>فرمان‌های کلونی</h4><div class="row">
+      <button class="btn sm ${C.shelter ? 'on' : ''}" data-a="shelter">⛺ ${C.shelter ? 'خروج کارگران از پناهگاه' : 'پناه گرفتن کارگران'}</button>
+      <button class="btn sm ${C.ambush ? 'on' : ''}" data-a="ambush" ${G.evo.has('psyche', 1) ? '' : 'disabled'}>🕳 کمین سربازان</button>
+      <button class="btn sm warn" data-a="migrate" ${C.migrating ? 'disabled' : ''}>🧭 کوچ‌سازی کلونی</button>
+      <button class="btn sm" data-a="selall">⚔️ انتخاب همه‌ی سربازان</button></div>
+      <div style="font-size:11px;opacity:.75;margin-top:6px">کوچ‌سازی: سازه‌ها برچیده می‌شوند (۵۰٪ منابع بازمی‌گردد) و ملکه با کل کلونی به مکان جدید می‌رود — برای خشکسالی یا آتش‌سوزی.</div></div>`;
+  }
+  tabBuild() {
+    const list = Object.keys(STRUCTS).filter(k => k !== 'nest').map(k => { const d = STRUCTS[k]; const c = d.cost[0]; return `<div class="card"><h4>${d.icon} ${d.name} <span style="font-size:10px;opacity:.7">${d.ug ? '(زیرزمینی — ایمن از باران/آتش)' : '(سطحی)'}</span></h4><div style="font-size:11px;opacity:.85">${d.desc}</div><div class="cost">هزینه‌ی سطح ۱: ${costStr(c)} • زمان ساخت ${fa(d.time / G.evo.buildMult())} ثانیه${d.cost[1] ? ` • س۲: ${costStr(d.cost[1])} • س۳: ${costStr(d.cost[2])}` : ''}</div><button class="btn sm ${G.res.has(c) ? 'good' : ''}" data-a="build" data-p="${k}" ${(d.unique && G.build.firebreak) ? 'disabled' : ''}>${d.unique ? 'ساخت دور لانه' : 'انتخاب مکان و ساخت'}</button></div>`; }).join('');
+    const ex = G.build.structures.filter(s => s.type !== 'nest').map(s => { const p = `${s.pos.x.toFixed(0)},${s.pos.z.toFixed(0)}`; return `<div class="kv"><span>${s.def.icon} ${s.def.name} س${fa(s.level)} ${s.built ? `(${fa(s.hp)}/${fa(s.maxHp)})` : '(ساخت ' + fa(s.progress * 100) + '٪)'} ${s.roofed ? '☂' : ''}</span><span class="row"><button class="btn sm" data-a="focus" data-p="${p}">📍</button><button class="btn sm" data-a="upg" data-p="${p}" ${s.upgradeCost() && s.built ? '' : 'disabled'}>⬆</button>${!s.underground && !s.roofed && s.type !== 'firebreak' ? `<button class="btn sm" data-a="roof" data-p="${p}">☂</button>` : ''}<button class="btn sm danger" data-a="demo" data-p="${p}">✕</button></span></div>`; }).join('');
+    return `<div class="card"><h4>گرید ساخت ۱۰×۱۰ دور لانه</h4><div style="font-size:11px;opacity:.8">پس از انتخاب سازه، روی خانه‌ای در گرید کلیک/ضربه بزنید. کارگران خودکار می‌آیند و می‌سازند (تا ۳ کارگر هم‌زمان). دیوارها مسیر دشمن را می‌بندند. Esc/کلیک راست = لغو.</div></div>${list}<div class="card"><h4>سازه‌های موجود (${fa(G.build.structures.filter(s => s.type !== 'nest').length)})</h4>${ex || '<div style="opacity:.6">هنوز سازه‌ای ندارید</div>'}</div>`;
+  }
+  tabEvo() {
+    const R = G.res, E = G.evo;
+    const cols = Object.keys(EVO_TREE).map(b => { const T = EVO_TREE[b]; const next = E.nextIndex(b); const maxOn = Math.max(-1, ...E.active[b].map((v, k) => v ? k : -1)); const nodes = T.nodes.map((nd, i) => { const on = E.has(b, i); const lost = !on && i < maxOn; const c = E.cost(i); return `<div class="node ${on ? 'on' : i === next ? 'next' : lost ? 'lost' : ''}"><b>${fa(i + 1)}. ${nd.n}</b>${nd.d}<div class="cd">${on ? '✓ فعال' : lost ? 'از دست رفته — قابل بازخرید' : `💎${fa(c.crystals)} 🧬${fa(c.points)}`}</div></div>`; }).join(''); return `<div><div style="text-align:center;color:${T.color};font-weight:800">${T.icon} ${T.name} (${fa(E.count(b))}/۶)</div>${nodes}<button class="btn sm ${E.canBuy(b) ? 'good' : ''}" style="width:100%" data-a="evo" data-p="${b}" ${next < 0 ? 'disabled' : ''}>${next < 0 ? 'کامل' : 'ارتقا'}</button></div>`; }).join('');
+    const ab = [E.has('combat', 5) ? `<button class="btn sm danger" data-a="press" ${E.pressCd > 0 ? 'disabled' : ''}>💢 فشار مرگبار ${E.pressCd > 0 ? fa(E.pressCd) + 'ث' : ''}</button>` : '', E.has('psyche', 2) ? `<button class="btn sm purple" data-a="decoy" ${E.decoyCd > 0 ? 'disabled' : ''}>🎭 فریب ${E.decoyCd > 0 ? fa(E.decoyCd) + 'ث' : ''}</button>` : '', E.has('psyche', 3) ? `<button class="btn sm purple" data-a="coord" ${E.coord.cd > 0 ? 'disabled' : ''}>🎯 هماهنگی حمله ${E.coord.cd > 0 ? fa(E.coord.cd) + 'ث' : ''}</button>` : ''].join('') || '<span style="opacity:.6;font-size:11px">هنوز قابلیتی باز نشده</span>';
+    return `<div class="card"><div class="kv"><span>💎 کریستال جهش (غار طبقه‌ی ۲/۳، عنکبوت‌ها، تجارت)</span><span>${fa(R.crystals)}</span></div><div class="kv"><span>🧬 امتیاز تکامل (هر ۵ دقیقه +۱، کشتن موجودات خاص)</span><span>${fa(R.evoPoints)}</span></div><div class="kv"><span>🏺 آثار کهن</span><span>${fa(R.artifacts)}/۵ ${E.secret ? '— حافظه‌ی باستانی فعال' : ''}</span></div><div style="font-size:11px;color:#ff8a8a;margin-top:4px">⚠ هر ارتقا ۱۵٪ شانس «جهش معکوس» دارد: یکی از صفات قبلی همان شاخه از دست می‌رود.</div><div class="kv"><span>زره ${fa(E.armor() * 100)}٪ • آسیب ×${E.dmgMult().toFixed(2)} • سرعت حمله ×${E.atkSpeed().toFixed(2)}</span><span>حمل ${fa(E.carryCap())} • جمع‌آوری ×${E.gatherMult().toFixed(2)} • دید ×${E.visionMult().toFixed(2)}</span></div></div><div class="grid3">${cols}</div><div class="card"><h4>قابلیت‌های فعال</h4><div class="row">${ab}</div></div>`;
+  }
+  tabDiplo() {
+    const D = G.diplo;
+    const tribes = Object.values(D.tribes).map(t => {
+      if (!t.discovered) return `<div class="card"><h4 style="color:${t.color}">${t.name} — ناشناخته</h4><div style="font-size:11px;opacity:.7">برای کشف، واحدی را به گوشه‌های نقشه بفرستید یا ۵ اثر کهن جمع کنید.</div></div>`;
+      if (t.destroyed) return `<div class="card"><h4 style="color:${t.color}">${t.name} — نابود شده 🏴</h4></div>`;
+      const opts = ['food', 'wood', 'stone', 'bio'].map(k => `<option value="${k}">${RES_NAMES[k]}</option>`).join('');
+      return `<div class="card"><h4 style="color:${t.color}">${t.name} <span style="font-size:11px;opacity:.85">(${t.persona}) — ${t.stateName()}</span></h4><div style="font-size:11px;opacity:.8">${t.desc}</div>
+        <div class="kv"><span>اعتماد</span><span>${fa(t.trust)}/۱۰۰</span></div><div class="kv"><span>قدرت نظامی تخمینی</span><span>${fa(t.pool)} سرباز</span></div>${t.state === 'allied' ? `<div class="kv"><span>اتحاد باقی‌مانده</span><span>${fa(t.allianceT)} ثانیه</span></div>` : ''}
+        <div class="row" style="margin-top:6px"><span style="font-size:11px">می‌دهم</span><select id="tg-${t.id}">${opts}</select><span>⇄</span><span style="font-size:11px">می‌گیرم</span><select id="tr-${t.id}">${opts}<option value="crystal">۱ کریستال جهش (۱۵×نسبت)</option></select><button class="btn sm" data-a="trade" data-p="${t.id}">تجارت ۱۰ واحد (نسبت ${fa(D.ratio())}:۱)</button></div>
+        <div class="row" style="margin-top:6px">${['food', 'wood', 'stone', 'bio'].map(k => `<button class="btn sm" data-a="gift" data-p="${t.id}:${k}">🎁 ۱۰ ${RES_NAMES[k]}</button>`).join('')}</div>
+        <div class="row" style="margin-top:6px"><button class="btn sm good" data-a="ally" data-p="${t.id}">🤝 پیمان اتحاد (۵ دقیقه)</button>${t.state === 'war' ? `<button class="btn sm" data-a="peace" data-p="${t.id}">☮ پیشنهاد صلح (۴۰ غذا)</button>` : `<button class="btn sm danger" data-a="war" data-p="${t.id}">⚔ اعلان جنگ</button>`}<button class="btn sm" data-a="focus" data-p="${t.site.x.toFixed(0)},${t.site.z.toFixed(0)}">📍 لانه</button></div></div>`;
+    }).join('');
+    return `<div class="card"><h4>اعتبار شما: ${D.levelName()} (${fa(D.rep)}/۱۰۰)</h4><div class="rep"><i style="right:${D.rep}%"></i></div><div style="font-size:11px;opacity:.8">≥۷۵ قابل اعتماد: تجارت ۱:۱ • ۲۵–۷۵ خنثی: تجارت ۲:۱ • &lt;۲۵ بی‌اعتبار: ائتلاف همه‌ی قبایل و حمله‌ی هماهنگ${D.coalition ? ' — <b style="color:#ff5d5d">ائتلاف فعال است!</b>' : ''}</div><div style="font-size:11px;opacity:.8;margin-top:4px">اعتبار با هدیه/تجارت/وفای به پیمان بالا و با اعلان جنگ، خیانت به متحد و حمله‌ی غیرمنتظره پایین می‌آید. برای حمله به لانه‌ی قبیله، سربازان را انتخاب و روی لانه کلیک راست کنید.</div></div>${tribes}`;
+  }
+  tabCave() {
+    const C = G.caves;
+    const floors = [1, 2, 3, 4].map(f => { const info = ['', 'کریستال‌های معمولی و قطعات فلزی (سنگ و انرژی زیستی)', 'کریستال‌های جهش و آثار کهن (۵ قطعه = ارتقای مخفی)', 'منابع کمیاب، حوضچه‌های زیستی و ۳ کرم غول‌پیکر خفته — هر کرم برابر ۲۰ سرباز است؛ به فاصله‌ی ۲۰ واحدی نزدیک نشوید!', 'کنام اهریمن کهن (عمق ۵۰۰) — نبرد نهایی؛ نیازمند شکست یا اتحاد با هر ۳ قبیله'][f]; const dig = C.dig && C.dig.floor === f; return `<div class="card"><h4>طبقه‌ی ${fa(f)} — عمق ${fa(-CFG.LAYER_Y[f])} ${C.unlocked[f] ? '✓ باز' : '🔒'}</h4><div style="font-size:11px;opacity:.85">${info}</div>${dig ? `<div class="bar" style="margin:6px 0"><i style="width:${100 * C.dig.progress / C.dig.need}%;background:#b26cff"></i></div><div class="cd">در حال حفر: ${fa(C.dig.progress)}/${fa(C.dig.need)} ثانیه (${fa(G.units.filter(u => u.isPlayer && u.state === 'digging').length)} کارگر مشغول)</div>` : ''}<div class="row" style="margin-top:6px">${C.unlocked[f] ? `<button class="btn sm purple ${G.viewLayer === f ? 'on' : ''}" data-a="view" data-p="${f}">👁 مشاهده‌ی طبقه</button><button class="btn sm" data-a="send" data-p="${f}">⬇ فرستادن انتخاب‌شده‌ها (${fa(G.selected.length)})</button>` : `<button class="btn sm warn" data-a="dig" data-p="${f}" ${C.canDig(f) ? '' : 'disabled'}>⛏ حفر راهرو (۲۰ کارگر، ${fa(C.digCost(f).food)} غذا، ${f === 4 ? '۶۰' : '۳۰'} ثانیه)</button>`}</div></div>`; }).join('');
+    return `<div class="card"><div class="row"><button class="btn sm ${G.viewLayer === 0 ? 'on' : ''}" data-a="view" data-p="0">🌍 سطح سیاره</button><button class="btn sm" data-a="send" data-p="0">⬆ بازگرداندن انتخاب‌شده‌ها به سطح</button></div><div style="font-size:11px;opacity:.8;margin-top:6px">واحدها از نزدیک‌ترین ورودی غار (مثلث بنفش در مینی‌مپ) پایین می‌روند. کارگران در غار خودکار جمع‌آوری می‌کنند و منابع را از طریق راهرو به انبار می‌رسانند. سربازان همراه بفرستید!</div></div>${floors}`;
+  }
+  tabSettings() {
+    const I = G.input; return `<div class="card"><h4>تنظیمات</h4><div class="row"><button class="btn sm ${I.joyOn ? 'on' : ''}" data-a="joy">🕹 جوی‌استیک مجازی</button><button class="btn sm ${G.cam.gyro.on ? 'on' : ''}" data-a="gyro">📱 ژیروسکوپ</button><button class="btn sm ${G.renderer.shadowMap.enabled ? 'on' : ''}" data-a="shadow">🌓 سایه‌ها</button></div>
+      <div class="row" style="margin-top:8px"><span>سرعت بازی:</span>${[1, 2, 3].map(s => `<button class="btn sm ${G.speed === s ? 'on' : ''}" data-a="speed" data-p="${s}">×${fa(s)}</button>`).join('')}</div>
+      <div class="kv" style="margin-top:8px"><span>Seed نقشه</span><span dir="ltr">${SEED}</span></div><div class="kv"><span>زمان بازی</span><span>${fa(Math.floor(G.time / 60))} دقیقه — روز ${fa(G.day + 1)}</span></div></div>
+      <div class="card"><h4>راهنمای سریع</h4><div style="font-size:11px;line-height:1.9">• کارگران خودکار نزدیک‌ترین منبع را با توجه به اولویت جمع می‌کنند.<br>• هر مورچه غذا مصرف می‌کند؛ غذای صفر = مرگ تدریجی.<br>• جمعیت بیش از ظرفیت = فرار کارگران و فروپاشی. اتاق تخم‌گذاری و انبار بسازید.<br>• شب‌ها عنکبوت‌ها می‌آیند؛ چراغ زیستی روشن (با انرژی زیستی) آن‌ها را از لانه دور نگه می‌دارد.<br>• هر ۳ دقیقه پرنده‌ای یک واحد بی‌دفاع را می‌رباید؛ برج دیده‌بانی بسازید.<br>• باران اسیدی هر ۱۰ دقیقه: کارگران را پناه دهید و سقف چوبی نصب کنید.<br>• خشکسالی هر ۱۵ دقیقه و صاعقه هر ۲۰ دقیقه؛ کمربند آتش‌شکن (۱۰۰ سنگ) لانه را نجات می‌دهد.<br>• اعتبار پایین = ائتلاف قبایل. قبیله‌ی سبز ممکن است خیانت کند!</div></div>`;
+  }
+  // ---------- درخواست باج قبیله‌ی سرخ ----------
+  showDemand(t, type, amt) { this.demandOpen = true; this.demand = { t, type, amt }; $('demand-text').textContent = `${t.name} می‌گوید: «${fa(amt)} ${RES_NAMES[type]} به ما بدهید وگرنه لانه‌تان را به آتش می‌کشیم!» (دو برابر ارزش واقعی)`; $('demand').style.display = 'block'; let left = 25; const tm = $('demand-timer'); tm.textContent = `پاسخ خودکار (رد) تا ${fa(left)} ثانیه`; this.demandIv = setInterval(() => { if (G.paused) return; left--; tm.textContent = `پاسخ خودکار (رد) تا ${fa(left)} ثانیه`; if (left <= 0) this.resolveDemand(false); }, 1000); this.msg('قبیله‌ی سرخ باج می‌خواهد!', 'warn'); }
+  resolveDemand(accept) { if (!this.demandOpen) return; clearInterval(this.demandIv); this.demandOpen = false; $('demand').style.display = 'none'; const d = this.demand; G.diplo.resolveDemand(d.t, d.type, d.amt, accept); }
+  // ---------- مینی‌مپ ----------
+  makeMinimapBg() { const n = 96; const c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'); const img = x.createImageData(n, n); for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const wx = -CFG.HALF + (i + 0.5) / n * CFG.WORLD, wz = -CFG.HALF + (j + 0.5) / n * CFG.WORLD; const col = G.world.biome(wx, wz); const k = (j * n + i) * 4; img.data[k] = col[0] * 255; img.data[k + 1] = col[1] * 255; img.data[k + 2] = col[2] * 255; img.data[k + 3] = 255; } x.putImageData(img, 0, 0); return c; }
+  drawMinimap() {
+    const c = this.mmc, S = this.mm.width; const m = v => (v + CFG.HALF) / CFG.WORLD * S;
+    c.clearRect(0, 0, S, S); c.save(); c.beginPath(); c.arc(S / 2, S / 2, S / 2 - 2, 0, 6.283); c.clip(); c.drawImage(this.mmBg, 0, 0, S, S);
+    if (G.weather.isNight) { c.fillStyle = 'rgba(0,10,30,0.35)'; c.fillRect(0, 0, S, S); }
+    c.fillStyle = 'rgba(255,255,255,0.85)'; for (const n of G.res.nodes) if (n.big && n.layer === 0 && n.amount > 0) c.fillRect(m(n.x) - 1, m(n.z) - 1, 2, 2);
+    c.fillStyle = '#b26cff'; for (const e of G.world.caves) { const x = m(e.x), y = m(e.z); c.beginPath(); c.moveTo(x, y - 4); c.lineTo(x - 4, y + 3); c.lineTo(x + 4, y + 3); c.fill(); }
+    c.fillStyle = '#ff6a1a'; for (const t of G.weather.fire.burning) c.fillRect(m(t.x) - 1.5, m(t.z) - 1.5, 3, 3);
+    for (const k in G.diplo.tribes) { const t = G.diplo.tribes[k]; if (!t.discovered || t.destroyed) continue; c.fillStyle = t.color; c.beginPath(); c.arc(m(t.site.x), m(t.site.z), 5, 0, 6.283); c.fill(); }
+    c.fillStyle = '#ff3b3b'; for (const u of G.units) { if (u.layer !== 0 || u.isPlayer || u.kind === 'critter') continue; c.fillRect(m(u.pos.x) - 1, m(u.pos.z) - 1, 2.5, 2.5); }
+    c.fillStyle = '#7ee08a'; for (const u of G.units) { if (!u.isPlayer || u.layer !== 0) continue; c.fillRect(m(u.pos.x) - 0.75, m(u.pos.z) - 0.75, 1.5, 1.5); }
+    const n = G.colony.nestPos; c.fillStyle = '#2eff7a'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.arc(m(n.x), m(n.z), 5, 0, 6.283); c.fill(); c.stroke();
+    if (G.eco.bird) { c.fillStyle = '#ffd23a'; c.beginPath(); c.arc(m(G.eco.bird.pos.x), m(G.eco.bird.pos.z), 3, 0, 6.283); c.fill(); }
+    const t = G.cam.target; c.strokeStyle = 'rgba(124,245,211,0.9)'; c.lineWidth = 1; c.save(); c.translate(m(t.x), m(t.z)); c.rotate(-G.cam.yaw); const w = clamp(G.cam.dist / CFG.WORLD * S * 0.9, 6, S); c.strokeRect(-w / 2, -w / 2, w, w * 0.7); c.restore();
+    c.restore();
+  }
+  updateSelRings() { let k = 0; for (const u of G.selected) { if (k >= this.rings.length) break; if (!u.alive || u.layer !== G.viewLayer) continue; const r = this.rings[k++]; r.visible = true; r.position.set(u.pos.x, G.world.groundY(u.pos.x, u.pos.z, u.layer) + 0.3, u.pos.z); r.scale.setScalar(u.kind === 'queen' ? 2.2 : (u.kind === 'soldier' ? 1.3 : 1)); } for (; k < this.rings.length; k++) this.rings[k].visible = false; }
+  updateSelBar() {
+    const el = $('selbar'); const sel = G.selected;
+    if (!sel.length && !this.selStruct) { el.classList.remove('show'); el.dataset.html = ''; return; }
+    el.classList.add('show'); let html = '';
+    if (sel.length) {
+      const w = sel.filter(u => u.kind === 'worker').length, s = sel.filter(u => u.kind === 'soldier').length, q = sel.some(u => u.kind === 'queen'); const hp = sel.reduce((a, u) => a + u.hp, 0) / Math.max(1, sel.reduce((a, u) => a + u.maxHp, 0));
+      html += `<span>انتخاب: ${w ? `🐜 ${fa(w)} کارگر ` : ''}${s ? `⚔️ ${fa(s)} سرباز ` : ''}${q ? '👑 ملکه' : ''} <span class="cd">سلامت ${fa(hp * 100)}٪</span></span>`;
+      html += `<button class="btn sm" data-a="stop">✋ توقف</button><button class="btn sm" data-a="home">🏠 بازگشت</button>`;
+      if (w) html += `<button class="btn sm" data-a="shelterSel">⛺ پناه</button>`;
+      if (G.viewLayer === 0) { for (let f = 1; f <= 4; f++) if (G.caves.unlocked[f]) html += `<button class="btn sm purple" data-a="send" data-p="${f}">⬇ طبقه ${fa(f)}</button>`; } else html += `<button class="btn sm purple" data-a="send" data-p="0">⬆ سطح</button>`;
+      if (s) { const E = G.evo; if (E.has('combat', 5)) html += `<button class="btn sm danger" data-a="press" ${E.pressCd > 0 ? 'disabled' : ''}>💢 فشار مرگبار ${E.pressCd > 0 ? fa(E.pressCd) : ''}</button>`; if (E.has('psyche', 2)) html += `<button class="btn sm purple" data-a="decoy" ${E.decoyCd > 0 ? 'disabled' : ''}>🎭 فریب ${E.decoyCd > 0 ? fa(E.decoyCd) : ''}</button>`; if (E.has('psyche', 3)) html += `<button class="btn sm purple" data-a="coord" ${E.coord.cd > 0 ? 'disabled' : ''}>🎯 هماهنگی ${E.coord.cd > 0 ? fa(E.coord.cd) : ''}</button>`; }
+      if (isMobile) html += `<button class="btn sm warn ${G.input.touchMode === 'command' ? 'on' : ''}" data-a="cmdmode">🎯 حالت فرمان</button>`;
+    } else {
+      const s = this.selStruct; if (!s.alive) { this.selStruct = null; return; }
+      html += `<span>${s.def.icon} ${s.def.name} — سطح ${fa(s.level)} — سلامت ${fa(s.hp)}/${fa(s.maxHp)} ${s.built ? '' : '(ساخت ' + fa(s.progress * 100) + '٪ — ' + fa(s.builders) + ' کارگر)'} ${s.roofed ? '☂ سقف‌دار' : ''}${s.type === 'lamp' ? (s.lit ? ' 💡 روشن' : ' ⚫ خاموش (انرژی زیستی ندارید)') : ''}</span>`;
+      if (s.type !== 'nest' && s.type !== 'firebreak') { const uc = s.upgradeCost(); if (uc && s.built) html += `<button class="btn sm good" data-a="upgSel">⬆ ارتقا (${costStr(uc)})</button>`; if (!s.underground && !s.roofed) html += `<button class="btn sm" data-a="roofSel">☂ سقف چوبی (${fa(15 * s.level)} چوب)</button>`; html += `<button class="btn sm danger" data-a="demoSel">✕ برچیدن</button>`; }
+      html += `<button class="btn sm" data-a="closeInfo">بستن</button>`;
+    }
+    if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
+  }
+  updateHUD(dt) {
+    this.hudT += dt; if (this.hudT < 0.2) return; this.hudT = 0; const C = G.colony, R = G.res, W = G.weather;
+    $('pop').textContent = `کارگر: ${fa(C.count('worker'))} / سرباز: ${fa(C.count('soldier'))} / ملکه: ${fa(C.queen && C.queen.alive ? 1 : 0)}  (ظرفیت ${fa(C.popCap())})`;
+    const cap = R.cap(); for (const k of ['food', 'wood', 'stone', 'bio']) { $('bar-' + k).style.width = clamp(100 * R.store[k] / cap, 0, 100) + '%'; $('val-' + k).textContent = fa(R.store[k]) + ' / ' + fa(cap); }
+    $('crys').textContent = `💎 ${fa(R.crystals)}  🧬 ${fa(R.evoPoints)}  🏺 ${fa(R.artifacts)}/۵  ⭐ اعتبار ${fa(G.diplo.rep)}`;
+    const ct = W.cycleT, night = W.isNight, rem = night ? CFG.DAY - ct : CFG.DAY / 2 - ct;
+    $('clock').textContent = `${night ? '🌙' : '☀️'} روز ${fa(G.day + 1)} — ${night ? 'شب' : 'روز'} (${fa(Math.floor(rem / 60))}:${String(Math.floor(rem % 60)).padStart(2, '0')})`;
+    let season = 'عادی', cls = ''; if (W.rain) { season = '☔ باران اسیدی'; cls = 'danger'; } else if (W.drought) { season = '🏜 خشکسالی'; cls = 'warn'; } if (W.fire.burning.length) { season += ' 🔥 آتش‌سوزی'; cls = 'danger'; }
+    $('season').textContent = 'وضعیت: ' + season; $('season').className = cls;
+    const toRain = CFG.RAIN_START - G.time % CFG.RAIN_EVERY; const wt = G.diplo.warTribes();
+    $('alerts').innerHTML = (toRain > 0 && toRain <= 30 ? `<div class="warn">☔ باران اسیدی تا ${fa(toRain)} ثانیه</div>` : '') + (wt.length ? `<div class="danger">⚔ در جنگ با: ${wt.map(t => t.name).join('، ')}</div>` : '') + (C.pop() > C.popCap() ? `<div class="danger">جمعیت بیش از ظرفیت! ${fa(Math.ceil(45 - C.overflowT))} ثانیه تا فروپاشی</div>` : '') + (R.store.food < 10 ? `<div class="warn">🍖 غذا رو به اتمام است</div>` : '') + (C.migrating ? `<div class="warn">🧭 کوچ در جریان است</div>` : '') + (G.caves.dig ? `<div style="color:#b26cff">⛏ حفاری ${fa(100 * G.caves.dig.progress / G.caves.dig.need)}٪</div>` : '') + (G.paused ? `<div class="warn">⏸ زمان متوقف است</div>` : '');
+    $('layerlbl').textContent = G.viewLayer ? `طبقه‌ی ${fa(G.viewLayer)} زیرزمین (عمق ${fa(-CFG.LAYER_Y[G.viewLayer])})` : (G.mode !== 'normal' ? `حالت: ${{ build: 'ساخت — ' + (STRUCTS[G.buildType] || {}).name, migrate: 'انتخاب مکان لانه‌ی جدید', decoy: 'فریب', coord: 'هماهنگی حمله' }[G.mode]}` : 'سطح سیاره');
+    this.drawMinimap(); this.updateSelBar();
+    if (this.panelOpen) { this.panelT += 0.2; if (this.panelT >= 1) { this.panelT = 0; if (document.activeElement && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') this.renderTab(); } }
+    const d = G.caves.demon; if (d && d.alive && !d.asleep) { $('boss').style.display = 'block'; $('bossbar').style.width = (100 * d.hp / d.maxHp) + '%'; } else $('boss').style.display = 'none';
+  }
+}
+
+/* =====================================================================
+   بخش ۱۵: ورودی — ماوس/کیبورد دسکتاپ و تاچ/پینچ/جوی‌استیک/ژیروسکوپ موبایل
+   ===================================================================== */
+class Input {
+  constructor() { this.keys = {}; this.dragStart = null; this.dragging = false; this.rotating = false; this.rightDown = null; this.pointers = new Map(); this.pinchD = 0; this.pinchA = 0; this.touchMode = 'select'; this.joyOn = isMobile; this.joyVec = { x: 0, y: 0 }; this.ray = new THREE.Raycaster(); this.ndc = new THREE.Vector2(); this.longT = null; this.longFired = false; this.mouse = null; this.bind(); if (this.joyOn) $('joy').classList.add('on'); }
+  bind() {
+    const c = G.renderer.domElement;
+    c.addEventListener('pointerdown', e => this.down(e)); window.addEventListener('pointermove', e => this.move(e)); window.addEventListener('pointerup', e => this.up(e)); window.addEventListener('pointercancel', e => this.up(e));
+    c.addEventListener('wheel', e => { e.preventDefault(); G.cam.zoom(e.deltaY > 0 ? 1.12 : 0.89); }, { passive: false });
+    c.addEventListener('contextmenu', e => e.preventDefault());
+    window.addEventListener('keydown', e => this.key(e, true)); window.addEventListener('keyup', e => this.key(e, false));
+    const joy = $('joy'), knob = $('joyknob'); let jid = null;
+    joy.addEventListener('pointerdown', e => { jid = e.pointerId; joy.setPointerCapture(jid); e.stopPropagation(); });
+    joy.addEventListener('pointermove', e => { if (e.pointerId !== jid) return; const r = joy.getBoundingClientRect(); let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); const L = Math.hypot(dx, dy), M = r.width / 2 - 22; if (L > M) { dx *= M / L; dy *= M / L; } knob.style.left = (r.width / 2 - 22 + dx) + 'px'; knob.style.top = (r.height / 2 - 22 + dy) + 'px'; this.joyVec = { x: dx / M, y: dy / M }; });
+    const jend = e => { if (e.pointerId !== jid) return; jid = null; this.joyVec = { x: 0, y: 0 }; knob.style.left = knob.style.top = ''; }; joy.addEventListener('pointerup', jend); joy.addEventListener('pointercancel', jend);
+    window.addEventListener('deviceorientation', e => { if (!G.cam.gyro.on) return; G.cam.gyro.dx = clamp((e.gamma || 0) / 90, -1, 1) * 0.25; G.cam.gyro.dy = clamp(((e.beta || 45) - 45) / 90, -1, 1) * 0.15; });
+  }
+  toggleGyro() { if (G.cam.gyro.on) { G.cam.gyro.on = false; G.cam.gyro.dx = G.cam.gyro.dy = 0; G.ui.renderTab(); return; } const on = () => { G.cam.gyro.on = true; G.ui.msg('ژیروسکوپ فعال شد؛ گوشی را کج کنید', 'info'); G.ui.renderTab(); }; if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') on(); }).catch(() => G.ui.msg('دسترسی ژیروسکوپ داده نشد', 'warn')); else on(); }
+  clearLong() { if (this.longT) { clearTimeout(this.longT); this.longT = null; } }
+  pick(cx, cy) {
+    this.ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); this.ray.setFromCamera(this.ndc, G.camera); const hits = this.ray.intersectObjects(G.pickables, true);
+    for (const h of hits) { let o = h.object; while (o && !(o.userData.unit || o.userData.structure || o.userData.node || o.userData.tribe)) o = o.parent; if (!o) continue; const ud = o.userData; if (ud.unit && (!ud.unit.alive || ud.unit.layer !== G.viewLayer || ud.unit.sheltered)) continue; if (ud.node && ud.node.layer !== G.viewLayer) continue; if ((ud.structure || ud.tribe) && G.viewLayer !== 0) continue; return ud; }
+    return null;
+  }
+  ground(cx, cy) { this.ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); this.ray.setFromCamera(this.ndc, G.camera); const tgt = G.viewLayer === 0 ? G.world.terrain : G.world.layers[G.viewLayer].getObjectByName('floor'); const h = this.ray.intersectObject(tgt, false); return h.length ? h[0].point : null; }
+  down(e) {
+    if (G.over || e.target !== G.renderer.domElement) return; this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() });
+    if (e.pointerType === 'touch') { if (this.pointers.size === 2) { const [a, b] = [...this.pointers.values()]; this.pinchD = Math.hypot(a.x - b.x, a.y - b.y); this.pinchA = Math.atan2(b.y - a.y, b.x - a.x); this.clearLong(); } else { this.longFired = false; this.longT = setTimeout(() => { this.longT = null; this.longFired = true; this.command(e.clientX, e.clientY); }, 520); } return; }
+    if (e.button === 0) { if (e.shiftKey || e.altKey) this.rotating = true; else this.dragStart = { x: e.clientX, y: e.clientY }; }
+    else if (e.button === 1) this.rotating = true; else if (e.button === 2) this.rightDown = { x: e.clientX, y: e.clientY };
+  }
+  move(e) {
+    const p = this.pointers.get(e.pointerId); this.mouse = { x: e.clientX, y: e.clientY };
+    if (p && e.pointerType === 'touch') {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+      if (this.pointers.size === 1) { if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > 10) { this.clearLong(); p.moved = true; } if (p.moved) G.cam.pan(-dx, dy); }
+      else if (this.pointers.size === 2) { const [a, b] = [...this.pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); const ang = Math.atan2(b.y - a.y, b.x - a.x); if (this.pinchD > 0) { G.cam.zoom(this.pinchD / d); let da = ang - this.pinchA; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI; G.cam.yaw -= da; } this.pinchD = d; this.pinchA = ang; }
+      return;
+    }
+    if (this.rotating) { G.cam.yaw -= e.movementX * 0.006; G.cam.pitch = clamp(G.cam.pitch + e.movementY * 0.004, 0.35, 1.35); }
+    else if (this.dragStart && G.mode === 'normal') { const dx = e.clientX - this.dragStart.x, dy = e.clientY - this.dragStart.y; if (Math.hypot(dx, dy) > 6) { this.dragging = true; const b = $('selbox'); b.style.display = 'block'; b.style.left = Math.min(e.clientX, this.dragStart.x) + 'px'; b.style.top = Math.min(e.clientY, this.dragStart.y) + 'px'; b.style.width = Math.abs(dx) + 'px'; b.style.height = Math.abs(dy) + 'px'; } }
+    if (G.mode === 'build') { const g = this.ground(e.clientX, e.clientY); if (g) G.build.moveGhost(g.x, g.z); }
+  }
+  up(e) {
+    const p = this.pointers.get(e.pointerId); this.pointers.delete(e.pointerId);
+    if (e.pointerType === 'touch') { this.clearLong(); if (this.pointers.size < 2) this.pinchD = 0; if (p && !this.longFired && !p.moved && performance.now() - p.t < 600) this.tap(e.clientX, e.clientY); return; }
+    if (e.button === 0) { if (this.rotating) this.rotating = false; else if (this.dragging) this.boxSelect(e.clientX, e.clientY); else if (this.dragStart) this.click(e.clientX, e.clientY, e.shiftKey); this.dragStart = null; this.dragging = false; $('selbox').style.display = 'none'; }
+    else if (e.button === 1) this.rotating = false;
+    else if (e.button === 2) { if (this.rightDown && Math.hypot(e.clientX - this.rightDown.x, e.clientY - this.rightDown.y) < 8) { if (G.mode !== 'normal') this.cancel(); else this.command(e.clientX, e.clientY); } this.rightDown = null; }
+  }
+  tap(cx, cy) { if (G.over) return; if (G.mode !== 'normal') { this.click(cx, cy, false); return; } if (this.touchMode === 'command' && G.selected.length) this.command(cx, cy); else this.click(cx, cy, false); }
+  click(cx, cy, shift) {
+    if (G.over) return; const ud = this.pick(cx, cy);
+    if (G.mode === 'build') { const g = this.ground(cx, cy); if (g && G.build.place(G.buildType, g.x, g.z)) { G.ui.fx.marker(g.x, g.z); if (G.buildType !== 'wall' || isMobile) this.cancel(); } return; }
+    if (G.mode === 'migrate') { const g = this.ground(cx, cy); if (g) G.colony.startMigration(g.x, g.z); return; }
+    if (G.mode === 'decoy') { const g = this.ground(cx, cy); if (g) { G.evo.useDecoy(g.x, g.z); G.ui.fx.marker(g.x, g.z); } G.mode = 'normal'; return; }
+    if (G.mode === 'coord') { if (ud && ((ud.unit && !ud.unit.isPlayer) || ud.tribe)) { const t = ud.unit || ud.tribe.nest; if (ud.tribe && ud.tribe.state !== 'war') G.diplo.declareWar(ud.tribe, false); G.evo.useCoord(t); } else G.ui.msg('هدف معتبر نیست', 'warn'); G.mode = 'normal'; return; }
+    if (ud) {
+      if (ud.unit && ud.unit.isPlayer) { G.ui.selStruct = null; if (shift) { const i = G.selected.indexOf(ud.unit); if (i >= 0) G.selected.splice(i, 1); else G.selected.push(ud.unit); } else G.selected = [ud.unit]; return; }
+      if (ud.unit) { G.ui.msg(`${ud.unit.name} — سلامت ${fa(ud.unit.hp)}/${fa(ud.unit.maxHp)}${ud.unit.asleep ? ' (خفته)' : ''}`, 'info'); return; }
+      if (ud.structure) { G.selected = []; G.ui.selStruct = ud.structure; return; }
+      if (ud.tribe) { const t = ud.tribe; if (t.discovered) G.ui.openPanel('diplo'); else G.ui.msg('این لانه هنوز کشف نشده؛ واحدی را نزدیک‌تر بفرستید', 'warn'); return; }
+      if (ud.node) { const n = ud.node; G.ui.msg(`${n.name}: ${fa(n.amount)} ${RES_NAMES[n.type] || n.type} (برای جمع‌آوری، کارگران را انتخاب و کلیک راست/فرمان کنید)`, 'info'); return; }
+    }
+    if (!shift) { G.selected = []; G.ui.selStruct = null; }
+  }
+  boxSelect(cx, cy) {
+    const x1 = Math.min(cx, this.dragStart.x), x2 = Math.max(cx, this.dragStart.x), y1 = Math.min(cy, this.dragStart.y), y2 = Math.max(cy, this.dragStart.y); const v = new THREE.Vector3(); const out = [];
+    for (const u of G.units) { if (!u.isPlayer || u.layer !== G.viewLayer || u.kind === 'queen' || u.sheltered) continue; v.copy(u.mesh.position).project(G.camera); const sx = (v.x + 1) / 2 * innerWidth, sy = (1 - v.y) / 2 * innerHeight; if (sx >= x1 && sx <= x2 && sy >= y1 && sy <= y2 && v.z < 1) out.push(u); }
+    if (out.length) { G.selected = out; G.ui.selStruct = null; }
+  }
+  command(cx, cy) {
+    const sel = G.selected.filter(u => u.alive); if (!sel.length) return; const ud = this.pick(cx, cy);
+    if (ud) {
+      if (ud.unit && !ud.unit.isPlayer) { const u = ud.unit; const tr = G.diplo.tribes[u.faction]; if (tr && tr.state !== 'war') { if (!confirm(`حمله به واحد ${tr.name} یعنی اعلان جنگ. ادامه؟`)) return; G.diplo.declareWar(tr, false); } G.colony.commandAttack(sel, u); G.ui.msg(`حمله به ${u.name}`, 'info'); return; }
+      if (ud.tribe) { const t = ud.tribe; if (t.destroyed) return; if (t.state !== 'war') { if (!confirm(`حمله به لانه‌ی ${t.name} یعنی اعلان جنگ و کاهش اعتبار. ادامه؟`)) return; G.diplo.declareWar(t, false); } G.colony.commandAttack(sel, t.nest); return; }
+      if (ud.node) { if (sel.some(u => u.kind === 'worker')) G.colony.commandGather(sel, ud.node); else G.colony.commandMove(sel, ud.node.x, ud.node.z); return; }
+      if (ud.unit && ud.unit.isPlayer) { G.colony.commandMove(sel, ud.unit.pos.x, ud.unit.pos.z); return; }
+      if (ud.structure) { G.colony.commandMove(sel, ud.structure.pos.x + 8, ud.structure.pos.z + 8); return; }
+    }
+    const g = this.ground(cx, cy); if (g) { G.colony.commandMove(sel, g.x, g.z); G.ui.fx.marker(g.x, g.z, G.viewLayer); }
+  }
+  cancel() { G.mode = 'normal'; G.buildType = null; G.build.clearGhost(); if (G.ui.panelOpen) G.ui.closePanel(); else if (G.ui.demandOpen) { } else { G.selected = []; G.ui.selStruct = null; } }
+  key(e, down) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return; const k = e.key.toLowerCase(); this.keys[k] = down; this.keys[e.code] = down; if (!down || G.over) return;
+    if (e.code === 'Space') { e.preventDefault(); G.game.togglePause(); } else if (e.code === 'Tab') { e.preventDefault(); G.ui.togglePanel(); }
+    else if (k === 'l') { G.ui.action('homeCam'); } else if (k === 'b') G.ui.togglePanel('build'); else if (k === 'escape') this.cancel();
+    else if (k >= '1' && k <= '4') { const i = +k - 1; if (e.ctrlKey || e.metaKey) { e.preventDefault(); G.groups[i] = [...G.selected]; G.ui.msg(`گروه ${fa(i + 1)} ذخیره شد (${fa(G.selected.length)} واحد)`, 'info'); } else { G.selected = G.groups[i].filter(u => u.alive); if (G.selected.length) G.ui.selStruct = null; } }
+    else if (k === '+' || k === '=') G.game.setSpeed(Math.min(3, G.speed + 1)); else if (k === '-') G.game.setSpeed(Math.max(1, G.speed - 1));
+  }
+  update(dt) { const s = 560 * dt; let dx = 0, dz = 0; if (this.keys['w'] || this.keys['arrowup']) dz += 1; if (this.keys['s'] || this.keys['arrowdown']) dz -= 1; if (this.keys['a'] || this.keys['arrowleft']) dx -= 1; if (this.keys['d'] || this.keys['arrowright']) dx += 1; if (this.keys['q']) G.cam.yaw += dt * 1.6; if (this.keys['e']) G.cam.yaw -= dt * 1.6; dx += this.joyVec.x; dz -= this.joyVec.y; if (dx || dz) G.cam.pan(dx * s, dz * s); }
+}
+
+/* =====================================================================
+   بخش ۱۶: حلقه‌ی اصلی بازی، شرایط برد/باخت، راه‌اندازی
+   ===================================================================== */
+class Game {
+  constructor() { this.last = performance.now(); this.started = false; requestAnimationFrame(t => this.frame(t)); }
+  frame(t) {
+    requestAnimationFrame(tt => this.frame(tt)); const real = Math.min(0.05, (t - this.last) / 1000); this.last = t;
+    try {
+      G.input.update(real);
+      if (!G.paused && !G.over && this.started) { const dt = real * G.speed; G.time += dt; this.tick(dt); }
+      G.cam.update(); G.world.setTimeOfDay(G.weather.dayFrac, real); G.world.updateParticles(real, G.cam.target); G.ui.updateHUD(real); G.ui.updateSelRings(); G.ui.fx.update(real);
+      G.renderer.render(G.scene, G.camera);
+    } catch (err) { console.error(err); }
+  }
+  tick(dt) {
+    G.res.update(dt); G.colony.update(dt); G.build.update(dt); G.evo.update(dt); G.weather.update(dt); G.caves.update(dt); G.eco.update(dt); G.diplo.update(dt);
+    for (const u of [...G.units]) u.update(dt);
+    G.physics.step(dt); for (const u of G.units) u.sync();
+  }
+  togglePause() { G.paused = !G.paused; $('pausebtn').textContent = G.paused ? '▶' : '⏸'; G.ui.msg(G.paused ? '⏸ زمان متوقف شد — برنامه‌ریزی کنید' : '▶ ادامه', 'info'); }
+  setSpeed(s) { G.speed = s; $('speedlbl').textContent = '×' + fa(s); }
+  stats() { const C = G.colony; return `روزهای سپری‌شده: ${fa(G.day + 1)} • مورچه‌های متولدشده: ${fa(C.stats.born)} • تلفات: ${fa(C.stats.lost)} • دشمنان کشته‌شده: ${fa(C.stats.kills)} • اعتبار: ${fa(G.diplo.rep)} • Seed: ${SEED}`; }
+  gameOver(reason) { if (G.over) return; G.over = true; $('over-title').textContent = 'کلونی نابود شد'; $('over-text').textContent = reason; $('over-stats').textContent = this.stats(); $('over').style.display = 'flex'; }
+  victory() { if (G.over) return; G.over = true; $('over').classList.add('win'); $('over-title').textContent = 'پیروزی نهایی: طلوع تمدن مورچگان'; $('over-text').textContent = 'اهریمن کهن شکست خورد و سیاره‌ی جنگلی‌-باتلاقی برای همیشه تحت سلطه‌ی کلونی شما درآمد. ملکه، تمدن شما جاودانه شد.'; $('over-stats').textContent = this.stats(); $('over').style.display = 'flex'; }
+  start() { this.started = true; G.paused = false; $('overlay').style.display = 'none'; G.ui.msg('به سیاره خوش آمدید، ملکه. کارگران خودکار جمع‌آوری می‌کنند؛ اتاق تخم‌گذاری و انبار بسازید', 'good'); setTimeout(() => G.ui.msg('راهنما: Tab پنل مدیریت • B ساخت • کلیک راست فرمان', 'info'), 4000); }
+}
+
+function init() {
+  const canvas = $('c');
+  G.renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: 'high-performance' }); G.renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2)); G.renderer.setSize(innerWidth, innerHeight);
+  G.renderer.shadowMap.enabled = !isMobile; G.renderer.shadowMap.type = THREE.PCFSoftShadowMap; G.renderer.toneMapping = THREE.ACESFilmicToneMapping; G.renderer.toneMappingExposure = 1.1;
+  G.scene = new THREE.Scene(); G.camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 6000);
+  // ترتیب ساخت ماژول‌ها مهم است (وابستگی‌ها)
+  G.physics = new Physics(); G.world = new World(); G.cam = new CameraRig(); G.nav = new NavGrid(); G.build = new BuildSystem(); G.res = new Resources(); G.evo = new Evolution(); G.weather = new Weather(); G.diplo = new Diplomacy(); G.caves = new CaveSystem(); G.eco = new Ecosystem(); G.colony = new Colony(); G.ui = new UI(); G.input = new Input(); G.game = new Game();
+  window.addEventListener('resize', () => { G.camera.aspect = innerWidth / innerHeight; G.camera.updateProjectionMatrix(); G.renderer.setSize(innerWidth, innerHeight); });
+  $('seedinfo').textContent = `Seed این نقشه: ${SEED} — ${isMobile ? 'حالت موبایل' : 'حالت دسکتاپ'} — درختان: ${fa(G.world.trees.length)}`;
+  $('startbtn').onclick = () => G.game.start();
+  if (isMobile) $('controls-desktop').style.display = 'none'; else $('controls-mobile').style.display = 'none';
+}
+try { init(); } catch (err) { console.error(err); $('intro').innerHTML = '<b style="color:#ff6a6a">خطا در راه‌اندازی:</b> ' + err.message + '<br>لطفاً از مرورگر به‌روز با پشتیبانی WebGL استفاده کنید.'; }
+
+</script>
+</body>
+</html>

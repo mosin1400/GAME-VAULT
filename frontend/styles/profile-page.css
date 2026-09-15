@@ -1,0 +1,182 @@
+/* Source: profile.css */
+:root {
+  --bg:#07111f;
+  --panel:#101f35;
+  --line:#29465f;
+  --text:#edf8ff;
+  --muted:#91a9bd;
+  --cyan:#5fe6ed
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(circle at 82% 10%,#21436a,#07111f 46%);
+  font-family:Vazirmatn,sans-serif;
+  color:var(--text)
+}
+.profile-page {
+  max-width:1050px;
+  margin:auto;
+  padding:30px
+}
+.back {
+  color:#b9dbe5;
+  text-decoration:none;
+  font-size:12px
+}
+.profile-shell {
+  display:grid;
+  grid-template-columns:1fr 410px;
+  gap:55px;
+  align-items:center;
+  min-height:calc(100vh - 100px)
+}
+.profile-intro span {
+  color:var(--cyan);
+  font-size:11px;
+  letter-spacing:.2em
+}
+.profile-intro h1 {
+  font-size:42px;
+  line-height:1.45;
+  margin:14px 0
+}
+.profile-intro p {
+  max-width:490px;
+  color:var(--muted);
+  line-height:2;
+  font-size:14px
+}
+.auth-card {
+  background:#0c1b2d;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:31px;
+  box-shadow:0 25px 70px #02061180;
+  text-align:center
+}
+.guest-icon,.user-avatar {
+  display:grid;
+  place-items:center;
+  margin:auto;
+  background:linear-gradient(135deg,#5fe6ed,#566dff);
+  color:#07111f;
+  border-radius:50%;
+  font-size:29px;
+  font-weight:900
+}
+.guest-icon {
+  width:57px;
+  height:57px
+}
+.user-avatar {
+  width:86px;
+  height:86px;
+  font-size:32px
+}
+.auth-card h2 {
+  font-size:21px;
+  margin:16px 0 6px
+}
+.auth-card p {
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.9
+}
+.auth-tabs {
+  display:flex;
+  gap:6px;
+  background:#071422;
+  padding:4px;
+  border-radius:9px;
+  margin:22px 0 14px
+}
+.auth-tab {
+  flex:1;
+  border:0;
+  background:transparent;
+  color:#8fa4b8;
+  padding:8px;
+  border-radius:6px;
+  font:11px Vazirmatn
+}
+.auth-tab.active {
+  background:#18344b;
+  color:#dffaff
+}
+form {
+  display:grid;
+  gap:10px;
+  text-align:right
+}
+label {
+  display:grid;
+  gap:5px;
+  color:#a6bac9;
+  font-size:10px
+}
+input {
+  background:#071725;
+  border:1px solid #2c4d65;
+  border-radius:7px;
+  color:white;
+  padding:10px;
+  outline:0;
+  font:12px Vazirmatn
+}
+form button,#logoutBtn {
+  border:0;
+  background:var(--cyan);
+  color:#07202a;
+  border-radius:7px;
+  padding:11px;
+  font:12px Vazirmatn;
+  font-weight:800;
+  margin-top:5px
+}
+#authError {
+  display:block;
+  min-height:18px;
+  color:#ff91a3;
+  font-size:10px;
+  margin-top:8px
+}
+.user-info {
+  display:flex;
+  justify-content:space-between;
+  border-top:1px solid #233d53;
+  padding:12px 0;
+  color:#9cb1c1;
+  font-size:11px
+}
+.user-info b {
+  color:#eaf8ff
+}
+.online {
+  color:#6cf2ac!important
+}
+@media(max-width:750px) {
+  .profile-shell {
+    grid-template-columns:1fr;
+    gap:20px
+  }
+  .profile-intro h1 {
+    font-size:29px
+  }
+  .profile-page {
+    padding:18px
+  }
+}
+/* Source: profile-fix.css */
+/* Account state has one visible card at a time. */
+.hidden {
+   display: none !important;
+}
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #edf8ff;
+    -webkit-box-shadow: 0 0 0 1000px #071725 inset;
+    transition: background-color 9999s ease-out 0s;
+}

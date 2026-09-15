@@ -1,0 +1,5 @@
+node_modules
+.next
+n8n/custom-nodes/node_modules
+n8n/custom-nodes/dist
+.git

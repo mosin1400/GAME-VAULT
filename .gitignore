@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+runtime-logs/
+.vault/
+builds/
+apps/api/npm-install.*.log
+apps/api/node_modules/
+apps/api/dist/

@@ -1,0 +1,47 @@
+{
+  "capturedAt": "2026-09-15T06:59:44.192Z",
+  "node": "v24.19.0",
+  "baseUrl": "http://[::1]:8080",
+  "reproduction": "node scripts/audit-production-baseline.cjs",
+  "productDataModified": false,
+  "catalog": {"directories":11,"recognizedGames":1,"recognizedVersions":2,"nonversionedDirectories":10,"hasVersionsArray":false,"existingVersionPlayTargetsExist":false},
+  "http": [
+    {"route":"/","status":200},
+    {"route":"/theia.html","status":200},
+    {"route":"/project-tools.js","status":200},
+    {"route":"/editor.html","status":500,"leaksHostPath":true},
+    {"route":"/editor.js","status":500,"leaksHostPath":true},
+    {"route":"/editor-page.css","status":500,"leaksHostPath":true},
+    {"route":"/audit-missing-asset.css","status":500,"leaksHostPath":true},
+    {"route":"/server.js","status":200,"matchesLocalSource":true},
+    {"route":"/package.json","status":200},
+    {"route":"/backend/auth/admin-account.js","status":200},
+    {"route":"/.vault/users.json","status":200,"contentsRedacted":true},
+    {"route":"/api/games","status":200},
+    {"route":"/api/tree?game=t34-steel-front&version=v1.0.0","status":401,"authenticatedBehaviorNotRetested":true}
+  ],
+  "fixtures": {
+    "binarySnapshotRoundtripEqual":false,
+    "snapshotIncludes1000000ByteFile":false,
+    "historyPathEscapesVault":true,
+    "sessionSurvivesNewServiceInstance":false,
+    "concurrentComments":[{"submitted":20,"stored":1},{"submitted":20,"stored":1},{"submitted":20,"stored":1}],
+    "safeFileReadsExternalFixtureViaJunction":true
+  },
+  "contractSuite": {
+    "command":"node scripts/run-contracts.js",
+    "exitCode":1,
+    "total":46,
+    "passed":40,
+    "failed":6,
+    "failures":[
+      {"file":"asset-catalog-contract.test.js","class":"legacy-deletion-reference"},
+      {"file":"static-assets.test.js","class":"legacy-deletion-reference"},
+      {"file":"chat-submit-contract.test.js","class":"legacy-deletion-reference"},
+      {"file":"theia-workspace-theme.test.js","class":"legacy-deletion-reference"},
+      {"file":"project-layout-contract.test.js","class":"mixed-input-layout-contract"},
+      {"file":"system-tools.test.js","class":"missing-fixed-fixture"}
+    ],
+    "theiaContractPassesDoNotProveRuntimeIsolation":true
+  }
+}

@@ -1,0 +1,514 @@
+{
+  "name": "🤖 Automation Builder Agent (Template)",
+  "nodes": [
+    {
+      "id": "59a3c6b7-b6ce-41fc-a4ac-75c75265dd9f",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "cc939ac1-46e4-40a9-ad5d-3e0ffb1010d9",
+      "parameters": {
+        "path": "build-automation",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "notes": "لایهٔ ۱ — ورودی: POST { \"prompt\": \"...\" }"
+    },
+    {
+      "id": "15c2d83b-1f62-4803-9fd5-6374b0cb2d6b",
+      "name": "Bale Trigger",
+      "type": "n8n-nodes-bale.baleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        260
+      ],
+      "webhookId": "b457f2e3-196b-43b8-9dca-fdb22449d995",
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "onlyText": true
+      },
+      "credentials": {
+        "baleApi": {
+          "name": "Bale account"
+        }
+      },
+      "notes": "لایهٔ ۱ — ورودی از بات بله"
+    },
+    {
+      "id": "b2c1d181-080a-4e7a-9d60-b7b9f3f8435e",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        500
+      ],
+      "parameters": {},
+      "notes": "لایهٔ ۱ — راه‌اندازی دستی برای تست"
+    },
+    {
+      "id": "550a0158-decc-4063-af70-0dfeae51962f",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        260
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cb1f3f2f-d098-49eb-966e-6d40aa62bb9f",
+              "name": "prompt",
+              "type": "string",
+              "value": "={{ $json.body?.prompt || $json.message?.text || $json.prompt || 'یک بات بله بساز که به کدکس وصل باشه و هر چی بگم رو ترجمه کنه' }}"
+            },
+            {
+              "id": "4dcb29fe-2e58-4ef5-a53c-1ef3f9230f46",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $json.message?.chat?.id || $json.body?.chatId || '' }}"
+            },
+            {
+              "id": "bca975be-6ef1-4c50-947c-e10ede18efed",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.message ? 'bale' : ($json.body ? 'webhook' : 'manual') }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2bb1f511-5dca-4ccc-a591-15d96ec76a3b",
+      "name": "AI Agent (Codex)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        520,
+        260
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {
+          "systemMessage": "تو یک متخصص ساخت اتوماسیون با n8n هستی. وظیفه‌ات این است که درخواست‌های کاربر را به یک Workflow دقیق و قابل اجرا در n8n تبدیل کنی.\nخروجی تو باید یک فایل JSON باشد که دقیقاً منطبق با ساختار Workflow در n8n است: { \"name\", \"nodes\": [...], \"connections\": {...}, \"settings\": { \"executionOrder\": \"v1\" } }.\nهمیشه از نودهای موجود استفاده کن: n8n-nodes-base.webhook (v2), n8n-nodes-base.respondToWebhook (v1.1), n8n-nodes-base.httpRequest (v4.2), n8n-nodes-base.set (v3.4), n8n-nodes-base.code (v2), n8n-nodes-base.scheduleTrigger (v1.2), @n8n/n8n-nodes-langchain.agent (v1.7), @chrishdx/n8n-nodes-codex-cli-lm.codexCliLm (v1, به AI Agent با type ai_languageModel وصل می‌شود), n8n-nodes-bale.baleTrigger (v1, credentials: { baleApi: { name: \"Bale account\" } }), n8n-nodes-bale.bale (v1: resource=message, operation=sendMessage, chatId, text).\nهر Workflow دقیقاً یک Trigger دارد. نام نودها یکتا و انگلیسی. chatId بله را از ={{ $('Bale Trigger').item.json.message.chat.id }} بخوان. متن پیام: ={{ $json.message.text }}. خروجی AI Agent: ={{ $json.output }}.\nوقتی JSON آماده شد، آن را با ابزار Workflow Builder بساز و فعال کن؛ سپس نتیجه (id، لینک، نام نودها) را به‌صورت یک پیام کوتاه فارسی گزارش بده. اگر ابزار خطای اعتبارسنجی برگرداند، JSON را اصلاح کن و دوباره تلاش کن (حداکثر ۳ بار). هرگز سؤال نپرس.",
+          "maxIterations": 8
+        }
+      },
+      "notes": "لایهٔ ۲ — مغز Agent: Codex + دستورالعمل + ابزار Workflow Builder"
+    },
+    {
+      "id": "7917a998-9865-4f9a-95f9-180a0f047cc4",
+      "name": "Codex Chat Model",
+      "type": "@chrishdx/n8n-nodes-codex-cli-lm.codexCliLm",
+      "typeVersion": 1,
+      "position": [
+        440,
+        480
+      ],
+      "parameters": {
+        "model": "gpt-5-codex"
+      },
+      "notes": "احراز هویت: codex login داخل کانتینر"
+    },
+    {
+      "id": "730eb43f-2b11-4369-8b98-bcf9adb22bbd",
+      "name": "Workflow Builder Tool",
+      "type": "n8n-nodes-bale.workflowBuilder",
+      "typeVersion": 1,
+      "position": [
+        640,
+        480
+      ],
+      "parameters": {
+        "operation": "create",
+        "activate": true,
+        "workflowJson": "={{ $fromAI('workflowJson', 'Complete n8n workflow JSON as a string', 'string') }}",
+        "publicUrl": "={{ $env.N8N_EDITOR_BASE_URL || '' }}"
+      },
+      "credentials": {
+        "n8nBuilderApi": {
+          "name": "n8n Builder API"
+        }
+      },
+      "notes": "لایهٔ ۳ — اعتبارسنجی + POST /api/v1/workflows + activate"
+    },
+    {
+      "id": "70cc49d7-a7bc-455c-bed5-4263bb1eb342",
+      "name": "Extract Workflow JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        260
+      ],
+      "parameters": {
+        "jsCode": "// خروجی Agent را می‌گیریم؛ اگر Agent خودش ابزار را صدا زده باشد، فقط گزارش می‌دهیم.\n// اگر Agent فقط JSON برگردانده باشد (بدون ابزار)، آن را استخراج می‌کنیم تا با HTTP Request ساخته شود.\nconst out = String($json.output ?? '');\nlet wf = null;\ntry { wf = JSON.parse(out); } catch {\n  const m = out.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n  if (m) { try { wf = JSON.parse(m[1]); } catch {} }\n  if (!wf) { const a = out.indexOf('{'), b = out.lastIndexOf('}'); if (a !== -1 && b > a) { try { wf = JSON.parse(out.slice(a, b + 1)); } catch {} } }\n}\nconst needsCreate = !!(wf && Array.isArray(wf.nodes));\nreturn [{ json: { needsCreate, workflow: needsCreate ? { name: wf.name || 'Generated Automation', nodes: wf.nodes, connections: wf.connections || {}, settings: { executionOrder: 'v1' }, staticData: null } : null, report: out, prompt: $('Normalize Input').item.json.prompt, chatId: $('Normalize Input').item.json.chatId } }];"
+      }
+    },
+    {
+      "id": "fed2a6e3-b8a7-47d3-8dc8-afa00ea0cc62",
+      "name": "Needs Direct Create?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "201ca818-33dc-449a-aaed-47d263e75184",
+              "leftValue": "={{ $json.needsCreate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b0c05ff4-8358-4c54-9407-9fb2785b3524",
+      "name": "Create Workflow (n8n API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_EDITOR_BASE_URL ? $env.N8N_EDITOR_BASE_URL.replace(/\\/$/, '') : 'http://localhost:5678' }}/api/v1/workflows",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.workflow) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "n8n API Key (X-N8N-API-KEY)"
+        }
+      },
+      "notes": "لایهٔ ۳ — POST /api/v1/workflows"
+    },
+    {
+      "id": "dcd0c5f7-268e-43ad-94bd-2e67440b1313",
+      "name": "Activate Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_EDITOR_BASE_URL ? $env.N8N_EDITOR_BASE_URL.replace(/\\/$/, '') : 'http://localhost:5678' }}/api/v1/workflows/{{ $json.id }}/activate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "n8n API Key (X-N8N-API-KEY)"
+        }
+      },
+      "notes": "لایهٔ ۴ — فعال‌سازی"
+    },
+    {
+      "id": "503d92a3-af41-45e5-af7e-a8c90f454cdb",
+      "name": "Build Report",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1820,
+        260
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86827db8-ca37-4ead-8043-a629e3735dfa",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.id ? ('✅ Workflow «' + $json.name + '» ساخته و فعال شد.\\n🔗 ' + ($env.N8N_EDITOR_BASE_URL || 'http://localhost:5678/').replace(/\\/$/, '') + '/workflow/' + $json.id) : $('Extract Workflow JSON').item.json.report }}"
+            },
+            {
+              "id": "ca44f309-0eaf-4b21-b502-472d7cbe05c2",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $('Extract Workflow JSON').item.json.chatId }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8aefb00e-9098-4e5e-aab1-6ce923b30fb5",
+      "name": "Has Chat?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "1ff3bad1-1db8-4e4a-b06a-672e1713cddb",
+              "leftValue": "={{ $json.chatId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3cfcaac5-d87e-499b-830a-351f1d5bb149",
+      "name": "Reply in Bale",
+      "type": "n8n-nodes-bale.bale",
+      "typeVersion": 1,
+      "position": [
+        2340,
+        140
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}"
+      },
+      "credentials": {
+        "baleApi": {
+          "name": "Bale account"
+        }
+      },
+      "notes": "گزارش نتیجه به کاربر در بله"
+    },
+    {
+      "id": "8d12b750-cc07-4485-a7fe-b82c3ec2cadb",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        380
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, message: $json.message } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bale Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (Codex)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Codex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent (Codex)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Builder Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent (Codex)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (Codex)": {
+      "main": [
+        [
+          {
+            "node": "Extract Workflow JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Workflow JSON": {
+      "main": [
+        [
+          {
+            "node": "Needs Direct Create?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Direct Create?": {
+      "main": [
+        [
+          {
+            "node": "Create Workflow (n8n API)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Workflow (n8n API)": {
+      "main": [
+        [
+          {
+            "node": "Activate Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Has Chat?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Chat?": {
+      "main": [
+        [
+          {
+            "node": "Reply in Bale",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "description": "Automation Builder Agent — درخواست طبیعی → Workflow فعال در n8n"
+  }
+}

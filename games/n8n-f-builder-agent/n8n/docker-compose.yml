@@ -1,0 +1,117 @@
+# ==========================================================================
+# Automation Builder Agent — استقرار کامل
+#   - postgres : پایگاه دادهٔ مشترک n8n و اپ Agent
+#   - n8n      : با نودهای سفارشی Bale/WorkflowBuilder + Codex Chat Model + Codex CLI
+#   - agent    : اپ Next.js (لایه‌های ۱ تا ۴، داشبورد، Webhook بله، Self-Heal)
+#
+# راه‌اندازی:
+#   cp .env.example .env && docker compose up -d --build
+#   docker compose exec n8n codex login --device-auth     # احراز هویت Codex با اشتراک شما
+# ==========================================================================
+name: automation-builder-agent
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-n8n}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        N8N_VERSION: ${N8N_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # --- پایگاه داده ---
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-postgres}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # --- آدرس عمومی (برای Webhookهای بله) ---
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      N8N_EDITOR_BASE_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${TZ:-Asia/Tehran}
+      TZ: ${TZ:-Asia/Tehran}
+      # --- امنیت ---
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-please}
+      N8N_SECURE_COOKIE: "false"
+      # --- Public API + Community nodes + MCP ---
+      N8N_PUBLIC_API_DISABLED: "false"
+      N8N_COMMUNITY_PACKAGES_ENABLED: "true"
+      N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: "true"
+      N8N_MCP_SERVER_ENABLED: "true"
+      # --- برای نود Codex Chat Model ---
+      CODEX_HOME: /home/node/.codex
+      # --- متغیرهایی که Workflowها با $env می‌خوانند ---
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      AGENT_BASE_URL: http://agent:3000
+      AGENT_SHARED_SECRET: ${AGENT_SHARED_SECRET:-}
+      BALE_DEFAULT_CHAT_ID: ${BALE_DEFAULT_CHAT_ID:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - codex_home:/home/node/.codex      # سشن لاگین Codex اینجا ذخیره می‌شود
+      - ./workflows:/workflows:ro         # Workflowهای الگو برای import
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  agent:
+    build:
+      context: ..
+      dockerfile: n8n/agent.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${AGENT_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/agent
+      # Codex
+      CODEX_MODE: ${CODEX_MODE:-auto}
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5-codex}
+      CODEX_HOME: /home/node/.codex
+      N8N_CODEX_WEBHOOK_URL: ${N8N_CODEX_WEBHOOK_URL:-http://n8n:5678/webhook/codex-llm}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      # n8n
+      N8N_BASE_URL: http://n8n:5678
+      N8N_PUBLIC_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      N8N_MCP_TOKEN: ${N8N_MCP_TOKEN:-}
+      # بله / سروش
+      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+      BALE_WEBHOOK_SECRET: ${BALE_WEBHOOK_SECRET:-}
+      SOROUSH_BOT_TOKEN: ${SOROUSH_BOT_TOKEN:-}
+      PUBLIC_BASE_URL: ${AGENT_PUBLIC_URL:-http://localhost:3000}
+      AGENT_SHARED_SECRET: ${AGENT_SHARED_SECRET:-}
+      MAX_HEAL_ATTEMPTS: ${MAX_HEAL_ATTEMPTS:-3}
+    volumes:
+      - codex_home:/home/node/.codex      # اشتراک Codex بین n8n و agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  n8n_data:
+  codex_home:

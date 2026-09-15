@@ -1,0 +1,108 @@
+{
+  "name": "🩹 Error Monitor → Agent Self-Heal",
+  "nodes": [
+    {
+      "id": "96b55dfe-8e34-4f5c-ac86-bf3406640cfb",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "notes": "این Workflow را در Settings → Error Workflow سایر Workflowها انتخاب کنید"
+    },
+    {
+      "id": "de966f6d-0289-46a9-86d5-f1974b102b0b",
+      "name": "Report to Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.AGENT_BASE_URL || 'http://agent:3000') }}/api/agent/monitor",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Secret",
+              "value": "={{ $env.AGENT_SHARED_SECRET || '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflowId: $json.workflow.id, executionId: $json.execution?.id, error: ($json.execution?.error?.message || 'unknown') + ($json.execution?.lastNodeExecuted ? ' (node: ' + $json.execution.lastNodeExecuted + ')' : '') }) }}",
+        "options": {}
+      },
+      "notes": "لایهٔ ۴ — Agent خطا را دریافت، Workflow را بازتولید و جایگزین می‌کند"
+    },
+    {
+      "id": "ac9fc7c6-5963-4fa6-82d1-fe1de5e223d4",
+      "name": "Every 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2d23133c-ffbd-40a9-8df4-3019be26b9be",
+      "name": "Poll Agent Monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.AGENT_BASE_URL || 'http://agent:3000') }}/api/agent/monitor",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Report to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 min": {
+      "main": [
+        [
+          {
+            "node": "Poll Agent Monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null
+}

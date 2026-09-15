@@ -1,0 +1,128 @@
+{
+  "name": "Automation Builder Template",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "automation-request",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "تو یک متخصص ساخت اتوماسیون با n8n هستی. وظیفه ات این است که درخواست های کاربر را به یک Workflow دقیق و قابل اجرا در n8n تبدیل کنی.\nخروجی تو باید یک فایل JSON باشد که دقیقا منطبق با ساختار Workflow در n8n است.\nهمیشه از نودهای موجود (HTTP Request، Webhook، Codex Chat Model، و نودهای سفارشی بله/سروش) استفاده کن."
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "codex-model",
+      "name": "Codex Model",
+      "type": "@chrishdx/n8n-nodes-codex-cli-lm.codexModel",
+      "typeVersion": 1,
+      "position": [
+        400,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "workflowJson": "={{ $json.output }}"
+      },
+      "id": "workflow-builder",
+      "name": "Workflow Builder",
+      "type": "n8n-nodes-automation-builder.workflowBuilder",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $('Webhook').item.json.body.chatId }}",
+        "text": "=اتوماسیون شما با موفقیت ساخته شد!\nشناسه: {{ $json.id }}"
+      },
+      "id": "bale-messenger",
+      "name": "Bale Messenger",
+      "type": "n8n-nodes-automation-builder.bale",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Codex Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Workflow Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Builder": {
+      "main": [
+        [
+          {
+            "node": "Bale Messenger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "f7ab2c10-e7fa-4fc5-91db-a3861c8c853f",
+  "id": "1",
+  "tags": []
+}

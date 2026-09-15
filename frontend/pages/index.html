@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111f" />
+  <meta name="description" content="مرکز مدیریت و اجرای بازی‌های ساخته‌شده با هوش مصنوعی" />
+  <title>Game Vault | مدیریت بازی‌ها</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/frontend/styles/app-page.css" />
+  <link rel="stylesheet" href="/frontend/styles/foundation.css" />
+  <link rel="stylesheet" href="/frontend/styles/community.css" />
+  <link rel="stylesheet" href="/frontend/styles/theme.css" />
+  <link rel="manifest" href="/frontend/public/manifest.webmanifest" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">✦</span><span>GAME<br /><b>VAULT</b></span></div>
+      <div class="side-label">مرکز کنترل</div>
+      <nav class="side-nav" aria-label="ناوبری اصلی">
+        <a class="active" href="#dashboard" data-view="dashboard"><span>◈</span> داشبورد</a>
+        <a href="#games" data-view="games"><span>▦</span> همه بازی‌ها <em id="sideCount">۰</em></a>
+        <a href="#recent" data-view="recent"><span>◷</span> اخیراً اضافه‌شده</a>
+        <a href="#favorites" data-view="favorites"><span>☆</span> منتخب من</a>
+      </nav>
+      <div class="side-bottom">
+        <div class="mini-status"><span class="pulse"></span><div><b>کتابخانه آنلاین</b><small>همه‌چیز آماده است</small></div></div>
+        <button class="edit-entry" id="openEditor"><span>⚙</span> حالت ادیت</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span id="crumbPrimary">مرکز کنترل</span><i>/</i><b id="crumbCurrent">داشبورد</b></div>
+        <div class="top-actions"><button class="icon-button" id="themeToggle" data-theme-toggle aria-label="تغییر ظاهر"></button><button class="icon-button" aria-label="اعلان‌ها">♢<span class="notification-dot"></span></button><a class="avatar" id="profileLink" href="/profile.html">م</a></div>
+      </header>
+
+      <section class="app-view" id="dashboardView">
+        <div class="view-heading"><div><p class="eyebrow">نمای کلی کتابخانه <span></span></p><h1>داشبورد <strong>فرماندهی</strong></h1></div><button class="compact-action" data-view="games">مشاهده بازی‌ها ←</button></div>
+        <div class="metric-row">
+          <article class="metric-card"><div class="metric-ring cyan-ring"><b id="metricGames">۰</b><span>بازی</span></div><div><span>کل پروژه‌ها</span><b id="metricGamesLabel">۰ بازی</b><small>کتابخانه فعال</small></div></article>
+          <article class="metric-card"><div class="mini-chart line-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><span>اجرا و دانلود</span><b id="metricActivity">۰</b><small>هفته‌ی جاری</small></div></article>
+          <article class="metric-card"><div class="metric-ring amber-ring"><b id="metricRating">۰</b><span>از ۵</span></div><div><span>میانگین امتیاز</span><b id="metricRatingLabel">۰</b><small>کیفیت کتابخانه</small></div></article>
+          <article class="metric-card"><div class="split-donut"><i></i><i></i></div><div><span>وضعیت انتشار</span><b id="metricPublished">۰</b><small>منتشرشده</small></div></article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="dash-panel activity-panel"><div class="panel-title"><div><span>فعالیت هفتگی</span><small>اجرا و دانلود بازی‌ها</small></div><b>۷ روز اخیر</b></div><div class="activity-chart" id="activityChart"></div><div class="chart-axis"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div></section>
+          <section class="dash-panel category-panel"><div class="panel-title"><div><span>ترکیب کتابخانه</span><small>دسته‌بندی بازی‌ها</small></div></div><div class="category-bars" id="categoryBars"></div></section>
+          <section class="dash-panel popular-panel"><div class="panel-title"><div><span>محبوب‌ترین بازی‌ها</span><small>بر اساس امتیاز</small></div><button data-view="games">همه</button></div><div id="popularList"></div></section>
+          <section class="dash-panel updates-panel"><div class="panel-title"><div><span>آخرین فعالیت‌ها</span><small>تغییرات و پروژه‌های جدید</small></div></div><div id="updatesList"></div></section>
+        </div>
+      </section>
+
+      <section class="app-view hidden" id="gamesView">
+        <div class="compact-library-head"><div><p class="eyebrow">کتابخانه <span></span></p><h1 id="gamesTitle">همه بازی‌ها</h1></div><div class="library-mini-stats"><span>کل <b id="miniTotal">۰</b></span><span>منتشرشده <b id="miniPublished">۰</b></span><span>میانگین <b id="miniRating">۰</b></span></div></div>
+        <section class="library-toolbar"><div class="filter-tabs" id="filters"><button class="filter active" data-filter="همه">همه</button><button class="filter" data-filter="اکشن">اکشن</button><button class="filter" data-filter="مسابقه‌ای">مسابقه‌ای</button><button class="filter" data-filter="ماجراجویی">ماجراجویی</button><button class="filter" data-filter="استراتژی">استراتژی</button></div><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="جست‌وجوی بازی..." aria-label="جست‌وجوی بازی" /></label></section>
+        <section class="game-grid" id="gameGrid" aria-live="polite"></section>
+        <div class="empty-state hidden" id="emptyState"><div>⌁</div><h3 id="emptyTitle">بازی‌ای پیدا نشد</h3><p id="emptyCopy">عبارت جست‌وجو یا فیلتر را تغییر بده.</p></div>
+      </section>
+
+      <section class="app-view hidden" id="detailView">
+        <button class="back-button" data-view="games">← بازگشت به بازی‌ها</button>
+        <div id="gameDetail"></div>
+      </section>
+      <footer class="footer"><span>GAME VAULT / 2026</span><span>ساخته‌شده برای تجربه‌های خلاقانه‌ی شما</span></footer>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="passwordTitle"><div class="password-modal"><button class="close-modal" data-close="passwordModal">×</button><div class="lock-icon">⌑</div><p class="eyebrow">دسترسی خصوصی</p><h2 id="passwordTitle">ورود به حالت ادیت</h2><p>برای مدیریت کتابخانه، رمز عبور مدیر را وارد کن.</p><form id="passwordForm"><input id="passwordInput" type="password" inputmode="numeric" placeholder="رمز عبور" required /><button class="primary-button" type="submit">باز کردن ادیتور <span>←</span></button><small class="form-error" id="passwordError"></small></form></div></div>
+  <aside class="editor-drawer hidden" id="editorDrawer" aria-label="ویرایشگر بازی‌ها"><div class="drawer-head"><div><p class="eyebrow">فضای مدیریت</p><h2>ادیتور کتابخانه</h2></div><button class="close-modal" id="closeEditor">×</button></div><div class="editor-layout"><div class="folder-rail"><div class="folder-title">پوشه بازی‌ها <span id="folderCount">۰</span></div><div id="folderList"></div><button class="new-game-button">＋ بازی جدید</button></div><div class="editor-form-wrap"></div></div></aside>
+  <div class="toast" id="toast"></div>
+  <script src="/frontend/scripts/theme-sync.js"></script>
+  <script src="/frontend/scripts/app.js"></script>
+  <script src="/frontend/scripts/community-ui.js"></script>
+  <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/frontend/public/sw.js');</script>
+</body>
+</html>

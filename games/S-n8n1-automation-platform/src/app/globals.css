@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+html, body {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+.react-flow__node-automationNode {
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: 220px;
+}

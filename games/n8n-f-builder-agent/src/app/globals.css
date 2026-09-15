@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0b1020;
+  --panel: #111832;
+  --line: #1f2a4d;
+  --accent: #7c8cff;
+  --accent-2: #34d399;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: "Vazirmatn", "IRANSans", "Segoe UI", Tahoma, system-ui, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(124, 140, 255, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(52, 211, 153, 0.12), transparent 60%),
+    var(--bg);
+  color: #e6e9f5;
+  min-height: 100vh;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  direction: ltr;
+  text-align: left;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse { animation: pulse-dot 1.2s ease-in-out infinite; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2a3663; border-radius: 8px; }

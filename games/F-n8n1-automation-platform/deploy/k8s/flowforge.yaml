@@ -1,0 +1,59 @@
+# FlowForge – Kubernetes manifests (اختیاری). اعمال: kubectl apply -f deploy/k8s/flowforge.yaml
+apiVersion: v1
+kind: Namespace
+metadata: { name: flowforge }
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: flowforge-secrets, namespace: flowforge }
+stringData:
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/flowforge
+  REDIS_URL: redis://redis:6379
+  ENCRYPTION_KEY: change-me-please-32-chars-minimum!!
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: flowforge-main, namespace: flowforge }
+spec:
+  replicas: 2   # Multi-Main
+  selector: { matchLabels: { app: flowforge-main } }
+  template:
+    metadata: { labels: { app: flowforge-main } }
+    spec:
+      containers:
+        - name: app
+          image: flowforge:latest
+          ports: [{ containerPort: 3000 }]
+          envFrom: [{ secretRef: { name: flowforge-secrets } }]
+          env: [{ name: MULTI_MAIN, value: "true" }, { name: EXECUTIONS_MODE, value: "queue" }]
+          readinessProbe: { httpGet: { path: /api/health, port: 3000 }, periodSeconds: 10 }
+          volumeMounts: [{ name: files, mountPath: /files }]
+      volumes: [{ name: files, persistentVolumeClaim: { claimName: flowforge-files } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: flowforge-worker, namespace: flowforge }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: flowforge-worker } }
+  template:
+    metadata: { labels: { app: flowforge-worker } }
+    spec:
+      containers:
+        - name: worker
+          image: flowforge:latest
+          command: ["node", "scripts/worker.mjs"]
+          envFrom: [{ secretRef: { name: flowforge-secrets } }]
+          env: [{ name: MAIN_URL, value: "http://flowforge:3000" }, { name: WORKER_CONCURRENCY, value: "50" }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: flowforge, namespace: flowforge }
+spec:
+  selector: { app: flowforge-main }
+  ports: [{ port: 3000, targetPort: 3000 }]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: flowforge-files, namespace: flowforge }
+spec: { accessModes: [ReadWriteMany], resources: { requests: { storage: 10Gi } } }

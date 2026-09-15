@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+:root {
+  --ff-bg: #0b1020;
+  --ff-panel: #111833;
+  --ff-border: #1f2a4d;
+  --ff-accent: #f97316;
+}
+
+html { font-family: "Vazirmatn", "Segoe UI", Tahoma, system-ui, sans-serif; }
+body { background: var(--ff-bg); color: #e2e8f0; }
+
+.ff-card { @apply rounded-xl border border-[#1f2a4d] bg-[#111833] shadow-sm; }
+.ff-btn { @apply inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
+.ff-btn-primary { @apply inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed bg-orange-500 text-white hover:bg-orange-400; }
+.ff-btn-ghost { @apply inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed border border-[#1f2a4d] bg-transparent text-slate-200 hover:bg-[#1a2347]; }
+.ff-btn-danger { @apply inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed bg-red-600/80 text-white hover:bg-red-500; }
+.ff-input { @apply w-full rounded-lg border border-[#1f2a4d] bg-[#0b1020] px-3 py-2 text-sm text-slate-100 outline-none focus:border-orange-500 placeholder:text-slate-500; }
+.ff-label { @apply mb-1 block text-xs font-medium text-slate-400; }
+.ff-badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium; }
+.ff-table { @apply w-full text-sm; }
+.ff-table th { @apply px-3 py-2 text-right text-xs font-semibold text-slate-400 border-b border-[#1f2a4d]; }
+.ff-table td { @apply px-3 py-2 border-b border-[#1f2a4d]/60 align-top; }
+.ff-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* React Flow theme */
+.react-flow { direction: ltr; }
+.react-flow__background { background: #0b1020; }
+.react-flow__edge-path { stroke: #64748b; stroke-width: 2; }
+.react-flow__edge.selected .react-flow__edge-path { stroke: #f97316; }
+.react-flow__handle { width: 12px; height: 12px; border: 2px solid #0b1020; background: #94a3b8; }
+.react-flow__handle:hover { background: #f97316; }
+.react-flow__controls button { background: #111833; border-color: #1f2a4d; fill: #e2e8f0; }
+.react-flow__minimap { background: #111833; }
+.react-flow__attribution { display: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #1f2a4d; border-radius: 8px; }

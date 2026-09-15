@@ -1,0 +1,36 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const root = path.join(__dirname, '..');
+const frontend = fs.readFileSync(path.join(root, 'theia', 'src-gen', 'frontend', 'index.js'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'theia', 'lib', 'frontend', 'index.html'), 'utf8');
+
+assert(fs.existsSync(path.join(root, 'theia', 'gv-extension', 'studio-module.js')), 'native Studio module must exist');
+assert(fs.existsSync(path.join(root, 'theia', 'gv-extension', 'language-module.js')), 'Studio language registration module must exist');
+assert(frontend.includes("require('../../gv-extension/studio-module')"), 'native Studio module must be loaded by Theia');
+assert(frontend.includes("require('../../gv-extension/language-module')"), 'Studio language registration must be loaded by Theia');
+assert(!html.includes('gv-agent-panel'), 'legacy overlay agent must not be shipped');
+assert(!html.includes('gv-agent-toggle'), 'legacy overlay agent toggle must not be shipped');
+const studio = fs.readFileSync(path.join(root, 'theia', 'gv-extension', 'studio-module.js'), 'utf8');
+assert.match(studio, /credentials:\s*['"]include['"]/, 'native Agent must send the authenticated manager session');
+assert.doesNotMatch(studio, /GameVaultMetadataWidget/, 'game.json must use the native Theia text editor, not a graphical metadata form');
+assert.doesNotMatch(studio, /GameVaultReadmeWidget/, 'README.md must use the native Theia text editor, not a graphical README view');
+assert.doesNotMatch(studio, /EditorManager/, 'Studio must not intercept Explorer file opens');
+assert.match(studio, /window\.location\.hostname/, 'Studio API calls must use the same host as the manager session');
+assert.match(studio, /x-gv-studio-token/, 'Studio API calls must carry the short-lived access token issued by management');
+assert.match(studio, /\/api\/agent\/conversation/, 'native Agent must restore its persisted conversation');
+assert.match(studio, /\/api\/agent\/message/, 'native Agent must use the contextual Agent endpoint');
+assert.match(studio, /پاک کردن گفتگو/, 'native Agent must let the user clear project memory');
+assert.match(studio, /gv-attach/, 'native Agent must provide an attachment action');
+assert.match(studio, /\/api\/skills/, 'native Agent must load available skills');
+assert.match(studio, /attachmentData/, 'native Agent must send an attached file to the Agent API');
+assert.match(studio, /approvalMode/, 'native Agent must expose approval mode with each request');
+assert.match(studio, /apiFetch\(`\$\{API\}\/api\/theia\/open`/, 'switching versions must ask the server for a fresh workspace URL');
+assert.match(studio, /window\.location\.assign\(data\.url\)/, 'switching versions must replace both version identity and workspace together');
+assert.doesNotMatch(studio, /باید با حالت مدیر وارد شوید/, 'Studio must not show an irrelevant manager-mode message');
+assert.doesNotMatch(studio, /gv-studio-metadata/, 'the obsolete graphical metadata toolbar button must not remain');
+const languages = fs.readFileSync(path.join(root, 'theia', 'gv-extension', 'language-module.js'), 'utf8');
+for (const language of ['html', 'css', 'javascript', 'json', 'python']) assert.match(languages, new RegExp(`id:\\s*['\"]${language}['\"]`), `${language} must receive native Monaco syntax support`);
+assert.match(languages, /setMonarchTokensProvider/, 'registered languages must provide real Monaco tokenization');
+console.log('Theia native studio contract passed');

@@ -1,0 +1,115 @@
+/* 🚀 Ultra-Modern Glassy Theme for Theia/VSCode */
+
+:root {
+    /* پالت رنگی نئون-پاستل */
+    --accent-color: #7c4dff;
+    --accent-glow: rgba(124, 77, 255, 0.5);
+    --bg-glass: rgba(30, 30, 30, 0.85);
+    --border-radius: 12px;
+    --transition-speed: 0.3s;
+
+    /* اورراید متغیرهای اصلی */
+    --theia-editor-background: #0d0d12 !important;
+    --theia-sideBar-background: #12121a !important;
+    --theia-activityBar-background: #0a0a0f !important;
+    --theia-statusBar-background: #7c4dff !important;
+    --theia-titleBar-activeBackground: #0a0a0f !important;
+    --theia-list-activeSelectionBackground: rgba(124, 77, 255, 0.2) !important;
+}
+
+/* 🌀 ۱. لبه‌های گرد و حالت شیشه‌ای برای المان‌های اصلی */
+.theia-ApplicationShell, .monaco-workbench {
+    background: linear-gradient(135deg, #0d0d12 0%, #1a1a2e 100%) !important;
+}
+
+/* تب‌ها را شبیه کپسول‌های زیبا می‌کنیم */
+.theia-tabBar-tab-row .p-TabBar-tab {
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    margin: 4px 4px 0 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    transition: all var(--transition-speed) ease !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.theia-tabBar-tab-row .p-TabBar-tab.theia-mod-selected {
+    background: var(--accent-color) !important;
+    color: white !important;
+    box-shadow: 0 -4px 15px var(--accent-glow) !important;
+}
+
+/* 🔳 ۲. استایل دکمه‌ها و ورودی‌ها (Rounded & Glowing) */
+.theia-button, .monaco-button {
+    border-radius: 20px !important;
+    padding: 6px 16px !important;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: transform 0.2s active !important;
+    border: none !important;
+    background: linear-gradient(45deg, #7c4dff, #b388ff) !important;
+}
+
+.theia-button:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 0 15px var(--accent-glow) !important;
+    transform: translateY(-1px);
+}
+
+.theia-input, .monaco-inputbox {
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 8px !important;
+    color: #eee !important;
+}
+
+.theia-input:focus {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 8px var(--accent-glow) !important;
+}
+
+/* 📂 ۳. تغییر ظاهر لیست فایل‌ها و درخت (Tree View) */
+.theia-TreeNode {
+    border-radius: 6px !important;
+    margin: 1px 8px !important;
+    transition: background 0.2s !important;
+}
+
+.theia-mod-selected {
+    background: rgba(124, 77, 255, 0.15) !important;
+    color: #b388ff !important;
+    border-left: 3px solid var(--accent-color) !important;
+}
+
+/* 🌫 ۴. افکت محو شدگی (Blur) برای پنل‌های شناور */
+.monaco-editor-overlay-message, .context-view, .quick-input-widget {
+    backdrop-filter: blur(10px) !important;
+    background: rgba(20, 20, 30, 0.8) !important;
+    border-radius: var(--border-radius) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ⚡ ۵. انیمیشن برای آیکون‌ها */
+.theia-icon {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.theia-icon:hover {
+    transform: scale(1.2) rotate(5deg);
+    color: var(--accent-color) !important;
+}
+
+/* اسکرول‌بار بسیار باریک و مینیمال */
+::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(124, 77, 255, 0.3) !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color) !important;
+}

@@ -1,0 +1,37 @@
+/* Shared document rules: left scrollbar, Persian content direction unchanged. */
+html {
+  min-height: 100%;
+  direction: ltr;
+  scrollbar-color: #4d7192 #0a1420;
+  scrollbar-width: thin;
+}
+
+body {
+  min-height: 100vh;
+  direction: ltr;
+  overflow-x: hidden;
+}
+
+body > * {
+  direction: rtl;
+}
+
+body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #0a1420;
+}
+
+body::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 2px solid #0a1420;
+  border-radius: 999px;
+  background: linear-gradient(#5f86aa, #34516c);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(#79b4d4, #487592);
+}

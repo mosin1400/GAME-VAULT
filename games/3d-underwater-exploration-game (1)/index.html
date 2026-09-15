@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ABYSS | اعماق ناشناخته — بازی بقا در اقیانوس</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+  /* ───────────── استایل پایه ───────────── */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000;
+    font-family: 'Segoe UI', Tahoma, 'Vazirmatn', sans-serif; color:#d7f4ff; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; transition: filter .5s; }
+  #c.blur { filter: blur(3px) saturate(.6) hue-rotate(20deg); }   /* اثر سم چتر دریایی */
+
+  /* ───────────── HUD ───────────── */
+  .hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  .panel { position:absolute; background:rgba(2,18,34,.55); border:1px solid rgba(72,200,255,.28); border-radius:12px; padding:8px 12px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size:13px; line-height:1.5; transition: border-color .3s; }
+  .num { font-variant-numeric: tabular-nums; font-weight:700; }
+  .vbar { width:14px; height:110px; background:rgba(255,255,255,.08); border-radius:7px; overflow:hidden; position:relative; border:1px solid rgba(255,255,255,.15); }
+  .vbar > div { position:absolute; bottom:0; left:0; right:0; border-radius:7px; transition: height .25s, background .3s; }
+  .hbar { height:8px; background:rgba(255,255,255,.1); border-radius:4px; overflow:hidden; }
+  .hbar > div { height:100%; border-radius:4px; transition: width .25s, background .3s; }
+  .up { display:inline-block; width:24px; height:24px; border-radius:6px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2);
+    font-size:12px; text-align:center; line-height:22px; margin-left:3px; opacity:.35; }
+  .up.got { opacity:1; background:rgba(34,197,94,.35); border-color:#4ade80; box-shadow:0 0 8px rgba(74,222,128,.5); }
+  kbd { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:5px; padding:0 6px; font-size:12px; font-family:inherit; }
+  #minimap { display:block; border-radius:8px; background:#031523; }
+
+  /* ───────────── افکت‌های تمام‌صفحه ───────────── */
+  #cracks { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; z-index:8; transition: opacity .3s; }
+  #vignette { position:fixed; inset:0; pointer-events:none; z-index:7; opacity:0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(255,0,20,.8) 100%); }
+  #darkness { position:fixed; inset:0; pointer-events:none; z-index:6; opacity:0; background:#000; transition: opacity 1.5s; }
+  #sonarRing { position:fixed; left:50%; top:50%; width:12px; height:12px; margin:-6px; border-radius:50%;
+    border:2px solid rgba(80,255,150,.85); box-shadow:0 0 14px rgba(80,255,150,.6); pointer-events:none; opacity:0; z-index:9; }
+  #sonarRing.go { animation: ring 2s ease-out forwards; }
+  @keyframes ring { 0%{transform:scale(1);opacity:.95} 100%{transform:scale(180);opacity:0} }
+
+  /* ───────────── پیام‌ها و هشدارها ───────────── */
+  #toasts { position:absolute; top:80px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:6px; align-items:center; width:min(92vw, 480px); }
+  .toast { background:rgba(2,18,34,.8); border:1px solid rgba(72,200,255,.4); border-radius:10px; padding:6px 14px; font-size:13px; animation: toastIn .3s ease; text-align:center; }
+  .toast.warn { border-color:rgba(255,120,60,.8); color:#ffd7c2; }
+  .toast.good { border-color:rgba(80,255,160,.8); color:#c8ffe4; }
+  @keyframes toastIn { from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+  #currentWarn { position:absolute; top:14px; left:50%; transform:translateX(-50%); display:none; flex-direction:column; align-items:center; gap:2px; }
+  #currentRot { transition: transform .4s; }
+  #currentArrows { font-size:36px; color:#5fd0ff; letter-spacing:-8px; text-shadow:0 0 14px #38bdf8; animation: flow .9s linear infinite; line-height:1; }
+  @keyframes flow { 0%{transform:translateX(-8px);opacity:.2} 50%{opacity:1} 100%{transform:translateX(8px);opacity:.2} }
+  #malf { position:absolute; bottom:150px; left:50%; transform:translateX(-50%); display:none; background:rgba(60,5,5,.8); border:1px solid rgba(255,80,80,.7);
+    border-radius:12px; padding:8px 18px; text-align:center; animation: blinkB 1s ease-in-out infinite; }
+  @keyframes blinkB { 0%,100%{box-shadow:0 0 0 rgba(255,60,60,0)} 50%{box-shadow:0 0 24px rgba(255,60,60,.7)} }
+
+  /* ───────────── کنترل‌های لمسی ───────────── */
+  .tbtn { pointer-events:auto; position:absolute; width:60px; height:60px; border-radius:50%; background:rgba(60,180,255,.35); border:2px solid rgba(160,230,255,.6);
+    color:#fff; font-size:11px; font-weight:700; display:none; align-items:center; justify-content:center; flex-direction:column; opacity:.4; touch-action:none; }
+  .tbtn.on { opacity:.85; background:rgba(60,255,180,.45); }
+  .tbtn .k { font-size:20px; line-height:1.1; }
+  #joy { pointer-events:auto; position:absolute; left:24px; bottom:28px; width:130px; height:130px; border-radius:50%; background:rgba(60,180,255,.18);
+    border:2px solid rgba(160,230,255,.4); opacity:.5; touch-action:none; display:none; }
+  #joyKnob { position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px; border-radius:50%; background:rgba(200,240,255,.6); }
+  body.mobile .tbtn, body.mobile #joy { display:flex; }
+  body.mobile .desktop-only { display:none !important; }
+  body.mobile #mapPanel { bottom:auto; top:12px; right:50%; transform:translateX(50%); padding:4px; }
+  body.mobile #minimap { width:96px; height:96px; }
+  body.mobile #o2Panel { top:34%; }
+  body.mobile #toasts { top:130px; }
+  body.mobile #currentWarn { top:auto; bottom:200px; }
+  body.mobile #malf { bottom:200px; }
+  #gyroBtn { display:none; } body.mobile #gyroBtn { display:inline-block; }
+
+  /* ───────────── صفحات شروع / پایان ───────────── */
+  .overlay { position:fixed; inset:0; z-index:50; background:radial-gradient(ellipse at center, rgba(2,30,60,.93), rgba(0,4,10,.98));
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:16px; }
+  .overlay .box { max-width:600px; width:100%; background:rgba(2,18,34,.6); border:1px solid rgba(72,200,255,.35); border-radius:18px; padding:20px 22px; max-height:94vh; overflow:auto; }
+  .btn { pointer-events:auto; display:inline-block; background:linear-gradient(135deg,#0ea5e9,#0369a1); color:#fff; border:none; border-radius:10px;
+    padding:10px 22px; font-size:15px; font-weight:700; cursor:pointer; margin:6px 4px; font-family:inherit; }
+  .btn.sec { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25); }
+  .help { text-align:right; font-size:12px; line-height:1.9; background:rgba(0,0,0,.25); border-radius:10px; padding:10px 14px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="darkness"></div>
+<div id="vignette"></div>
+<!-- ترک‌های بدنه (فشار بحرانی) -->
+<svg id="cracks" viewBox="0 0 100 100" preserveAspectRatio="none">
+  <g stroke="#ff2b2b" stroke-width=".35" fill="none" opacity=".9">
+    <path d="M0 20 L12 26 L18 22 L27 31 L33 29 L41 38 L44 36"/>
+    <path d="M100 70 L90 66 L84 72 L75 68 L66 75 L60 72 L55 78"/>
+    <path d="M30 100 L35 88 L31 82 L38 74 L36 68"/>
+    <path d="M70 0 L66 10 L71 16 L64 24 L67 30"/>
+    <path d="M0 60 L8 58 L11 64 L20 63 L24 69"/>
+    <path d="M100 25 L92 30 L93 36 L85 38 L82 44"/>
+    <path d="M50 0 L52 8 L48 13 L51 20"/>
+    <path d="M0 90 L9 86 L13 91 L22 88"/>
+  </g>
+</svg>
+<div id="sonarRing"></div>
+
+<div class="hud">
+  <!-- (۱) بالا-چپ: عمق و فشار -->
+  <div class="panel" id="depthPanel" style="top:12px; left:12px; min-width:140px; direction:ltr; text-align:left;">
+    <div style="font-size:11px; opacity:.7">DEPTH · عمق</div>
+    <div class="num" style="font-size:22px"><span id="depthVal">0</span><span style="font-size:12px"> m</span></div>
+    <div style="font-size:11px; opacity:.7">PRESSURE · فشار</div>
+    <div class="num" id="pressVal" style="font-size:15px; color:#4ade80">1.0 atm</div>
+    <div class="hbar" style="margin-top:4px"><div id="pressBar" style="width:0%; background:#4ade80"></div></div>
+  </div>
+
+  <!-- (۳) بالا-راست: سلامت بدنه، موجودی و ارتقاها -->
+  <div class="panel" style="top:12px; right:12px; min-width:175px;">
+    <div style="display:flex; justify-content:space-between; align-items:center"><span style="font-size:11px; opacity:.7">سلامت بدنه</span><span class="num" id="hullVal" style="font-size:18px">100%</span></div>
+    <div class="hbar"><div id="hullBar" style="width:100%; background:#4ade80"></div></div>
+    <div style="margin-top:6px; font-size:12px; display:flex; gap:10px; flex-wrap:wrap">
+      <span>🔩 تیتانیوم: <b id="tiVal">0</b></span>
+      <span>🧰 قطعه: <b id="partVal">1</b></span>
+    </div>
+    <div style="font-size:11px; opacity:.75; margin-top:3px">مقاومت بدنه تا عمق <b id="crushVal">300</b> m</div>
+    <div style="margin-top:6px">
+      <span class="up" id="up0" title="اکسیژن">O₂</span><span class="up" id="up1" title="بدنه">🛡</span><span class="up" id="up2" title="اژدر">🚀</span><span class="up" id="up3" title="سرعت">⚡</span><span class="up" id="up4" title="استتار">👁</span>
+    </div>
+  </div>
+
+  <!-- (۲) چپ: اکسیژن و باتری (نوار عمودی) -->
+  <div class="panel" id="o2Panel" style="top:50%; left:12px; transform:translateY(-50%); display:flex; gap:12px; padding:10px;">
+    <div style="text-align:center"><div class="vbar"><div id="o2Bar" style="height:100%; background:#38bdf8"></div></div><div style="font-size:10px; margin-top:3px">O₂</div><div class="num" id="o2Val" style="font-size:11px">180s</div></div>
+    <div style="text-align:center"><div class="vbar"><div id="batBar" style="height:100%; background:#a3e635"></div></div><div style="font-size:10px; margin-top:3px">⚡</div><div class="num" id="batVal" style="font-size:11px">100%</div></div>
+  </div>
+
+  <!-- (۴) پایین-راست: مینی‌مپ -->
+  <div class="panel" id="mapPanel" style="bottom:12px; right:12px; padding:6px;">
+    <canvas id="minimap" width="150" height="150"></canvas>
+    <div style="font-size:11px; text-align:center; margin-top:3px">ایستگاه بعدی: <b id="stDist" class="num">—</b> m</div>
+  </div>
+
+  <!-- هشدار جریان زیرآبی -->
+  <div id="currentWarn"><div id="currentRot"><div id="currentArrows">➤➤➤</div></div><div style="font-size:12px; color:#bae6fd; text-shadow:0 0 6px #000">جریان قوی زیرآبی!</div></div>
+  <!-- اعلان خرابی -->
+  <div id="malf"><div style="font-size:12px; color:#fca5a5">⚠ خرابی سیستم</div><div id="malfName" style="font-weight:700; font-size:15px"></div><div style="font-size:11px; opacity:.85">تعمیر: <kbd>F</kbd> / دکمه 🔧 — نیاز به ۱ قطعه یدکی</div></div>
+  <div id="toasts"></div>
+
+  <!-- راهنمای کلیدها (دسکتاپ) -->
+  <div class="panel desktop-only" style="bottom:12px; left:12px; font-size:11px; opacity:.8;">
+    <kbd>WASD</kbd> حرکت · <kbd>Space</kbd> صعود · <kbd>Shift</kbd> شیرجه · <kbd>L</kbd> چراغ · <kbd>Q</kbd> سونار · <kbd>F</kbd> تعمیر · <kbd>R</kbd> اژدر · <kbd>C</kbd> استتار · درگ ماوس: دوربین · اسکرول: زوم
+  </div>
+
+  <!-- کنترل‌های لمسی موبایل -->
+  <div id="joy"><div id="joyKnob"></div></div>
+  <div class="tbtn" id="bUp" style="right:20px; bottom:112px; width:68px; height:68px"><span class="k">▲</span>صعود</div>
+  <div class="tbtn" id="bDown" style="right:20px; bottom:30px; width:68px; height:68px"><span class="k">▼</span>شیرجه</div>
+  <div class="tbtn" id="bLight" style="right:104px; bottom:34px"><span class="k">💡</span>چراغ</div>
+  <div class="tbtn" id="bSonar" style="right:174px; bottom:34px"><span class="k">◎</span>سونار</div>
+  <div class="tbtn" id="bFix" style="right:104px; bottom:112px"><span class="k">🔧</span>تعمیر</div>
+  <div class="tbtn" id="bTorp" style="right:174px; bottom:112px"><span class="k">🚀</span>اژدر</div>
+  <div class="tbtn" id="bStealth" style="right:244px; bottom:34px"><span class="k">👁</span>استتار</div>
+</div>
+
+<!-- صفحه شروع -->
+<div class="overlay" id="startScr">
+  <div class="box">
+    <h1 style="font-size:28px; margin:0 0 4px; color:#7dd3fc; letter-spacing:1px">ABYSS — اعماق ناشناخته</h1>
+    <p style="font-size:13px; opacity:.85; margin:0 0 12px">۵ ایستگاه علمی متروکه را پیدا کن و کپسول‌های ارتقا را جمع کن. مراقب فشار، اکسیژن، باتری، کوسه‌ها، چترهای سمی، جریان‌ها، خرابی‌ها و لویاتان خفته باش.</p>
+    <div class="help">
+      <div class="desktop-only"><b>دسکتاپ:</b> <kbd>WASD</kbd> حرکت · <kbd>Space</kbd> صعود · <kbd>Shift</kbd> شیرجه · درگ ماوس چرخش دوربین · <kbd>L</kbd> چراغ · <kbd>Q</kbd> سونار · <kbd>F</kbd> تعمیر · <kbd>R</kbd> اژدر · <kbd>C</kbd> استتار</div>
+      <div><b>موبایل:</b> جوی‌استیک چپ حرکت · دکمه‌های ▲▼ صعود/شیرجه · کشیدن انگشت روی نیمه راست چرخش دوربین · ژیروسکوپ (اختیاری) · حالت افقی توصیه می‌شود</div>
+      <div style="margin-top:6px; opacity:.9">🔩 تیتانیوم (غارها) مقاومت فشار را زیاد می‌کند · 💎 کریستال باتری · 🫧 حباب اکسیژن (جنگل کلپ) · 🧰 قطعه یدکی (صندوقچه غارها) · سطح آب اکسیژن را شارژ می‌کند</div>
+      <div style="opacity:.9">⚠ چراغ روشن = کوسه‌ها از ۵۰ متری می‌بینند · سونار چیزی بزرگ را جذب می‌کند · کوسه‌ها به عمق بیش از ۱۵۰ متر نمی‌آیند</div>
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn" id="startBtn">شروع ماموریت</button>
+      <button class="btn sec" id="gyroBtn">فعال‌سازی ژیروسکوپ</button>
+    </div>
+    <div style="font-size:11px; opacity:.55; margin-top:8px" id="seedInfo"></div>
+  </div>
+</div>
+<!-- صفحه پایان -->
+<div class="overlay" id="endScr" style="display:none">
+  <div class="box">
+    <h1 id="endTitle" style="font-size:26px; margin:0 0 8px; color:#7dd3fc"></h1>
+    <p id="endMsg" style="font-size:14px; opacity:.9"></p>
+    <div id="endStats" style="font-size:12px; opacity:.75; margin-bottom:10px"></div>
+    <button class="btn" id="endContinue" style="display:none">ادامه اکتشاف</button>
+    <button class="btn sec" onclick="location.reload()">ماموریت جدید</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ══════════════════════════════════════════════════════════════
+   ۰. تنظیمات کلی — همه اعداد گیم‌پلی را از اینجا شخصی‌سازی کنید
+   ══════════════════════════════════════════════════════════════ */
+const CFG = {
+  WORLD_SIZE: 1000,           // ابعاد اقیانوس (واحد)
+  WORLD_SEED: 1337,           // Seed ثابت توپوگرافی (زمین همیشه یکسان)
+  RES_SEED: (Date.now() % 1000003) | 0,   // Seed منابع (هر رفرش عوض می‌شود)
+  O2_MAX: 180, O2_UPGRADE: 300,           // اکسیژن (ثانیه)
+  CRUSH_BASE: 300, CRUSH_TITANIUM: 20, CRUSH_UPGRADE: 150, CRUSH_TIME: 5,  // فشار
+  SPEED_BASE: 14, SPEED_UPGRADE: 21, ACCEL: 26, DRAG: 1.8,                // حرکت
+  BAT_IDLE: 0.12, BAT_MOVE: 0.8, BAT_LIGHT: 0.25, BAT_STEALTH: 5, BAT_CRYSTAL: 30, // باتری (%/ثانیه)
+  CURRENT_INTERVAL: 30, CURRENT_DURATION: 14, CURRENT_STRENGTH: 7,        // جریان‌ها
+  MALF_INTERVAL: 120, MALF_FIRST: 90, MALF_TICK: 10, MALF_DMG: 5,          // خرابی‌ها
+  SHARK_COUNT: 14, SHARK_SEE: 50, SHARK_SPEED: 7, SHARK_HUNT_SPEED: 17, SHARK_DMG: 20, SHARK_MAX_DEPTH: 150,
+  MEGA_SPEED: 22, MEGA_DMG: 30, MEGA_HUNT_TIME: 45,
+  JELLY_COUNT: 26, JELLY_O2: 0.05, JELLY_BLUR: 6,
+  LEV_WAKE: 50, LEV_KNOCK: 200, LEV_DMG: 40,
+  SONAR_CD: 8, SONAR_DUR: 2, SONAR_RANGE: 260,
+  VENT_DMG: 4,
+};
+
+const isMobile = (navigator.maxTouchPoints > 0) && matchMedia('(pointer:coarse)').matches;
+if (isMobile) document.body.classList.add('mobile');
+const $ = id => document.getElementById(id);
+$('seedInfo').textContent = 'Seed جهان: ' + CFG.WORLD_SEED + ' · Seed منابع: ' + CFG.RES_SEED;
+
+/* ══════════════════════════════════════════════════════════════
+   ۱. ابزارها: RNG قطعی، نویز، ریاضی
+   ══════════════════════════════════════════════════════════════ */
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+/** ۱ وقتی x<=edge1 و ۰ وقتی x>=edge0 (edge0 > edge1) — برای ترکیب نرم نواحی */
+function smoothIn(edge0, edge1, x){ const t = clamp((x-edge0)/(edge1-edge0),0,1); return t*t*(3-2*t); }
+function angDiff(a,b){ let d=(a-b)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d<-Math.PI) d+=Math.PI*2; return d; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function hash2(ix, iy, seed){ let h = Math.imul(ix,374761393) ^ Math.imul(iy,668265263) ^ Math.imul(seed,1442695041); h = Math.imul(h ^ (h>>>13), 1274126177); return ((h ^ (h>>>16))>>>0)/4294967296; }
+function vnoise(x,y,seed){ const ix=Math.floor(x), iy=Math.floor(y), fx=x-ix, fy=y-iy; const sx=fx*fx*(3-2*fx), sy=fy*fy*(3-2*fy);
+  const a=hash2(ix,iy,seed), b=hash2(ix+1,iy,seed), c=hash2(ix,iy+1,seed), d=hash2(ix+1,iy+1,seed); return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy; }
+function fbm(x,y,seed,oct=5){ let v=0,amp=.5,f=1,n=0; for(let i=0;i<oct;i++){ v+=amp*vnoise(x*f,y*f,seed+i*17); n+=amp; amp*=.5; f*=2.03; } return v/n; }
+const rng = mulberry32(CFG.RES_SEED);          // RNG منابع (چیدمان غارها، ایستگاه‌ها و…)
+const rr = (a,b)=>a+rng()*(b-a);
+const pick = arr => arr[Math.floor(rng()*arr.length)];
+
+/* ══════════════════════════════════════════════════════════════
+   ۲. رندرر، صحنه، دوربین، نورها
+   ══════════════════════════════════════════════════════════════ */
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.75));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+const scene = new THREE.Scene();
+const FOG_SHALLOW = new THREE.Color(0x0b4668), FOG_DEEP = new THREE.Color(0x01040a);
+scene.fog = new THREE.FogExp2(0x0b4668, 0.011);       // مه حجمی زیر آب (چگالی با عمق تغییر می‌کند)
+scene.background = new THREE.Color(0x0b4668);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 800);
+const uTime = { value: 0 };                             // یونیفرم زمان مشترک شیدرها
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3(), tmpColor = new THREE.Color();
+const sonarHide = [];   // آبجکت‌هایی که در پاس سونار مخفی می‌شوند (ذرات)
+
+const hemi = new THREE.HemisphereLight(0x67b8e6, 0x03111c, 1.2); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xbfe8ff, 1.6); sun.position.set(80, 200, 40); scene.add(sun);
+
+/* ══════════════════════════════════════════════════════════════
+   ۳. توپوگرافی کف اقیانوس (تپه‌ها، فلات کم‌عمق، ترانشه، گودال‌ها)
+   ══════════════════════════════════════════════════════════════ */
+const HALF = CFG.WORLD_SIZE/2;
+const PITS = [ {x:-250,z:250,r:160,depth:-380}, {x:310,z:-330,r:140,depth:-330} ];  // گودال‌های چتر دریایی
+const REEF = { x:-300, z:-300, r:300 };                                              // فلات صخره‌ای کم‌عمق (کوسه‌ها)
+const trenchX = z => 150 + Math.sin(z*0.007)*90;                                     // مسیر ترانشه عمیق (لویاتان)
+function terrainHeight(x,z){
+  const W = CFG.WORLD_SEED;
+  let h = -70 - fbm(x*0.0035, z*0.0035, W+1)*90;                 // تپه‌های ماسه‌ای بزرگ
+  h += (fbm(x*0.02, z*0.02, W+2)-0.5)*16;                        // ریزتپه‌ها
+  const wReef = smoothIn(REEF.r, REEF.r*0.3, Math.hypot(x-REEF.x, z-REEF.z));
+  if (wReef>0) h = lerp(h, -36 - fbm(x*0.03, z*0.03, W+3)*22, wReef);   // فلات کم‌عمق
+  const wT = smoothIn(110, 25, Math.abs(x - trenchX(z)));
+  if (wT>0) h = lerp(h, -540 + fbm(x*0.01, z*0.01, W+4)*40, wT);         // ترانشه تا عمق ~۵۴۰
+  for (const p of PITS){ const w = smoothIn(p.r, p.r*0.3, Math.hypot(x-p.x, z-p.z)); if(w>0) h = lerp(h, p.depth + fbm(x*0.02,z*0.02,W+5)*20, w); }
+  return Math.min(h, -14);
+}
+function inTrench(x,z){ return Math.abs(x-trenchX(z)) < 125; }
+function inPit(x,z){ return PITS.some(p=>Math.hypot(x-p.x,z-p.z) < p.r); }
+function isDune(x,z){ return !inTrench(x,z) && !inPit(x,z); }
+
+// مش زمین با رنگ‌های رأسی
+const SEG = 160;
+const tGeo = new THREE.PlaneGeometry(CFG.WORLD_SIZE, CFG.WORLD_SIZE, SEG, SEG);
+tGeo.rotateX(-Math.PI/2);
+{
+  const tp = tGeo.attributes.position, tCol = new Float32Array(tp.count*3);
+  const cSand=new THREE.Color(0x8f7d55), cRock=new THREE.Color(0x353a42), cDeep=new THREE.Color(0x10151d), cReef=new THREE.Color(0x8a6a58);
+  for (let i=0;i<tp.count;i++){
+    const x=tp.getX(i), z=tp.getZ(i), h=terrainHeight(x,z);
+    tp.setY(i,h);
+    const slope = clamp((Math.abs(terrainHeight(x+2.5,z)-h)+Math.abs(terrainHeight(x,z+2.5)-h))*0.25, 0, 1);
+    tmpColor.copy(cSand).lerp(cDeep, clamp((-h-50)/380,0,1));
+    tmpColor.lerp(cReef, smoothIn(REEF.r, REEF.r*0.3, Math.hypot(x-REEF.x, z-REEF.z))*0.7);
+    tmpColor.lerp(cRock, slope);
+    tmpColor.multiplyScalar(fbm(x*0.05, z*0.05, 99)*0.3+0.85);
+    tCol[i*3]=tmpColor.r; tCol[i*3+1]=tmpColor.g; tCol[i*3+2]=tmpColor.b;
+  }
+  tGeo.setAttribute('color', new THREE.BufferAttribute(tCol,3));
+  tGeo.computeVertexNormals();
+}
+const terrainMat = new THREE.MeshStandardMaterial({ vertexColors:true, roughness:.95, metalness:0 });
+// تزریق کاستیک (انعکاس نور سطح آب) به شیدر استاندارد
+terrainMat.onBeforeCompile = (s)=>{
+  s.uniforms.uTime = uTime;
+  s.vertexShader = s.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+    .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed,1.0)).xyz;');
+  s.fragmentShader = s.fragmentShader
+    .replace('#include <common>', '#include <common>\nuniform float uTime; varying vec3 vWPos;')
+    .replace('#include <fog_fragment>', `
+      { float depthF = exp(vWPos.y/70.0);
+        vec2 p = vWPos.xz*0.09;
+        float c1 = sin(p.x*1.7+uTime*1.3+sin(p.y*2.1+uTime*0.7));
+        float c2 = sin(p.y*1.9-uTime*1.1+sin(p.x*2.3-uTime*0.9));
+        float c = pow(max(0.0,(c1+c2)*0.5), 3.0);
+        gl_FragColor.rgb += vec3(0.45,0.8,0.9)*c*depthF*0.9; }
+      #include <fog_fragment>`);
+};
+const terrain = new THREE.Mesh(tGeo, terrainMat); scene.add(terrain);
+
+/* ══════════════════════════════════════════════════════════════
+   ۴. سطح آب، پلانکتون
+   ══════════════════════════════════════════════════════════════ */
+const waterMat = new THREE.ShaderMaterial({
+  uniforms: Object.assign(THREE.UniformsUtils.clone(THREE.UniformsLib.fog), { uTime }),
+  vertexShader: `varying vec3 vW;
+#include <fog_pars_vertex>
+void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vW = wp.xyz; vec4 mvPosition = viewMatrix*wp; gl_Position = projectionMatrix*mvPosition;
+#include <fog_vertex>
+}`,
+  fragmentShader: `uniform float uTime; varying vec3 vW;
+#include <fog_pars_fragment>
+void main(){ vec2 p = vW.xz*0.06;
+  float w = sin(p.x*3.1+uTime*1.1)+sin(p.y*2.3-uTime*0.9)+sin((p.x+p.y)*1.7+uTime*0.6)+sin((p.x-p.y*1.3)*2.6-uTime*1.4);
+  w = w*0.125+0.5; vec3 col = mix(vec3(0.03,0.28,0.48), vec3(0.75,0.95,1.0), pow(w,4.0)*1.4);
+  gl_FragColor = vec4(col,1.0);
+#include <fog_fragment>
+}`, side: THREE.DoubleSide, fog: true });
+const water = new THREE.Mesh(new THREE.PlaneGeometry(1400,1400).rotateX(Math.PI/2), waterMat); water.position.y = 0; scene.add(water);
+sonarHide.push(water);
+
+const PL_N = isMobile ? 900 : 1600, PL_R = 70;
+const plPos = new Float32Array(PL_N*3);
+for (let i=0;i<PL_N;i++){ plPos[i*3]=(Math.random()-.5)*2*PL_R; plPos[i*3+1]=(Math.random()-.5)*2*PL_R; plPos[i*3+2]=(Math.random()-.5)*2*PL_R; }
+const plGeo = new THREE.BufferGeometry(); plGeo.setAttribute('position', new THREE.BufferAttribute(plPos,3));
+const plankton = new THREE.Points(plGeo, new THREE.PointsMaterial({ color:0xbfeaff, size:0.22, transparent:true, opacity:.7, depthWrite:false }));
+plankton.frustumCulled = false; scene.add(plankton); sonarHide.push(plankton);
+
+/* ══════════════════════════════════════════════════════════════
+   ۵. تولید رویه‌ای جهان: غارها، کلپ، چشمه‌ها، ایستگاه‌ها، منابع
+   ══════════════════════════════════════════════════════════════ */
+const colliders = [];   // {p:Vector3, s:Vector3} بیضی‌گون‌های برخورد
+const pickups = [], stations = [], caves = [], vents = [], kelpPatches = [], rockList = [], kelpList = [];
+
+function randomDunePos(minFromOrigin=0, avoid=[], avoidR=60){
+  for (let i=0;i<80;i++){ const x=rr(-450,450), z=rr(-450,450);
+    if (!isDune(x,z) || Math.hypot(x,z)<minFromOrigin) continue;
+    if (avoid.some(a=>Math.hypot(a.x-x,a.z-z)<avoidR)) continue;
+    return {x,z}; }
+  return { x:rr(-200,200), z:rr(-200,200) };
+}
+function addRock(x,y,z,sx,sy,sz,color=0x4b5058){
+  rockList.push({x,y,z,sx,sy,sz,ry:rng()*6.28,color});
+  colliders.push({ p:new THREE.Vector3(x,y,z), s:new THREE.Vector3(sx,sy,sz) });
+}
+// آیتم‌های قابل جمع‌آوری
+const PK = {
+  titanium: [new THREE.OctahedronGeometry(0.9,0), new THREE.MeshStandardMaterial({color:0xc8d0d8, metalness:.95, roughness:.25, emissive:0x223344, emissiveIntensity:.5})],
+  crystal:  [new THREE.OctahedronGeometry(0.8,0), new THREE.MeshStandardMaterial({color:0x7ffcf0, emissive:0x00ffd5, emissiveIntensity:2.2, roughness:.2})],
+  bubble:   [new THREE.SphereGeometry(0.9,14,10), new THREE.MeshStandardMaterial({color:0xcdf3ff, emissive:0x6fd0ff, emissiveIntensity:1, transparent:true, opacity:.45, roughness:.1})],
+  chest:    [new THREE.BoxGeometry(1.7,1.1,1.1), new THREE.MeshStandardMaterial({color:0x8a5a2b, metalness:.3, roughness:.7, emissive:0x3a2200, emissiveIntensity:.6})],
+  capsule:  [new THREE.CapsuleGeometry(0.7,1.5,6,12), new THREE.MeshStandardMaterial({color:0xb8ffe0, emissive:0x22ff99, emissiveIntensity:2.5, roughness:.2})],
+};
+function addPickup(type,x,y,z,extra={}){
+  const m = new THREE.Mesh(PK[type][0], PK[type][1]); m.position.set(x,y,z); scene.add(m);
+  const p = Object.assign({type, mesh:m, pos:m.position, baseY:y, taken:false, ph:rng()*6.28}, extra); pickups.push(p); return p;
+}
+
+// ── ایستگاه‌های علمی متروکه ──
+const stMat = new THREE.MeshStandardMaterial({color:0x7d8b93, metalness:.8, roughness:.45});
+const stMatDark = new THREE.MeshStandardMaterial({color:0x33404a, metalness:.6, roughness:.6});
+function makeStation(x,z,tag){
+  const y = terrainHeight(x,z); const g = new THREE.Group(); g.position.set(x,y,z);
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(6,18,12,0,Math.PI*2,0,Math.PI/2), stMat));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(6.2,0.35,8,28), stMatDark); ring.rotation.x=Math.PI/2; ring.position.y=0.4; g.add(ring);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.35,9,8), stMatDark); mast.position.set(4.5,4.5,-3); g.add(mast);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.5,10,8), new THREE.MeshStandardMaterial({color:0xff5555, emissive:0xff2020, emissiveIntensity:3})); beacon.position.set(4.5,9.3,-3); g.add(beacon);
+  for (let i=0;i<3;i++){ const a=i*2.1+0.5; const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,7,8), stMatDark); pipe.rotation.set(0,-a,Math.PI/2); pipe.position.set(Math.cos(a)*5,0.8,Math.sin(a)*5); g.add(pipe); }
+  scene.add(g);
+  colliders.push({ p:new THREE.Vector3(x,y,z), s:new THREE.Vector3(6.3,6.3,6.3) });
+  const st = { pos:new THREE.Vector3(x,y,z), g, beacon, visited:false, tag, announced:false };
+  st.capsule = addPickup('capsule', x, y+9.5, z, {station:st});
+  stations.push(st);
+}
+(function placeStations(){
+  { const a=rng()*6.28, r=rr(30,110); makeStation(REEF.x+Math.cos(a)*r, REEF.z+Math.sin(a)*r, 'reef'); }          // ۱) فلات کوسه‌ها
+  { const z=rr(-330,330); const s = rng()<0.5?-1:1; makeStation(trenchX(z)+s*rr(66,80), z, 'trench'); }             // ۲) لبه ترانشه (فشار)
+  { const p=PITS[0], a=rng()*6.28; makeStation(p.x+Math.cos(a)*p.r*0.6, p.z+Math.sin(a)*p.r*0.6, 'pit'); }           // ۳) گودال چترها ۱
+  { const p=PITS[1], a=rng()*6.28; makeStation(p.x+Math.cos(a)*p.r*0.62, p.z+Math.sin(a)*p.r*0.62, 'pit'); }         // ۴) گودال چترها ۲
+  { const c = pick([[430,430],[-430,430],[430,-430]]); makeStation(c[0]+rr(-40,40), c[1]+rr(-40,40), 'far'); }         // ۵) دوردست
+})();
+
+// ── غارها (تیتانیوم + صندوقچه) ──
+function makeCave(x,z){
+  const gy = terrainHeight(x,z), R=15, gap = rng()*Math.PI*2;
+  for (let i=0;i<12;i++){ const a = i/12*Math.PI*2; if (Math.abs(angDiff(a,gap))<0.6) continue;   // ورودی غار
+    addRock(x+Math.cos(a)*R, gy+2.5, z+Math.sin(a)*R, rr(5,7), rr(7,11), rr(5,7), 0x3a3d44); }
+  addRock(x, gy+17, z, R+7, 6, R+7, 0x33363c);                                                       // سقف
+  for (let i=0;i<3;i++){ const a=rng()*6.28, r=rr(2,8); addPickup('titanium', x+Math.cos(a)*r, gy+2.2, z+Math.sin(a)*r); }
+  const nCh = rng()<0.4?2:1; for (let i=0;i<nCh;i++){ const a=rng()*6.28, r=rr(1,6); addPickup('chest', x+Math.cos(a)*r, gy+1.6, z+Math.sin(a)*r); }
+  caves.push({x,z,y:gy});
+}
+// ── جنگل کلپ (حباب‌های اکسیژن) ──
+function makeKelpPatch(x,z){
+  const n = isMobile?28:40;
+  for (let i=0;i<n;i++){ const a=rng()*6.28, r=Math.sqrt(rng())*26; const kx=x+Math.cos(a)*r, kz=z+Math.sin(a)*r; kelpList.push({x:kx,y:terrainHeight(kx,kz)-0.5,z:kz,s:rr(0.7,1.35),ry:rng()*6.28}); }
+  for (let i=0;i<4;i++){ const a=rng()*6.28, r=rr(3,20); const bx=x+Math.cos(a)*r, bz=z+Math.sin(a)*r; addPickup('bubble', bx, terrainHeight(bx,bz)+rr(4,12), bz); }
+  kelpPatches.push({x,z});
+}
+// ── چشمه‌های گرمابی (خطر گرما + کریستال) ──
+const ventMat = new THREE.MeshStandardMaterial({color:0x2b2622, roughness:1});
+const ventTipMat = new THREE.MeshStandardMaterial({color:0xff7a2a, emissive:0xff5a10, emissiveIntensity:2});
+function makeVent(x,z){
+  const y=terrainHeight(x,z); const g=new THREE.Group(); g.position.set(x,y,z);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(3.2,7,10), ventMat); cone.position.y=3.5; g.add(cone);
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.3,1.2,10), ventTipMat); tip.position.y=7; g.add(tip);
+  const N=50, pos=new Float32Array(N*3);
+  for (let i=0;i<N;i++){ pos[i*3]=rr(-.6,.6); pos[i*3+1]=rr(7,30); pos[i*3+2]=rr(-.6,.6); }
+  const pg=new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const pts=new THREE.Points(pg, new THREE.PointsMaterial({color:0xffa060, size:0.9, transparent:true, opacity:.45, depthWrite:false, blending:THREE.AdditiveBlending}));
+  pts.frustumCulled=false; g.add(pts); scene.add(g);
+  colliders.push({ p:new THREE.Vector3(x,y+2,z), s:new THREE.Vector3(3.2,4,3.2) });
+  vents.push({ pos:new THREE.Vector3(x,y+7,z), pts, arr:pos });
+  sonarHide.push(pts);
+  for (let i=0;i<4;i++){ const a=rng()*6.28, r=rr(5,10); const cx=x+Math.cos(a)*r, cz=z+Math.sin(a)*r; addPickup('crystal', cx, terrainHeight(cx,cz)+1.2, cz); }
+}
+// ── اجرای تولید ──
+const stAvoid = stations.map(s=>({x:s.pos.x,z:s.pos.z}));
+for (let i=0;i<6;i++){ const p=randomDunePos(140, stAvoid.concat(caves), 90); makeCave(p.x,p.z); }
+for (let i=0;i<8;i++){ const p=randomDunePos(40, caves.concat(kelpPatches), 70); makeKelpPatch(p.x,p.z); }
+for (let i=0;i<5;i++){ const p=randomDunePos(90, caves.concat(kelpPatches, stAvoid), 60); makeVent(p.x,p.z); }
+for (let i=0;i<55;i++){ const p=randomDunePos(30, caves, 40); const s=rr(2,6); addRock(p.x, terrainHeight(p.x,p.z)+s*0.3, p.z, s*rr(.8,1.3), s*rr(.6,1), s*rr(.8,1.3)); }
+for (let i=0;i<30;i++){ const a=rng()*6.28, r=rr(20,240); const x=REEF.x+Math.cos(a)*r, z=REEF.z+Math.sin(a)*r; const s=rr(1.2,3);
+  addRock(x, terrainHeight(x,z)+s*0.4, z, s, s*rr(.8,1.6), s, pick([0xd9534f,0xf0a04b,0xc84fa8,0x4fc8b0])); }   // مرجان‌های رنگی
+for (let i=0;i<45;i++){ const x=rr(-470,470), z=rr(-470,470); addPickup('crystal', x, terrainHeight(x,z)+1.2, z); }
+
+// صخره‌ها: InstancedMesh
+const rockGeo = new THREE.IcosahedronGeometry(1,1);
+{ const p=rockGeo.attributes.position; for (let i=0;i<p.count;i++){ const k = 0.8+hash2(Math.round(p.getX(i)*1000), Math.round(p.getY(i)*1000)*31+Math.round(p.getZ(i)*1000), 5)*0.4; p.setXYZ(i,p.getX(i)*k,p.getY(i)*k,p.getZ(i)*k); } rockGeo.computeVertexNormals(); }
+const rocks = new THREE.InstancedMesh(rockGeo, new THREE.MeshStandardMaterial({roughness:.95, flatShading:true}), rockList.length);
+{ const d = new THREE.Object3D(); rockList.forEach((r,i)=>{ d.position.set(r.x,r.y,r.z); d.rotation.set(0,r.ry,0); d.scale.set(r.sx,r.sy,r.sz); d.updateMatrix(); rocks.setMatrixAt(i,d.matrix); rocks.setColorAt(i, tmpColor.set(r.color)); });
+  rocks.instanceMatrix.needsUpdate=true; rocks.instanceColor.needsUpdate=true; rocks.frustumCulled=false; scene.add(rocks); }
+
+// کلپ: InstancedMesh با شیدر نوسان
+const kelpGeo = new THREE.PlaneGeometry(1.4, 24, 1, 10); kelpGeo.translate(0,12,0);
+const kelpMat = new THREE.ShaderMaterial({
+  uniforms: Object.assign(THREE.UniformsUtils.clone(THREE.UniformsLib.fog), { uTime }),
+  vertexShader: `uniform float uTime; varying vec2 vUv;
+#include <fog_pars_vertex>
+void main(){ vUv = uv; vec4 wp = modelMatrix * instanceMatrix * vec4(position,1.0); float k = uv.y*uv.y;
+  wp.x += sin(uTime*1.1 + wp.z*0.15 + wp.x*0.1)*k*2.2; wp.z += cos(uTime*0.8 + wp.x*0.12)*k*1.6;
+  vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;
+#include <fog_vertex>
+}`,
+  fragmentShader: `varying vec2 vUv;
+#include <fog_pars_fragment>
+void main(){ float e = abs(vUv.x-0.5)*2.0; float w = 0.55 + 0.4*sin(vUv.y*28.0); if (e > w) discard;
+  vec3 col = mix(vec3(0.03,0.16,0.06), vec3(0.16,0.55,0.2), vUv.y) * (0.6 + 0.4*(1.0-e));
+  gl_FragColor = vec4(col,1.0);
+#include <fog_fragment>
+}`, side: THREE.DoubleSide, fog: true });
+const kelp = new THREE.InstancedMesh(kelpGeo, kelpMat, kelpList.length);
+{ const d = new THREE.Object3D(); kelpList.forEach((k,i)=>{ d.position.set(k.x,k.y,k.z); d.rotation.set(0,k.ry,0); d.scale.set(1,k.s,1); d.updateMatrix(); kelp.setMatrixAt(i,d.matrix); });
+  kelp.instanceMatrix.needsUpdate=true; kelp.frustumCulled=false; scene.add(kelp); }
+
+/* ══════════════════════════════════════════════════════════════
+   ۶. زیردریایی اکتشافی (۶ درجه آزادی)
+   ══════════════════════════════════════════════════════════════ */
+const S = {
+  pos: new THREE.Vector3(0,-20,0), vel: new THREE.Vector3(), yaw:0, pitch:0, roll:0,
+  hull:100, o2:CFG.O2_MAX, o2Max:CFG.O2_MAX, bat:100, crush:CFG.CRUSH_BASE,
+  titanium:0, parts:1, light:true, stealth:false, knockT:0, maxDepth:0,
+  up:{ o2:false, hull:false, torpedo:false, speed:false, stealth:false },
+};
+const SUB_R = 1.8;   // شعاع برخورد زیردریایی
+const subG = new THREE.Group(); subG.rotation.order = 'YXZ';
+{
+  const yellow = new THREE.MeshStandardMaterial({color:0xf4b400, metalness:.55, roughness:.4});
+  const dark = new THREE.MeshStandardMaterial({color:0x2a2f38, metalness:.7, roughness:.35});
+  const hull = new THREE.Mesh(new THREE.CapsuleGeometry(1.1,3,6,16), yellow); hull.rotation.x=Math.PI/2; subG.add(hull);
+  const tower = new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,.9,12), yellow); tower.position.set(0,1.2,0.2); subG.add(tower);
+  const glass = new THREE.Mesh(new THREE.SphereGeometry(.7,16,12), new THREE.MeshStandardMaterial({color:0x6fd6ff, emissive:0x1a4a66, roughness:.1, metalness:.2, transparent:true, opacity:.85})); glass.position.set(0,0.2,-2.2); subG.add(glass);
+  const finH = new THREE.Mesh(new THREE.BoxGeometry(3,.15,.9), dark); finH.position.set(0,0,2.2); subG.add(finH);
+  const finV = new THREE.Mesh(new THREE.BoxGeometry(.15,1.8,.9), dark); finV.position.set(0,0,2.2); subG.add(finV);
+  for (const sx of [-.6,.6]){ const lamp = new THREE.Mesh(new THREE.SphereGeometry(.18,8,6), new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:3})); lamp.position.set(sx,-.1,-2); subG.add(lamp); subG.userData.lamps = (subG.userData.lamps||[]).concat(lamp); }
+}
+const prop = new THREE.Group(); prop.position.set(0,0,2.9);
+for (let i=0;i<3;i++){ const b = new THREE.Mesh(new THREE.BoxGeometry(.12,1.1,.3), new THREE.MeshStandardMaterial({color:0x8899aa, metalness:.8, roughness:.3})); b.rotation.z=i*Math.PI*2/3; prop.add(b); }
+subG.add(prop);
+const spot = new THREE.SpotLight(0xe8fbff, 70, 110, 0.55, 0.5, 1); spot.position.set(0,0,-1.8); spot.target.position.set(0,0,-40); subG.add(spot); subG.add(spot.target);
+const glow = new THREE.PointLight(0xfff2cc, 5, 18, 1); glow.position.set(0,0.5,0); subG.add(glow);
+subG.position.copy(S.pos); scene.add(subG);
+
+/* ══════════════════════════════════════════════════════════════
+   ۷. حیات وحش: کوسه‌ها، مگالودون، چترهای دریایی، لویاتان
+   ══════════════════════════════════════════════════════════════ */
+const sharks = [], jellies = [];
+function makeSharkMesh(scale, color){
+  const g=new THREE.Group(); const m=new THREE.MeshStandardMaterial({color, roughness:.65, metalness:.15});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,14,10), m); body.scale.set(1,0.8,3); g.add(body);
+  const dorsal=new THREE.Mesh(new THREE.ConeGeometry(0.55,1.5,6), m); dorsal.position.set(0,1.05,0.2); dorsal.rotation.x=-0.3; g.add(dorsal);
+  const finL=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.12,0.9), m); finL.position.set(1.1,-0.2,0.6); finL.rotation.z=0.25; g.add(finL);
+  const finR=finL.clone(); finR.position.x=-1.1; finR.rotation.z=-0.25; g.add(finR);
+  const tail=new THREE.Group(); tail.position.z=-2.9; const tf=new THREE.Mesh(new THREE.BoxGeometry(0.15,2.4,1.3), m); tf.position.z=-0.6; tail.add(tf); g.add(tail);
+  const eyeM=new THREE.MeshStandardMaterial({color:0x111111, emissive:0x330000}); const e1=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,6), eyeM); e1.position.set(0.45,0.25,2.4); g.add(e1); const e2=e1.clone(); e2.position.x=-0.45; g.add(e2);
+  g.scale.setScalar(scale); return {g, tail};
+}
+function spawnShark(kind, x, z, home){
+  const isMega = kind==='mega'; const {g,tail} = makeSharkMesh(isMega?3.2:1.2, isMega?0x3a4048:0x6b7684);
+  const h=terrainHeight(x,z); const y = clamp(rr(h+6,-8), -140, -6);
+  const sh = { kind, g, tail, pos:new THREE.Vector3(x,y,z), vel:new THREE.Vector3(), state:'patrol', timer:0, hitCD:0, target:null, home,
+    r: isMega?7:3.2, speed: isMega?6:CFG.SHARK_SPEED, huntSpeed: isMega?CFG.MEGA_SPEED:CFG.SHARK_HUNT_SPEED, dmg: isMega?CFG.MEGA_DMG:CFG.SHARK_DMG, ph:rng()*6.28 };
+  g.position.copy(sh.pos); scene.add(g); sharks.push(sh); return sh;
+}
+for (let i=0;i<10;i++){ const a=rng()*6.28, r=rr(20,230); spawnShark('shark', REEF.x+Math.cos(a)*r, REEF.z+Math.sin(a)*r, {x:REEF.x,z:REEF.z,r:240}); }   // کوسه‌های فلات
+for (let i=0;i<CFG.SHARK_COUNT-10;i++){ const p=randomDunePos(120); spawnShark('shark', p.x, p.z, {x:p.x,z:p.z,r:150}); }                            // کوسه‌های سرگردان
+const mega = spawnShark('mega', -440, 440, {x:0,z:0,r:470});   // مگالودون — با سونار جذب می‌شود
+function newPatrolTarget(sh){
+  const a=Math.random()*6.28, r=Math.sqrt(Math.random())*sh.home.r;
+  const x=clamp(sh.home.x+Math.cos(a)*r,-480,480), z=clamp(sh.home.z+Math.sin(a)*r,-480,480);
+  const h=terrainHeight(x,z); const yMin=Math.max(h+5,-140), yMax=-6;
+  sh.target = new THREE.Vector3(x, yMin + Math.random()*Math.max(0,yMax-yMin), z); sh.timer = 12+Math.random()*10;
+}
+sharks.forEach(newPatrolTarget);
+
+// چترهای دریایی غول‌پیکر (عمق ۲۰۰ تا ۴۰۰)
+const jellyMat = new THREE.MeshStandardMaterial({color:0xff9ad0, emissive:0xff4d9a, emissiveIntensity:1.3, transparent:true, opacity:.55, side:THREE.DoubleSide, roughness:.3});
+const tentMat = new THREE.MeshStandardMaterial({color:0xffb3e0, emissive:0xff66b0, emissiveIntensity:.8, transparent:true, opacity:.5});
+const bellGeo = new THREE.SphereGeometry(1,12,8,0,Math.PI*2,0,Math.PI/2), tentGeo = new THREE.CylinderGeometry(0.05,0.015,3.2,5);
+function makeJelly(x,y,z){
+  const g=new THREE.Group(); const s=rr(2.2,3.6); const bell=new THREE.Mesh(bellGeo, jellyMat); g.add(bell);
+  for (let i=0;i<7;i++){ const a=i/7*6.28; const t=new THREE.Mesh(tentGeo, tentMat); t.position.set(Math.cos(a)*.55,-1.6,Math.sin(a)*.55); t.rotation.set(Math.cos(a)*.2,0,Math.sin(a)*.2); g.add(t); }
+  g.scale.setScalar(s); g.position.set(x,y,z); scene.add(g);
+  jellies.push({ g, bell, base:new THREE.Vector3(x,y,z), r:s*1.1, ph:rng()*6.28, cd:0 });
+}
+{ let tries=0; while (jellies.length<CFG.JELLY_COUNT && tries<600){ tries++; let x,z;
+    if (rng()<0.6){ const p=pick(PITS); const a=rng()*6.28, r=rng()*p.r*0.75; x=p.x+Math.cos(a)*r; z=p.z+Math.sin(a)*r; } else { z=rr(-450,450); x=trenchX(z)+rr(-60,60); }
+    const h=terrainHeight(x,z); const yMin=Math.max(h+8,-400), yMax=-200; if (yMin>=yMax) continue; makeJelly(x, rr(yMin,yMax), z); } }
+
+// لویاتان — باس محیطی خفته در عمق ترانشه
+const lev = (()=>{
+  const x=trenchX(0), z=0, y=terrainHeight(x,z)+12; const g=new THREE.Group(); g.position.set(x,y,z);
+  const m=new THREE.MeshStandardMaterial({color:0x1c2431, roughness:.6, metalness:.2, emissive:0x061018, emissiveIntensity:1});
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(9,50,6,14), m); body.rotation.x=Math.PI/2; g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(10,16,12), m); head.position.z=28; head.scale.set(1,0.85,1.2); g.add(head);
+  const eyeMat=new THREE.MeshStandardMaterial({color:0xff3030, emissive:0xff2020, emissiveIntensity:0});
+  const e1=new THREE.Mesh(new THREE.SphereGeometry(1.2,10,8), eyeMat); e1.position.set(5,3,37); g.add(e1); const e2=e1.clone(); e2.position.x=-5; g.add(e2);
+  const fins=new THREE.Mesh(new THREE.BoxGeometry(34,1.2,10), m); fins.position.set(0,-2,10); g.add(fins);
+  const tail=new THREE.Mesh(new THREE.BoxGeometry(20,1,9), m); tail.position.set(0,0,-36); g.add(tail);
+  const shock=new THREE.Mesh(new THREE.SphereGeometry(1,24,16), new THREE.MeshBasicMaterial({color:0x7fd6ff, transparent:true, opacity:.5, side:THREE.DoubleSide, depthWrite:false})); shock.visible=false; scene.add(shock);
+  scene.add(g); colliders.push({ p:new THREE.Vector3(x,y,z), s:new THREE.Vector3(10,10,40) });
+  return { g, pos:new THREE.Vector3(x,y,z), eyeMat, shock, awake:false, t:0, cd:0, warned:false };
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ۸. وضعیت بازی، پیام‌ها، آسیب
+   ══════════════════════════════════════════════════════════════ */
+const G = { running:false, over:false, won:false, time:0, hudT:0, mapT:0, flash:0, shake:0, blurT:0, critT:0, critWarned:false, o2Warned:false, batWarned:false, upg:0,
+  current:{ active:false, dir:new THREE.Vector3(1,0,0), t:0, next:CFG.CURRENT_INTERVAL },
+  malf:{ active:null, next:CFG.MALF_FIRST, tick:0 },
+  sonar:{ t:0, cd:0 }, torps:[], torpCd:0, lastSharkToast:-99 };
+const MALFS = [ {name:'سیستم ناوبری مختل شد', kind:'nav', res:'hull'}, {name:'پمپ آب نشت کرد', kind:'pump', res:'hull'},
+  {name:'مخزن اکسیژن نشتی دارد', kind:'o2', res:'o2'}, {name:'اتصالی در مدار برق', kind:'bat', res:'bat'} ];
+const UPG_NAMES = ['ظرفیت اکسیژن افزایش یافت (۳۰۰ ثانیه)', 'مقاومت بدنه در برابر فشار +۱۵۰ متر', 'اژدر نصب شد (کلید R / دکمه 🚀)', 'سرعت موتور +۵۰٪', 'حالت استتار فعال شد (کلید C / دکمه 👁)'];
+
+function toast(txt, cls=''){ const el=document.createElement('div'); el.className='toast '+cls; el.textContent=txt; const box=$('toasts'); box.appendChild(el);
+  while (box.children.length>4) box.removeChild(box.firstChild); setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .5s'; setTimeout(()=>el.remove(),500); }, 3500); }
+function damage(a, reason){ if (G.over) return; S.hull -= a; if (a>=1){ G.flash = Math.min(1, G.flash + a/40 + 0.25); G.shake = Math.max(G.shake, a/60); }
+  if (S.hull<=0){ S.hull=0; gameOver(reason); } }
+function gameOver(reason){ if (G.over) return; G.over=true; G.running=false;
+  $('endTitle').textContent='زیردریایی از دست رفت'; $('endTitle').style.color='#f87171'; $('endMsg').textContent='علت: '+reason;
+  $('endStats').innerHTML=`زمان: ${G.time.toFixed(0)} ثانیه · ارتقاها: ${G.upg}/5 · بیشترین عمق: ${S.maxDepth.toFixed(0)} m · تیتانیوم: ${S.titanium}`;
+  $('endContinue').style.display='none'; $('endScr').style.display='flex'; }
+function win(){ G.won=true; G.running=false; $('endTitle').textContent='پایان بازی: نجات اقیانوس 🌊'; $('endTitle').style.color='#4ade80';
+  $('endMsg').textContent='هر پنج کپسول ارتقا جمع‌آوری شد. داده‌های ایستگاه‌ها بازیابی شدند و اقیانوس نجات یافت. می‌توانید به اکتشاف آزاد ادامه دهید.';
+  $('endStats').innerHTML=`زمان: ${G.time.toFixed(0)} ثانیه · بیشترین عمق: ${S.maxDepth.toFixed(0)} m · بدنه: ${Math.ceil(S.hull)}%`;
+  $('endContinue').style.display='inline-block'; $('endScr').style.display='flex'; }
+$('endContinue').addEventListener('click', ()=>{ $('endScr').style.display='none'; G.running=true; });
+
+/* ══════════════════════════════════════════════════════════════
+   ۹. اکشن‌ها: چراغ، سونار، تعمیر، اژدر، استتار، ارتقا
+   ══════════════════════════════════════════════════════════════ */
+function toggleLight(){ if (S.bat<=0){ toast('باتری خالی است — چراغ کار نمی‌کند','warn'); return; } S.light=!S.light; toast(S.light?'💡 چراغ روشن (کوسه‌ها از ۵۰ متری می‌بینند)':'💡 چراغ خاموش (فقط صدای موتور شنیده می‌شود)'); }
+function sonar(){ if (G.sonar.cd>0) { toast('سونار در حال شارژ…'); return; } if (S.bat<2){ toast('باتری کافی نیست','warn'); return; }
+  S.bat-=2; G.sonar.t=CFG.SONAR_DUR; G.sonar.cd=CFG.SONAR_CD; sonarMat.uniforms.uOrigin.value.copy(S.pos);
+  const ring=$('sonarRing'); ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
+  if (mega.state!=='stunned'){ mega.state='hunt'; mega.timer=CFG.MEGA_HUNT_TIME; }
+  toast('◎ پینگ سونار ارسال شد… چیزی بزرگ صدای شما را شنید','warn'); }
+function repair(){ const M=G.malf; if (!M.active){ toast('چیزی برای تعمیر نیست'); return; } if (S.parts<=0){ toast('قطعه یدکی ندارید! صندوقچه‌های غارها را بگردید','warn'); return; }
+  S.parts--; M.active=null; M.next=CFG.MALF_INTERVAL; $('malf').style.display='none'; toast('🔧 تعمیر انجام شد','good'); }
+const torpGeo = new THREE.CylinderGeometry(0.2,0.2,1.5,8).rotateX(Math.PI/2), torpMat = new THREE.MeshStandardMaterial({color:0xff6b3b, emissive:0xff4400, emissiveIntensity:2});
+function fireTorp(){ if (!S.up.torpedo){ toast('اژدر هنوز نصب نشده — ایستگاه‌ها را پیدا کن','warn'); return; } if (G.torpCd>0) return; if (S.bat<3){ toast('باتری برای شلیک کافی نیست','warn'); return; }
+  S.bat-=3; G.torpCd=4; const dir=new THREE.Vector3(); camera.getWorldDirection(dir);
+  const m=new THREE.Mesh(torpGeo, torpMat); m.position.copy(S.pos).addScaledVector(dir,3); m.lookAt(tmpA.copy(m.position).add(dir)); scene.add(m);
+  G.torps.push({m, dir, life:2.5}); }
+function toggleStealth(){ if (!S.up.stealth){ toast('حالت استتار هنوز در دسترس نیست','warn'); return; } if (!S.stealth && S.bat<5){ toast('باتری برای استتار کافی نیست','warn'); return; }
+  S.stealth=!S.stealth; $('bStealth').classList.toggle('on', S.stealth);
+  if (S.stealth){ sharks.forEach(s=>{ if (s.state==='hunt'||s.state==='retreat'){ s.state='confused'; s.timer=5; newPatrolTarget(s); } }); toast('👁 استتار فعال — موتور و چراغ خاموش؛ کوسه‌ها گیج شدند؛ باتری سریع خالی می‌شود','good'); }
+  else toast('استتار غیرفعال شد'); }
+function applyUpgrade(st){ st.visited=true; st.beacon.material.color.set(0x55ff88); st.beacon.material.emissive.set(0x22ff66);
+  const i=G.upg++; $('up'+i).classList.add('got');
+  switch(i){ case 0: S.o2Max=CFG.O2_UPGRADE; S.o2=S.o2Max; S.up.o2=true; break; case 1: S.up.hull=true; break; case 2: S.up.torpedo=true; break; case 3: S.up.speed=true; break; case 4: S.up.stealth=true; break; }
+  S.hull=Math.min(100,S.hull+25); toast('🧪 کپسول ارتقا: '+UPG_NAMES[i],'good'); if (G.upg>=5) setTimeout(win, 800); }
+const maxSpeed = ()=> S.up.speed ? CFG.SPEED_UPGRADE : CFG.SPEED_BASE;
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۰. به‌روزرسانی زیردریایی، فیزیک و برخورد
+   ══════════════════════════════════════════════════════════════ */
+const input = { x:0, y:0, z:0 };
+const cam = { yaw:0, pitch:0.28, dist:14, dragging:false, lx:0, ly:0, touchId:null };
+const camForward = ()=> tmpB.set(-Math.sin(cam.yaw),0,-Math.cos(cam.yaw));
+const camRight = ()=> tmpC.set(Math.cos(cam.yaw),0,-Math.sin(cam.yaw));
+let lastYaw = 0;
+function updateSub(dt){
+  const fwd = camForward().clone(), right = camRight().clone();
+  const mv = tmpA.set(0,0,0).addScaledVector(fwd, input.z).addScaledVector(right, input.x);
+  if (mv.lengthSq()>1) mv.normalize(); mv.y = input.y;
+  const canMove = S.bat>0 && !S.stealth; if (!canMove) mv.set(0,0,0);
+  const throttle = Math.min(1, mv.length());
+  // حرکت خلاف جریان: سرعت ۳۰٪ و مصرف باتری ۲ برابر
+  let against=false;
+  if (G.current.active && throttle>0.05){ const hv = tmpB.copy(mv).setY(0); if (hv.lengthSq()>0.01 && hv.normalize().dot(G.current.dir) < -0.3) against=true; }
+  const thrustMul = against ? 0.3 : 1;
+  S.vel.addScaledVector(mv, CFG.ACCEL*thrustMul*dt);
+  S.vel.multiplyScalar(Math.max(0, 1-CFG.DRAG*dt));
+  S.knockT -= dt;
+  if (S.knockT<=0){ const sp=S.vel.length(), lim=maxSpeed()*thrustMul; if (sp>lim) S.vel.multiplyScalar(lim/sp); }
+  // باتری
+  const drain = CFG.BAT_IDLE + throttle*CFG.BAT_MOVE*(against?2:1) + (S.light&&S.bat>0?CFG.BAT_LIGHT:0) + (S.stealth?CFG.BAT_STEALTH:0) + (G.malf.active&&G.malf.active.kind==='bat'?0.3:0);
+  S.bat = Math.max(0, S.bat - drain*dt);
+  if (S.bat<=0 && !G.batWarned){ G.batWarned=true; S.light=false; S.stealth=false; toast('🔋 باتری تمام شد! زیردریایی در تاریکی متوقف شد — کریستال پیدا کن یا صبر کن جریان شما را ببرد','warn'); }
+  if (S.bat>5) G.batWarned=false;
+  if (S.stealth && S.bat<3){ S.stealth=false; $('bStealth').classList.remove('on'); toast('استتار به دلیل کمبود باتری قطع شد','warn'); }
+  // موقعیت
+  S.pos.addScaledVector(S.vel, dt);
+  if (G.current.active) S.pos.addScaledVector(G.current.dir, CFG.CURRENT_STRENGTH*dt);
+  if (S.pos.y > -1.5){ S.pos.y=-1.5; S.vel.y=Math.min(0,S.vel.y); }
+  for (const k of ['x','z']){ if (Math.abs(S.pos[k])>495){ S.pos[k]=Math.sign(S.pos[k])*495; S.vel[k]=0; } }
+  // برخورد با کف
+  const h = terrainHeight(S.pos.x,S.pos.z);
+  if (S.pos.y-1.6 < h){ S.pos.y=h+1.6; if (S.vel.y<-7) damage(3,'برخورد با کف اقیانوس'); S.vel.y=Math.max(S.vel.y*-0.2,0); S.vel.x*=0.9; S.vel.z*=0.9; }
+  // برخورد با بیضی‌گون‌ها (صخره، ایستگاه، لویاتان)
+  for (const c of colliders){
+    if (Math.abs(c.p.x-S.pos.x)>60 || Math.abs(c.p.z-S.pos.z)>60) continue;
+    const rx=c.s.x+SUB_R, ry=c.s.y+SUB_R, rz=c.s.z+SUB_R;
+    const dx=(S.pos.x-c.p.x)/rx, dy=(S.pos.y-c.p.y)/ry, dz=(S.pos.z-c.p.z)/rz; const n=dx*dx+dy*dy+dz*dz;
+    if (n<1 && n>1e-6){ const f=1/Math.sqrt(n); S.pos.set(c.p.x+dx*f*rx, c.p.y+dy*f*ry, c.p.z+dz*f*rz);
+      tmpB.set(dx/rx,dy/ry,dz/rz).normalize(); const vn=S.vel.dot(tmpB); if (vn<0){ if (vn<-8) damage(4,'برخورد با صخره'); S.vel.addScaledVector(tmpB,-vn*1.3); } }
+  }
+  // جهت‌گیری بدنه (رو به جهت حرکت)
+  const hs = Math.hypot(S.vel.x,S.vel.z);
+  if (hs>0.6){ S.yaw += angDiff(Math.atan2(-S.vel.x,-S.vel.z), S.yaw)*Math.min(1,dt*4); }
+  const tp = clamp(Math.atan2(S.vel.y, Math.max(hs,2))*0.8, -0.6, 0.6); S.pitch += (tp-S.pitch)*Math.min(1,dt*3);
+  const yawRate = angDiff(S.yaw,lastYaw)/Math.max(dt,1e-3); lastYaw=S.yaw; S.roll += (clamp(-yawRate*0.25,-0.5,0.5)-S.roll)*Math.min(1,dt*3);
+  subG.position.copy(S.pos); subG.rotation.set(S.pitch,S.yaw,S.roll);
+  prop.rotation.z += (2+throttle*25)*dt;
+  const lightOn = S.light && S.bat>0 && !S.stealth; spot.visible=lightOn; glow.visible = S.bat>0 && !S.stealth;
+  subG.userData.lamps.forEach(l=>l.material.emissiveIntensity = lightOn?3:0);
+  S.maxDepth = Math.max(S.maxDepth, -S.pos.y);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۱. آیتم‌ها، موجودات، لویاتان
+   ══════════════════════════════════════════════════════════════ */
+function collect(p){ p.taken=true; p.mesh.visible=false;
+  switch(p.type){
+    case 'titanium': S.titanium++; toast(`🔩 تیتانیوم! مقاومت بدنه +${CFG.CRUSH_TITANIUM} متر`,'good'); break;
+    case 'crystal': S.bat=Math.min(100,S.bat+CFG.BAT_CRYSTAL); toast('💎 کریستال فسفری: باتری +۳۰٪','good'); break;
+    case 'bubble': S.o2=Math.min(S.o2Max,S.o2+40); toast('🫧 حباب اکسیژن: +۴۰ ثانیه','good'); break;
+    case 'chest': { const n=1+Math.floor(Math.random()*2); S.parts+=n; toast(`🧰 صندوقچه: ${n} قطعه یدکی`,'good'); break; }
+    case 'capsule': applyUpgrade(p.station); break;
+  } }
+function updatePickups(dt){
+  for (const p of pickups){ if (p.taken) continue; const dd=S.pos.distanceToSquared(p.pos); if (dd>150*150) continue;
+    p.mesh.rotation.y += dt*1.5; p.mesh.position.y = p.baseY + Math.sin(G.time*2+p.ph)*0.35;
+    const R = p.type==='capsule'?6:4; if (dd<R*R) collect(p); }
+  for (const st of stations){ if (!st.visited && !st.announced && st.pos.distanceToSquared(S.pos)<45*45){ st.announced=true; toast('🏛 ایستگاه علمی متروکه پیدا شد! کپسول سبز بالای گنبد را بردار','good'); } }
+}
+function steer(sh, target, speed, dt, agility){
+  const d = tmpC.copy(target).sub(sh.pos); const l=d.length(); if (l>0.01) d.multiplyScalar(speed/l);
+  sh.vel.lerp(d, Math.min(1, dt*agility)); sh.pos.addScaledVector(sh.vel, dt);
+}
+function updateSharks(dt){
+  const hearR = S.stealth ? 0 : (S.vel.length()/maxSpeed())*32;             // شعاع شنیدن صدای موتور
+  const seeR = (S.light && S.bat>0 && !S.stealth) ? CFG.SHARK_SEE : 0;      // شعاع دیدن چراغ
+  for (const sh of sharks){
+    const toSub = tmpA.copy(S.pos).sub(sh.pos); const d=toSub.length(); sh.hitCD-=dt; sh.timer-=dt;
+    const isMega = sh.kind==='mega'; const detect = !S.stealth && (d<seeR || d<hearR);
+    switch (sh.state){
+      case 'patrol':
+        if (!isMega && detect){ sh.state='hunt'; sh.timer=6; if (G.time-G.lastSharkToast>6){ G.lastSharkToast=G.time; toast(d<seeR?'🦈 کوسه چراغ شما را دید!':'🦈 کوسه صدای موتور را شنید!','warn'); } }
+        if (!sh.target || sh.pos.distanceTo(sh.target)<6 || sh.timer<=0) newPatrolTarget(sh);
+        steer(sh, sh.target, sh.speed, dt, 1.2); break;
+      case 'hunt': {
+        if (detect && !isMega) sh.timer=6;
+        if (!isMega && sh.timer<=0 && d>60){ sh.state='patrol'; newPatrolTarget(sh); break; }
+        if (isMega && sh.timer<=0){ sh.state='leave'; sh.timer=25; sh.target=new THREE.Vector3(-440,-60,440); break; }
+        const goal = tmpB.copy(S.pos); if (!isMega && goal.y < -CFG.SHARK_MAX_DEPTH) goal.y = -CFG.SHARK_MAX_DEPTH;   // کوسه‌ها به اعماق نمی‌روند
+        steer(sh, goal, sh.huntSpeed, dt, 2.5);
+        if (d < sh.r+2.2 && sh.hitCD<=0){ damage(sh.dmg, isMega?'حمله مگالودون':'حمله کوسه'); sh.hitCD=2.5; S.vel.addScaledVector(toSub.normalize(), 22); S.knockT=0.4;
+          sh.state='retreat'; sh.timer=2.5; toast(isMega?'🦈 مگالودون ضربه زد! −۳۰٪ بدنه':'🦈 ضربه کوسه! −۲۰٪ بدنه','warn'); }
+        break; }
+      case 'retreat': { const away=tmpB.copy(sh.pos).sub(S.pos).normalize().multiplyScalar(40).add(sh.pos); steer(sh, away, sh.huntSpeed*0.8, dt, 2); if (sh.timer<=0) sh.state='hunt'; break; }
+      case 'confused': steer(sh, sh.target, sh.speed, dt, 1); if (sh.timer<=0){ sh.state='patrol'; newPatrolTarget(sh); } break;
+      case 'stunned': sh.vel.multiplyScalar(Math.max(0,1-1.5*dt)); sh.pos.addScaledVector(sh.vel, dt); if (sh.timer<=0){ sh.state='patrol'; newPatrolTarget(sh); } break;
+      case 'leave': steer(sh, sh.target, sh.huntSpeed*0.7, dt, 1.5); if (sh.timer<=0 || sh.pos.distanceTo(sh.target)<20){ sh.state='patrol'; newPatrolTarget(sh); } break;
+    }
+    const h=terrainHeight(sh.pos.x,sh.pos.z); if (sh.pos.y<h+3) sh.pos.y=h+3; if (sh.pos.y>-4) sh.pos.y=-4;
+    sh.pos.x=clamp(sh.pos.x,-490,490); sh.pos.z=clamp(sh.pos.z,-490,490);
+    if (sh.vel.lengthSq()>0.05){ tmpB.copy(sh.pos).add(sh.vel); sh.g.lookAt(tmpB); }
+    sh.g.position.copy(sh.pos);
+    sh.tail.rotation.y = Math.sin(G.time*(sh.state==='hunt'?14:6)+sh.ph)*0.45;
+  }
+}
+function updateJellies(dt){
+  for (const j of jellies){ j.cd-=dt;
+    j.g.position.set(j.base.x+Math.sin(G.time*0.25+j.ph)*3, j.base.y+Math.sin(G.time*0.5+j.ph)*1.5, j.base.z+Math.cos(G.time*0.2+j.ph)*3);
+    const pulse = 1+0.15*Math.sin(G.time*2+j.ph); j.bell.scale.set(1/pulse*1.05, pulse, 1/pulse*1.05);
+    if (j.cd<=0 && j.g.position.distanceTo(S.pos) < j.r+SUB_R){ j.cd=3; G.blurT=CFG.JELLY_BLUR; S.o2=Math.max(0,S.o2-S.o2Max*CFG.JELLY_O2); damage(2,'سم چتر دریایی'); toast('🪼 سم چتر دریایی! دید تار شد و ۵٪ اکسیژن از دست رفت','warn'); }
+  }
+}
+function updateLeviathan(dt){
+  const L=lev; const d=S.pos.distanceTo(L.pos);
+  if (!L.awake){
+    L.g.position.y = L.pos.y + Math.sin(G.time*0.6)*0.6; L.g.rotation.z = Math.sin(G.time*0.3)*0.02;
+    if (L.cd>0) L.cd-=dt;
+    else if (d<CFG.LEV_WAKE){
+      L.awake=true; L.t=0; L.eyeMat.emissiveIntensity=4;
+      const dir=tmpA.copy(S.pos).sub(L.pos); if (dir.lengthSq()<0.01) dir.set(0,1,0); dir.normalize();
+      S.vel.addScaledVector(dir, CFG.LEV_KNOCK*CFG.DRAG); S.knockT=1.6;      // پرتاب ~۲۰۰ واحد
+      damage(CFG.LEV_DMG,'موج انفجاری لویاتان'); G.shake=1.5; L.shock.visible=true; L.shock.position.copy(L.pos);
+      toast('🐋 لویاتان بیدار شد!!! موج انفجاری — ۴۰٪ بدنه شکست','warn');
+    } else if (d<130 && !L.warned){ L.warned=true; toast('… چیزی عظیم در تاریکی نفس می‌کشد. نزدیک‌تر نشو.','warn'); }
+  } else {
+    L.t+=dt; L.g.position.y = L.pos.y + Math.min(14, L.t*7); L.g.rotation.y = Math.sin(L.t*1.5)*0.25;
+    L.shock.scale.setScalar(1+L.t*150); L.shock.material.opacity=Math.max(0,0.55-L.t*0.35); L.shock.visible = L.t<1.6;
+    if (L.t>10){ L.awake=false; L.cd=25; L.warned=false; L.eyeMat.emissiveIntensity=0; }
+  }
+}
+function updateTorps(dt){
+  G.torpCd-=dt;
+  for (let i=G.torps.length-1;i>=0;i--){ const t=G.torps[i]; t.life-=dt; t.m.position.addScaledVector(t.dir,45*dt); let hit=false;
+    for (const sh of sharks){ if (sh.pos.distanceTo(t.m.position) < sh.r+4){ hit=true; const away=tmpA.copy(sh.pos).sub(S.pos).normalize();
+      sh.vel.copy(away).multiplyScalar(sh.kind==='mega'?18:35); sh.state='stunned'; sh.timer=sh.kind==='mega'?4:8; toast('💥 اژدر اصابت کرد! کوسه پرت شد','good'); break; } }
+    if (hit || t.life<=0 || t.m.position.y<terrainHeight(t.m.position.x,t.m.position.z)){ scene.remove(t.m); G.torps.splice(i,1); } }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۲. سیستم‌های بقا: فشار، اکسیژن، جریان، خرابی، چشمه‌ها، سونار
+   ══════════════════════════════════════════════════════════════ */
+function updateSurvival(dt){
+  const depth = Math.max(0,-S.pos.y);
+  // فشار هیدرواستاتیک — عمق بحرانی = پایه + تیتانیوم + ارتقا
+  S.crush = CFG.CRUSH_BASE + S.titanium*CFG.CRUSH_TITANIUM + (S.up.hull?CFG.CRUSH_UPGRADE:0);
+  if (depth > S.crush){ G.critT+=dt; G.shake=Math.max(G.shake,0.12); if (!G.critWarned){ G.critWarned=true; toast('⚠ فشار بحرانی! بدنه ترک خورد — ۵ ثانیه تا انهدام','warn'); }
+    if (G.critT>=CFG.CRUSH_TIME) gameOver('بدنه زیر فشار هیدرواستاتیک له شد'); }
+  else { G.critT=Math.max(0,G.critT-dt*0.6); if (G.critT===0) G.critWarned=false; if (depth>S.crush*0.9) G.shake=Math.max(G.shake,0.05); }
+  // اکسیژن
+  if (depth<4){ if (S.o2<S.o2Max-1 && Math.random()<dt*0.3) toast('🌊 در سطح آب — اکسیژن شارژ می‌شود','good'); S.o2=Math.min(S.o2Max,S.o2+20*dt); }
+  else S.o2 -= dt*(G.malf.active&&G.malf.active.kind==='o2'?1.6:1);
+  if (S.o2<=0){ S.o2=0; damage(6*dt,'خفگی — اکسیژن تمام شد'); if (!G.o2Warned){ G.o2Warned=true; toast('☠ اکسیژن تمام شد! بدنه در حال آسیب دیدن است','warn'); } }
+  else if (S.o2<30 && !G.o2Warned){ G.o2Warned=true; toast('⚠ اکسیژن کم است! به سطح برگرد یا حباب پیدا کن','warn'); }
+  if (S.o2>=40) G.o2Warned=false;
+  // جریان‌های زیرآبی تصادفی
+  const C=G.current;
+  if (C.active){ C.t-=dt; if (C.t<=0){ C.active=false; $('currentWarn').style.display='none'; C.next=CFG.CURRENT_INTERVAL; } }
+  else { C.next-=dt; if (C.next<=0){ const a=Math.random()*Math.PI*2; C.dir.set(Math.cos(a),0,Math.sin(a)); C.active=true; C.t=CFG.CURRENT_DURATION; $('currentWarn').style.display='flex'; toast('🌊 جریان قوی زیرآبی! خلاف آن نرو — بگذار تو را به مناطق جدید ببرد','warn'); } }
+  // خرابی‌های تصادفی
+  const M=G.malf;
+  if (M.active){ M.tick-=dt; if (M.tick<=0){ M.tick=CFG.MALF_TICK; if (M.active.res==='hull') damage(CFG.MALF_DMG,'خرابی تعمیرنشده: '+M.active.name); else if (M.active.res==='o2') S.o2=Math.max(0,S.o2-S.o2Max*0.05); else S.bat=Math.max(0,S.bat-5); toast('⚠ خرابی تعمیر نشده: −۵٪','warn'); } }
+  else { M.next-=dt; if (M.next<=0){ M.active=MALFS[Math.floor(Math.random()*MALFS.length)]; M.tick=CFG.MALF_TICK; $('malf').style.display='block'; $('malfName').textContent=M.active.name; toast('⚠ خرابی: '+M.active.name+' — با F تعمیر کن','warn'); } }
+  // چشمه‌های گرمابی: گرما
+  for (const v of vents){ if (v.pos.distanceToSquared(S.pos)<7*7){ damage(CFG.VENT_DMG*dt,'گرمای چشمه گرمابی'); if (Math.random()<dt*0.5) toast('🔥 دمای بدنه بالا رفت! از چشمه فاصله بگیر','warn'); } }
+  // تایمرها
+  G.sonar.t=Math.max(0,G.sonar.t-dt); G.sonar.cd=Math.max(0,G.sonar.cd-dt); G.blurT=Math.max(0,G.blurT-dt); G.shake=Math.max(0,G.shake-dt*1.2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۳. محیط: مه/دید، نور، پلانکتون، چشمه‌ها، چراغ ایستگاه‌ها
+   ══════════════════════════════════════════════════════════════ */
+function updateEnvironment(dt){
+  uTime.value = G.time;
+  const depth = Math.max(0,-S.pos.y);
+  const sunF = Math.exp(-depth/110);
+  hemi.intensity = 0.12 + 1.3*sunF; sun.intensity = 1.8*sunF;
+  // چگالی مه: کم‌عمق ~۱۴۰م دید، زیر ۱۵۰ متر فقط ~۱۵ متر دید
+  const deepT = clamp((depth-130)/40,0,1); let dens = lerp(lerp(0.011,0.017,clamp(depth/130,0,1)), 0.11, deepT*deepT*(3-2*deepT));
+  if (G.blurT>0) dens*=2.2;
+  scene.fog.density += (dens-scene.fog.density)*Math.min(1,dt*2.5);
+  tmpColor.copy(FOG_SHALLOW).lerp(FOG_DEEP, clamp(depth/230,0,1)); if (S.bat<=0) tmpColor.multiplyScalar(0.15);
+  scene.fog.color.lerp(tmpColor, Math.min(1,dt*2)); scene.background.copy(scene.fog.color);
+  // پلانکتون: پیچش دور زیردریایی + رانش با جریان
+  const pa=plGeo.attributes.position.array; const cx=S.pos.x, cy=S.pos.y, cz=S.pos.z; const cd=G.current.active?G.current.dir:null;
+  for (let i=0;i<PL_N;i++){ const j=i*3; if (cd){ pa[j]+=cd.x*5*dt; pa[j+2]+=cd.z*5*dt; } pa[j+1]+=Math.sin(G.time*0.7+i*1.3)*0.004;
+    if (pa[j]-cx>PL_R) pa[j]-=2*PL_R; else if (pa[j]-cx<-PL_R) pa[j]+=2*PL_R;
+    if (pa[j+1]-cy>PL_R) pa[j+1]-=2*PL_R; else if (pa[j+1]-cy<-PL_R) pa[j+1]+=2*PL_R;
+    if (pa[j+2]-cz>PL_R) pa[j+2]-=2*PL_R; else if (pa[j+2]-cz<-PL_R) pa[j+2]+=2*PL_R; }
+  plGeo.attributes.position.needsUpdate=true;
+  // دود چشمه‌ها
+  for (const v of vents){ if (v.pos.distanceToSquared(S.pos)>220*220) continue; const a=v.arr;
+    for (let i=0;i<50;i++){ a[i*3+1]+=dt*(2.5+(i%5)*0.6); a[i*3]+=(Math.random()-.5)*0.4*dt; a[i*3+2]+=(Math.random()-.5)*0.4*dt; if (a[i*3+1]>32){ a[i*3+1]=7; a[i*3]=(Math.random()-.5)*1.2; a[i*3+2]=(Math.random()-.5)*1.2; } }
+    v.pts.geometry.attributes.position.needsUpdate=true; }
+  for (const st of stations) st.beacon.material.emissiveIntensity = st.visited ? 2.5 : 1+Math.max(0,Math.sin(G.time*5))*3;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۴. دوربین سوم‌شخص (ماوس / تاچ / ژیروسکوپ) + لرزش
+   ══════════════════════════════════════════════════════════════ */
+const gyro = { on:false, base:null, tx:0, ty:0 };
+function updateCamera(dt){
+  if (gyro.on){ const dz = Math.abs(gyro.tx)>4 ? gyro.tx : 0, dy = Math.abs(gyro.ty)>4 ? gyro.ty : 0; cam.yaw -= dz*0.03*dt; cam.pitch = clamp(cam.pitch + dy*0.015*dt, -0.5, 1.2); }
+  const cp=cam.pitch, d=cam.dist;
+  tmpA.set(Math.sin(cam.yaw)*Math.cos(cp)*d, Math.sin(cp)*d+1.5, Math.cos(cam.yaw)*Math.cos(cp)*d).add(S.pos);
+  const th=terrainHeight(tmpA.x,tmpA.z)+1.2; if (tmpA.y<th) tmpA.y=th; if (tmpA.y>-0.6) tmpA.y=-0.6;
+  camera.position.lerp(tmpA, 1-Math.pow(0.0005,dt));
+  if (G.shake>0){ camera.position.x+=(Math.random()-.5)*G.shake; camera.position.y+=(Math.random()-.5)*G.shake; camera.position.z+=(Math.random()-.5)*G.shake; }
+  camera.lookAt(S.pos.x, S.pos.y+1, S.pos.z);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۵. پاس رندر سونار (وایرفریم سبز که مه را می‌شکافد)
+   ══════════════════════════════════════════════════════════════ */
+const sonarMat = new THREE.ShaderMaterial({
+  uniforms:{ uOrigin:{value:new THREE.Vector3()}, uRadius:{value:0}, uOpacity:{value:1} },
+  vertexShader:`varying vec3 vW;
+void main(){ vec4 wp;
+#ifdef USE_INSTANCING
+  wp = modelMatrix * instanceMatrix * vec4(position,1.0);
+#else
+  wp = modelMatrix * vec4(position,1.0);
+#endif
+  vW = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+  fragmentShader:`uniform vec3 uOrigin; uniform float uRadius; uniform float uOpacity; varying vec3 vW;
+void main(){ float d = length(vW-uOrigin); float ring = 1.0-smoothstep(0.0,25.0,abs(d-uRadius));
+  float inside = d<uRadius ? 0.22*(1.0-d/max(uRadius,1.0))+0.08 : 0.0; float a=(ring*0.9+inside)*uOpacity; if (a<0.02) discard;
+  gl_FragColor = vec4(0.3,1.0,0.55,a); }`,
+  wireframe:true, transparent:true, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending });
+function render(){
+  renderer.render(scene, camera);
+  if (G.sonar.t>0){
+    const p = 1-G.sonar.t/CFG.SONAR_DUR; sonarMat.uniforms.uRadius.value=p*CFG.SONAR_RANGE; sonarMat.uniforms.uOpacity.value=1-p*p;
+    const fog=scene.fog; scene.fog=null; scene.overrideMaterial=sonarMat; sonarHide.forEach(o=>o.visible=false);
+    renderer.autoClear=false; renderer.render(scene,camera); renderer.autoClear=true;
+    scene.overrideMaterial=null; scene.fog=fog; sonarHide.forEach(o=>o.visible=true);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۶. ورودی: کیبورد، ماوس، تاچ (جوی‌استیک + دکمه‌ها)، ژیروسکوپ
+   ══════════════════════════════════════════════════════════════ */
+const keys = {}, btn = { up:false, down:false };
+const joy = { active:false, id:null, cx:0, cy:0, x:0, z:0 };
+function readInput(){
+  let kx=0,kz=0,ky=0;
+  if (keys.KeyW||keys.ArrowUp) kz+=1; if (keys.KeyS||keys.ArrowDown) kz-=1;
+  if (keys.KeyD||keys.ArrowRight) kx+=1; if (keys.KeyA||keys.ArrowLeft) kx-=1;
+  if (keys.Space) ky+=1; if (keys.ShiftLeft||keys.ShiftRight) ky-=1;
+  input.x = joy.active?joy.x:kx; input.z = joy.active?joy.z:kz; input.y = btn.up?1:btn.down?-1:ky;
+}
+addEventListener('keydown', e=>{ keys[e.code]=true; if (['Space','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if (e.repeat || !G.running) return;
+  switch (e.code){ case 'KeyL': toggleLight(); break; case 'KeyQ': sonar(); break; case 'KeyF': repair(); break; case 'KeyR': fireTorp(); break; case 'KeyC': toggleStealth(); break; } });
+addEventListener('keyup', e=>{ keys[e.code]=false; });
+addEventListener('blur', ()=>{ for (const k in keys) keys[k]=false; });
+canvas.addEventListener('mousedown', e=>{ cam.dragging=true; cam.lx=e.clientX; cam.ly=e.clientY; });
+addEventListener('mousemove', e=>{ if (!cam.dragging) return; cam.yaw-=(e.clientX-cam.lx)*0.005; cam.pitch=clamp(cam.pitch+(e.clientY-cam.ly)*0.005,-0.5,1.2); cam.lx=e.clientX; cam.ly=e.clientY; });
+addEventListener('mouseup', ()=>cam.dragging=false);
+addEventListener('wheel', e=>{ cam.dist=clamp(cam.dist+e.deltaY*0.01,7,26); }, {passive:true});
+addEventListener('contextmenu', e=>e.preventDefault());
+// تاچ: نیمه چپ = جوی‌استیک، نیمه راست = چرخش دوربین
+const isBtn = t => t.target.closest && t.target.closest('.tbtn');
+addEventListener('touchstart', e=>{ if (!G.running) return;
+  for (const t of e.changedTouches){ if (isBtn(t)) continue;
+    if (t.clientX < innerWidth*0.5){ if (joy.active) continue; joy.active=true; joy.id=t.identifier; joy.cx=t.clientX; joy.cy=t.clientY; }
+    else { if (cam.touchId!==null) continue; cam.touchId=t.identifier; cam.lx=t.clientX; cam.ly=t.clientY; } }
+  if (e.cancelable) e.preventDefault(); }, {passive:false});
+addEventListener('touchmove', e=>{
+  for (const t of e.changedTouches){
+    if (joy.active && t.identifier===joy.id){ let dx=(t.clientX-joy.cx)/48, dy=(t.clientY-joy.cy)/48; const l=Math.hypot(dx,dy); if (l>1){ dx/=l; dy/=l; } joy.x=dx; joy.z=-dy; $('joyKnob').style.transform=`translate(${dx*38}px,${dy*38}px)`; }
+    else if (t.identifier===cam.touchId){ cam.yaw-=(t.clientX-cam.lx)*0.007; cam.pitch=clamp(cam.pitch+(t.clientY-cam.ly)*0.007,-0.5,1.2); cam.lx=t.clientX; cam.ly=t.clientY; } }
+  if (e.cancelable) e.preventDefault(); }, {passive:false});
+const touchEnd = e=>{ for (const t of e.changedTouches){ if (t.identifier===joy.id){ joy.active=false; joy.id=null; joy.x=joy.z=0; $('joyKnob').style.transform=''; } if (t.identifier===cam.touchId) cam.touchId=null; } };
+addEventListener('touchend', touchEnd); addEventListener('touchcancel', touchEnd);
+const hold = (id,on,off)=>{ const el=$(id); el.addEventListener('touchstart', e=>{ e.preventDefault(); on(); el.classList.add('on'); }, {passive:false});
+  const end=e=>{ e.preventDefault(); off(); el.classList.remove('on'); }; el.addEventListener('touchend', end); el.addEventListener('touchcancel', end); };
+hold('bUp', ()=>btn.up=true, ()=>btn.up=false); hold('bDown', ()=>btn.down=true, ()=>btn.down=false);
+const tap = (id,fn)=>{ $(id).addEventListener('touchstart', e=>{ e.preventDefault(); if (G.running) fn(); }, {passive:false}); };
+tap('bLight', toggleLight); tap('bSonar', sonar); tap('bFix', repair); tap('bTorp', fireTorp); tap('bStealth', toggleStealth);
+// ژیروسکوپ (با درخواست مجوز iOS)
+function onGyro(e){ if (e.beta===null||e.beta===undefined) return; const ang=(screen.orientation&&screen.orientation.angle)||0; let tx,ty;
+  if (ang===90){ tx=e.beta; ty=-e.gamma; } else if (ang===270||ang===-90){ tx=-e.beta; ty=e.gamma; } else { tx=e.gamma; ty=e.beta; }
+  if (!gyro.base) gyro.base={tx,ty}; gyro.tx=tx-gyro.base.tx; gyro.ty=ty-gyro.base.ty; }
+$('gyroBtn').addEventListener('click', async ()=>{ try{
+  if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){ const r=await DeviceOrientationEvent.requestPermission(); if (r!=='granted'){ toast('دسترسی ژیروسکوپ رد شد','warn'); return; } }
+  gyro.on=true; gyro.base=null; addEventListener('deviceorientation', onGyro); $('gyroBtn').textContent='ژیروسکوپ فعال ✓ (کج کردن گوشی = چرخش دوربین)'; } catch(err){ toast('ژیروسکوپ در دسترس نیست','warn'); } });
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۷. HUD و مینی‌مپ
+   ══════════════════════════════════════════════════════════════ */
+const mapImg = document.createElement('canvas'); mapImg.width=mapImg.height=100;
+{ const ctx=mapImg.getContext('2d'); const img=ctx.createImageData(100,100);
+  for (let py=0;py<100;py++) for (let px=0;px<100;px++){ const h=terrainHeight((px/100-0.5)*1000,(py/100-0.5)*1000); const t=clamp((-h-14)/520,0,1); const i=(py*100+px)*4;
+    img.data[i]=Math.round(lerp(40,2,t)); img.data[i+1]=Math.round(lerp(120,10,t)); img.data[i+2]=Math.round(lerp(170,30,t)); img.data[i+3]=255; }
+  ctx.putImageData(img,0,0); }
+function nearestStation(){ let best=null; for (const st of stations){ if (st.visited) continue; const d=Math.hypot(st.pos.x-S.pos.x, st.pos.z-S.pos.z); if (!best||d<best.d) best={st,d}; } return best; }
+function drawMinimap(){
+  const mm=$('minimap'), ctx=mm.getContext('2d'), W=mm.width; ctx.clearRect(0,0,W,W); ctx.drawImage(mapImg,0,0,W,W);
+  if (G.malf.active && G.malf.active.kind==='nav'){ ctx.fillStyle='rgba(255,60,60,.25)'; for (let i=0;i<40;i++) ctx.fillRect(Math.random()*W,Math.random()*W,Math.random()*30,2); ctx.fillStyle='#fca5a5'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('NAV ERROR',W/2,W/2); return; }
+  const toM=(x,z)=>[(x+HALF)/CFG.WORLD_SIZE*W,(z+HALF)/CFG.WORLD_SIZE*W];
+  for (const c of caves){ const [x,z]=toM(c.x,c.z); ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.arc(x,z,2,0,7); ctx.fill(); }
+  for (const st of stations){ const [x,z]=toM(st.pos.x,st.pos.z); ctx.fillStyle=st.visited?'#4ade80':'#facc15'; ctx.beginPath(); ctx.arc(x,z,3.5,0,7); ctx.fill(); }
+  if (G.sonar.t>0){ for (const sh of sharks){ const [x,z]=toM(sh.pos.x,sh.pos.z); ctx.fillStyle=sh.kind==='mega'?'#ff2d2d':'#fb7185'; ctx.beginPath(); ctx.arc(x,z,sh.kind==='mega'?4:2.5,0,7); ctx.fill(); } }
+  const [sx,sz]=toM(S.pos.x,S.pos.z); const ns=nearestStation();
+  if (ns){ const [tx,tz]=toM(ns.st.pos.x,ns.st.pos.z); ctx.strokeStyle='rgba(250,204,21,.75)'; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(sx,sz); ctx.lineTo(tx,tz); ctx.stroke(); ctx.setLineDash([]); }
+  if (G.current.active){ ctx.strokeStyle='rgba(95,208,255,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(sx,sz); ctx.lineTo(sx+G.current.dir.x*16, sz+G.current.dir.z*16); ctx.stroke(); ctx.lineWidth=1; }
+  const f=camForward(); ctx.save(); ctx.translate(sx,sz); ctx.rotate(Math.atan2(f.z,f.x)); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(7,0); ctx.lineTo(-4,4.5); ctx.lineTo(-4,-4.5); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function updateHUD(){
+  const depth=Math.max(0,-S.pos.y); $('depthVal').textContent=depth.toFixed(0); $('pressVal').textContent=Math.pow(2,depth/100).toFixed(1)+' atm';
+  const ratio=depth/S.crush; const pc=ratio<0.6?'#4ade80':ratio<0.9?'#facc15':'#ef4444';
+  $('pressBar').style.width=Math.min(100,ratio*100)+'%'; $('pressBar').style.background=pc; $('pressVal').style.color=pc;
+  $('depthPanel').style.borderColor = ratio>=0.9?'rgba(239,68,68,.85)':'rgba(72,200,255,.28)'; $('crushVal').textContent=S.crush;
+  const hull=Math.max(0,Math.ceil(S.hull)); $('hullVal').textContent=hull+'%'; $('hullBar').style.width=hull+'%'; $('hullBar').style.background=hull>50?'#4ade80':hull>25?'#facc15':'#ef4444';
+  $('tiVal').textContent=S.titanium; $('partVal').textContent=S.parts;
+  const o2p=S.o2/S.o2Max*100; $('o2Bar').style.height=o2p+'%'; $('o2Bar').style.background=o2p>30?'#38bdf8':'#ef4444'; $('o2Val').textContent=Math.ceil(S.o2)+'s';
+  $('batBar').style.height=S.bat+'%'; $('batBar').style.background=S.bat>25?'#a3e635':'#ef4444'; $('batVal').textContent=Math.ceil(S.bat)+'%';
+  let cr=0; if (ratio>0.9) cr=(ratio-0.9)*4; if (depth>S.crush) cr=0.45+G.critT/CFG.CRUSH_TIME*0.55; $('cracks').style.opacity=clamp(cr,0,1);
+  $('darkness').style.opacity = S.bat<=0?0.6:0; canvas.classList.toggle('blur', G.blurT>0);
+  if (G.current.active){ const d=G.current.dir; const deg=Math.atan2(d.dot(camRight()), d.dot(camForward()))*180/Math.PI; $('currentRot').style.transform=`rotate(${deg-90}deg)`; }
+  const ns=nearestStation(); $('stDist').textContent = ns?ns.d.toFixed(0):'—';
+  $('bLight').classList.toggle('on', S.light && S.bat>0);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ۱۸. حلقه اصلی
+   ══════════════════════════════════════════════════════════════ */
+function update(dt){
+  readInput(); updateSub(dt); updatePickups(dt); updateSharks(dt); updateJellies(dt); updateLeviathan(dt); updateSurvival(dt); updateTorps(dt); updateEnvironment(dt); updateCamera(dt);
+  G.flash=Math.max(0,G.flash-dt*1.6); $('vignette').style.opacity=G.flash;
+  G.hudT+=dt; if (G.hudT>0.1){ G.hudT=0; updateHUD(); }
+  G.mapT+=dt; if (G.mapT>0.25){ G.mapT=0; drawMinimap(); }
+}
+let last=performance.now();
+renderer.setAnimationLoop((now)=>{
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if (G.running){ G.time+=dt; update(dt); } else { uTime.value+=dt*0.3; updateCamera(dt); }
+  render();
+});
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+updateCamera(1); camera.position.copy(tmpA); updateHUD(); drawMinimap();
+$('startBtn').addEventListener('click', ()=>{
+  $('startScr').style.display='none'; G.running=true; last=performance.now();
+  if (isMobile){ try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){} }
+  toast('ماموریت آغاز شد — ۵ ایستگاه را پیدا کن. مینی‌مپ نزدیک‌ترین ایستگاه را نشان می‌دهد','good');
+  setTimeout(()=>toast('نکته: تیتانیوم غارها را جمع کن تا بتوانی عمیق‌تر بروی'), 5000);
+});
+</script>
+</body>
+</html>
