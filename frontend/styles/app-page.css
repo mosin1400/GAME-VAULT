@@ -171,14 +171,18 @@ button {
   margin-left:8px
 }
 .main-content {
+  --content-padding:55px;
   flex:1 1 auto;
-  width:100%;
+  width:auto;
   max-width:none;
   min-width:0;
-  padding:0 55px 28px;
+  padding:0 var(--content-padding) 28px;
   margin:0 auto
 }
 .topbar {
+  width:calc(100% + var(--content-padding) * 2);
+  margin-inline:calc(-1 * var(--content-padding));
+  padding-inline:var(--content-padding);
   height:98px;
   border-bottom:1px solid #1c3146;
   display:flex;
@@ -826,6 +830,7 @@ button {
     grid-template-columns:repeat(2,minmax(0,1fr))
   }
   .main-content {
+    --content-padding:32px;
     padding:0 32px
   }
   .sidebar {
@@ -840,6 +845,7 @@ button {
   .sidebar.mobile-open{display:flex;position:fixed;inset:0 auto 0 0;width:260px;z-index:20;box-shadow:20px 0 50px #0008}
   .mobile-menu-button{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);font-size:20px}
   .main-content {
+    --content-padding:17px;
     padding:0 17px
   }
   .topbar {

@@ -59,3 +59,4 @@ html[data-theme="light"] .manage-card .manage-actions .delete{background:#fff2f3
 .manage-card .compact-version-controls button,.manage-card .compact-version-controls a{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;min-width:28px;height:28px;min-height:28px;padding:0;margin:0;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);font:17px/1 Vazirmatn,sans-serif;text-decoration:none;cursor:pointer}
 .manage-card .compact-version-controls button:hover,.manage-card .compact-version-controls a:hover{background:#7080a020;color:var(--text);transform:none;box-shadow:none}
 .manage-card .manage-actions [data-edit],.manage-card .manage-actions .delete{grid-column:1/-1}
+.detail-hero{align-items:stretch}.detail-cover{align-self:stretch}
