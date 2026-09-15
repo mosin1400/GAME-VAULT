@@ -4,7 +4,7 @@ const path = require('node:path');
 const requiredMetadataKeys = ['id', 'Order', 'name', 'slug', 'description', 'ai', 'category', 'image', 'playUrl', 'downloadUrl', 'version'];
 
 function safePart(value) {
-  return typeof value === 'string' && value.length > 0 && !value.includes('..') && !/[\\/:\0]/.test(value) && /^[\w. -]+$/u.test(value);
+  return typeof value === 'string' && value.length > 0 && !value.includes('..') && !/[\\/:\0]/.test(value) && /^[\w. ()-]+$/u.test(value);
 }
 
 function safeFile(root, relativePath) {
