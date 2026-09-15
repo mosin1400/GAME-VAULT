@@ -60,3 +60,4 @@ html[data-theme="light"] .manage-card .manage-actions .delete{background:#fff2f3
 .manage-card .compact-version-controls button:hover,.manage-card .compact-version-controls a:hover{background:#7080a020;color:var(--text);transform:none;box-shadow:none}
 .manage-card .manage-actions [data-edit],.manage-card .manage-actions .delete{grid-column:1/-1}
 .detail-hero{align-items:stretch}.detail-cover{align-self:stretch}
+.game-card>.cover{flex-shrink:0}.game-card .card-actions>*{display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box}

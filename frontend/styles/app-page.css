@@ -420,6 +420,8 @@ button {
   gap:18px
 }
 .game-card {
+  display:flex;
+  flex-direction:column;
   overflow:hidden;
   border:1px solid #20384e;
   border-radius:16px;
@@ -469,6 +471,9 @@ button {
   height:28px
 }
 .card-body {
+  display:flex;
+  flex-direction:column;
+  flex:1;
   padding:16px 15px 14px
 }
 .game-title {
@@ -503,6 +508,7 @@ button {
   margin:10px 0 13px
 }
 .card-meta {
+  margin-top:auto;
   display:flex;
   justify-content:space-between;
   align-items:center;
