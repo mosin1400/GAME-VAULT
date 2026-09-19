@@ -1,0 +1,50 @@
+[
+  {
+    "id": "t34-steel-front",
+    "name": "جبهه‌ی فولادی",
+    "slug": "t34-steel-front",
+    "description": "فرماندهی یک T-34/85 در قلب یک عملیات سینمایی؛ مسیرت را انتخاب کن و خط مقدم را پس بگیر.",
+    "rating": 4.9,
+    "ai": "OpenAI",
+    "category": "اکشن",
+    "image": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=1200&q=85",
+    "playUrl": "../t3475/game.html",
+    "downloadUrl": "../t3475/game.html"
+  },
+  {
+    "id": "neon-drift",
+    "name": "Neon Drift",
+    "slug": "neon-drift",
+    "description": "در شهری که همیشه باران می‌بارد، با سرعت نور از میان نئون‌ها عبور کن و رکورد بزن.",
+    "rating": 4.7,
+    "ai": "Claude",
+    "category": "مسابقه‌ای",
+    "image": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=85",
+    "playUrl": "#",
+    "downloadUrl": "#"
+  },
+  {
+    "id": "last-orbit",
+    "name": "آخرین مدار",
+    "slug": "last-orbit",
+    "description": "تنها خلبان باقی‌مانده‌ای. منابع را مدیریت کن، سیگنال را پیدا کن و از مدار فرار کن.",
+    "rating": 4.8,
+    "ai": "Gemini",
+    "category": "ماجراجویی",
+    "image": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=85",
+    "playUrl": "#",
+    "downloadUrl": "#"
+  },
+  {
+    "id": "shadow-protocol",
+    "name": "پروتکل سایه",
+    "slug": "shadow-protocol",
+    "description": "یک عملیات مخفیانه‌ی تاکتیکی با انتخاب‌های سخت، مسیرهای چندگانه و پایان‌های متفاوت.",
+    "rating": 4.6,
+    "ai": "DeepSeek",
+    "category": "استراتژی",
+    "image": "https://images.unsplash.com/photo-1520034475321-cbe63696469a?auto=format&fit=crop&w=1200&q=85",
+    "playUrl": "#",
+    "downloadUrl": "#"
+  }
+]

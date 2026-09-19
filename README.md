@@ -1,297 +1,225 @@
-# 🎮 Game Vault
+# 🎮 Game Vault - Professional Monorepo Architecture
 
-<p align="center">
-  <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&h=400&fit=crop" alt="Game Vault Banner" width="100%" />
-</p>
+![Game Vault Banner](https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&h=400&fit=crop)
 
-<p align="center">
-  <strong>A comprehensive browser-based game management and development platform with professional editing capabilities</strong>
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-61dafb.svg)](https://reactjs.org/)
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#project-structure">Structure</a> •
-  <a href="#testing">Testing</a> •
-  <a href="#tech-stack">Tech Stack</a>
-</p>
-
----
-
-## 📖 About
-
-**Game Vault** is a comprehensive modern platform for managing, showcasing, and developing browser-based games. This project intelligently combines:
-
-- 📚 **Public Game Catalog** - Versioned display with live previews
-- 🛠️ **Professional Admin Environment** - Advanced admin panel with powerful capabilities
-- 🤖 **AI Workshop** - AI assistant with real-time operation flows
-- 🎨 **Theia Studio Editor** - Integrated development environment in the browser
-
----
-
-## ✨ Features
-
-### 🎯 Core Features
-
-| Section | Description |
-|---------|-------------|
-| **Smart Catalog** | Versioned game list with precise preview of each version |
-| **Auto Documentation** | Automatic Markdown generation and rendering for game descriptions |
-| **Activity Tracking** | Real-time tracking of user and system activities |
-| **User Profiles** | Profile management, favorites, and community comments |
-| **Rating System** | Community rating and comment system |
-| **Project Management** | Versioning, upload, and file management operations |
-| **AI Assistant** | Smart workspace with manual file approval |
-| **Multiple Themes** | Light/dark mode with responsive mobile navigation |
-
-### 🔐 Security & Authentication
-
-- Secure session management (Session-based Authentication)
-- Separation of Admin and regular user access
-- API key protection on server side
-- CORS configured for Theia Studio
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Game Vault Platform                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │   Frontend   │    │   Backend    │    │    Theia     │   │
-│  │   (Pages)    │◄──►│    (API)     │◄──►│   Studio     │   │
-│  │              │    │              │    │  (Editor)    │   │
-│  └──────────────┘    └──────────────┘    └──────────────┘   │
-│         │                   │                   │           │
-│         ▼                   ▼                   ▼           │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                  Core Services                        │   │
-│  │  Auth │ Catalog │ Community │ AI │ History │ Tools   │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                              │                               │
-│                              ▼                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                   Data Layer                          │   │
-│  │        Games │ Builds │ Vault │ Sessions              │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Core Services
-
-| Module | Path | Responsibility |
-|--------|------|----------------|
-| **Project Core** | `backend/core/` | Safe paths, JSON, metadata validation |
-| **Authentication** | `backend/auth/` | User sessions, tokens, admin access |
-| **Game Catalog** | `backend/projects/` | Game lists, versions, file trees |
-| **Community** | `backend/community/` | Comments, ratings, favorites |
-| **AI** | `backend/ai/` | AI agent, conversation memory, tools |
-| **Tools** | `backend/tools/` | VS Code, Git, resource stats |
-| **History** | `backend/projects/history.js` | Snapshots and safe rollback |
-| **HTTP** | `backend/http/` | Static files, CORS, responses |
+> **Your ultimate gaming library** - Discover, play, and manage your favorite games all in one place.
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
 ```bash
-Node.js >= 24
-npm
-```
-
-### Installation & Running
-
-```powershell
-# Clone repository
-git clone <repository-url>
-cd game-vault
-
 # Install dependencies
 npm install
 
-# Run server
-npm start
-# or
-node server.js
+# Copy environment variables
+cp .env.example .env
+
+# Start all services (API + Auth + Web)
+npm run dev
+
+# Or start individual services
+npm run dev:api    # API on port 3001
+npm run dev:auth   # Auth service on port 3002
+npm run dev:web    # Frontend on port 3000
 ```
-
-### Access Points
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Main App** | `http://localhost:8080` | Catalog, profiles, management |
-| **Theia Studio** | `http://localhost:3010` | Code editor in browser |
-
-> 💡 **Tip:** Create a `.env` file in the project root for environment variables (like `OPENROUTER_API_KEY`). Never commit this file!
-
----
 
 ## 📁 Project Structure
 
 ```
 game-vault/
-├── frontend/                 # User interface
-│   ├── pages/               # HTML pages (index, manage, profile)
-│   ├── scripts/             # JavaScript logic (app.js, markdown.js)
-│   ├── styles/              # CSS styles
-│   └── public/              # Public static files
-│
-├── backend/                  # Server-side services
-│   ├── core/                # Core project logic
-│   ├── auth/                # Authentication and sessions
-│   ├── projects/            # Game catalog and management
-│   ├── community/           # User interactions
-│   ├── ai/                  # AI services
-│   ├── tools/               # System tools
-│   ├── http/                # HTTP request handling
-│   └── builds/              # Build output management
-│
-├── games/                    # Game projects
-│   └── <slug>/versions/     # Game versions
-│       ├── game.json        # Game metadata
-│       └── README.md        # Version documentation
-│
-├── theia/                    # Theia Studio editor
-│   ├── gv-extension/        # Game Vault extensions
-│   ├── lib/                 # Shared libraries
-│   └── src-gen/             # Generated code
-│
-├── skills/                   # AI skills
-│   ├── bug-fix/             # Bug fixing
-│   ├── code-review/         # Code review
-│   └── metadata-auditor/    # Metadata auditing
-│
-├── tests/                    # Contract and behavior tests
-│   ├── http/                # HTTP tests
-│   ├── integration/         # Integration tests
-│   └── migration/           # Migration tests
-│
-├── infrastructure/           # Infrastructure
-│   └── database/            # Database configuration
-│
-├── docs/                     # Documentation
-│   ├── CURRENT-ARCHITECTURE.md
-│   ├── EXECUTION-PLAN.md
-│   └── superpowers/         # Advanced documentation
-│
-├── data/                     # Operational data
-├── .vault/                   # Local sensitive data
-├── builds/                   # Build outputs
-│
-├── server.js                 # Main entry point
-├── package.json              # Dependencies and scripts
-└── README.md                 # This file
+├── apps/                    # Applications
+│   └── web/                 # React frontend (Vite)
+│       ├── src/
+│       │   ├── components/  # Reusable components
+│       │   ├── pages/       # Page components
+│       │   ├── styles/      # Global styles
+│       │   └── utils/       # Utilities & API client
+│       └── package.json
+├── services/                # Backend services
+│   ├── api/                 # Main API service (Fastify)
+│   │   └── src/
+│   └── auth/                # Authentication service
+│       └── src/
+├── packages/                # Shared packages
+│   ├── shared/              # Shared utilities & types
+│   └── config/              # Shared configuration
+├── tests/                   # Test suites
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+├── infrastructure/          # Infrastructure code
+│   └── docker/
+├── data/                    # Database files
+├── logs/                    # Application logs
+└── scripts/                 # Build & deployment scripts
 ```
 
----
+## ✨ Features
+
+### 🔐 Security First
+- JWT-based authentication with bcrypt password hashing
+- Rate limiting on all API endpoints
+- CORS protection
+- Helmet security headers
+- Input validation and sanitization
+
+### 🏗️ Modern Architecture
+- **Monorepo** structure with npm workspaces
+- **Microservices-ready** separation of concerns
+- **Shared packages** for code reusability
+- **Type-safe** development with TypeScript support
+
+### 🎯 Core Features
+- User registration and authentication
+- Game catalog with search and filtering
+- Game details and ratings
+- Admin dashboard with statistics
+- Responsive design for all devices
+
+### 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 18, Vite, React Router |
+| **Backend** | Fastify, Node.js 20+ |
+| **Database** | SQLite (dev), PostgreSQL (prod) |
+| **Auth** | JWT, bcryptjs |
+| **Testing** | Jest, Vitest, Playwright |
+| **DevOps** | Docker, Docker Compose |
+
+## 📊 API Endpoints
+
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Register new user |
+| POST | `/api/v1/auth/login` | Login user |
+| GET | `/api/v1/auth/me` | Get current user |
+
+### Games
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/games` | List all games |
+| GET | `/api/v1/games/:id` | Get game details |
+| POST | `/api/v1/games` | Create game (admin) |
+| PUT | `/api/v1/games/:id` | Update game (admin) |
+| DELETE | `/api/v1/games/:id` | Delete game (admin) |
+
+### Admin
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/admin/stats` | Get platform statistics |
 
 ## 🧪 Testing
 
-### Running Tests
-
-```powershell
+```bash
 # Run all tests
 npm test
 
-# Behavior tests
-npm run test:behavior
+# Unit tests
+npm run test:unit
 
-# API tests
-npm run test:api
+# Integration tests
+npm run test:integration
+
+# E2E tests
+npm run test:e2e
+
+# Generate coverage report
+npm test -- --coverage
 ```
 
-### Test Coverage
+## 🐳 Docker Support
 
-The project includes comprehensive tests in the following areas:
+```bash
+# Build all containers
+npm run docker:build
 
-- ✅ API and HTTP contracts
-- ✅ Authentication and session management
-- ✅ Game catalog and metadata
-- ✅ AI services and agents
-- ✅ Theia Studio integration
-- ✅ Themes and UI synchronization
-- ✅ Project history and rollback
+# Start all services
+npm run docker:up
 
----
+# Stop all services
+npm run docker:down
+```
 
-## 🛠️ Tech Stack
+## 📈 Development Workflow
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| **Runtime** | Node.js | >= 24 |
-| **Frontend** | Vanilla JS, HTML5, CSS3 | - |
-| **Editor** | Monaco Editor | ^0.52.0 |
-| **IDE** | Theia Studio | Latest |
-| **Build** | esbuild | Latest |
-| **Testing** | Node.js Test Runner | Built-in |
-| **AI** | OpenRouter API | External |
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/game-vault.git
+   cd game-vault
+   ```
 
----
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## 🔒 Security Notes
+3. **Set up environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-> ⚠️ **Important:** 
-> - Never expose API keys (like `OPENROUTER_API_KEY`) in client-side files
-> - The `.env` file must be in `.gitignore` and never committed
-> - Use `OPENROUTER_MODEL` to specify the AI model
-> - All AI requests are managed through server-side endpoints (`POST /api/ai`)
+4. **Run database migrations**
+   ```bash
+   npm run migrate
+   ```
 
----
+5. **Seed sample data** (optional)
+   ```bash
+   npm run seed
+   ```
 
-## 📸 Screenshots
+6. **Start development servers**
+   ```bash
+   npm run dev
+   ```
 
-### Main Page - Game Catalog
-<p align="center">
-  <img src="https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?w=800&h=450&fit=crop" alt="Game Catalog" width="80%" />
-</p>
+## 🔒 Security Best Practices
 
-### Project Management Dashboard
-<p align="center">
-  <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop" alt="Management Dashboard" width="80%" />
-</p>
-
-### Theia Studio Editor
-<p align="center">
-  <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=450&fit=crop" alt="Theia Editor" width="80%" />
-</p>
-
----
+- All passwords are hashed with bcrypt (12 rounds)
+- JWT tokens expire after 7 days (configurable)
+- Rate limiting: 100 requests per minute per IP
+- CORS restricted to allowed origins only
+- Input validation on all user inputs
+- SQL injection prevention with parameterized queries
 
 ## 🤝 Contributing
 
-To contribute to the project:
+We welcome contributions! Please follow these steps:
 
 1. Fork the repository
-2. Create a new branch (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
----
-
 ## 📄 License
 
-This project is developed under a private license. All rights reserved.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors
+
+- **Game Vault Team** - *Initial work*
+
+## 🙏 Acknowledgments
+
+- Thanks to all contributors
+- Built with ❤️ using modern web technologies
 
 ---
 
-## 📞 Contact
+<div align="center">
 
-For questions and support, please use GitHub Issues.
+**🎮 Happy Gaming!**
 
----
+[⬆ Back to Top](#-game-vault---professional-monorepo-architecture)
 
-<p align="center">
-  <strong>Built with ❤️ for the game development community</strong>
-</p>
-
-<p align="center">
-  <sub>Game Vault © 2024 - Browser-based Game Management Platform</sub>
-</p>
+</div>
