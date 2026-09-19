@@ -18,7 +18,7 @@ function createStudioProxy({ port } = {}) {
     });
     upstream.setTimeout(180000, () => upstream.destroy(new Error('Studio API timeout')));
     upstream.on('error', () => {
-      if (!res.headersSent) { res.writeHead(502, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'Dashboard API is unavailable. Open the dashboard on port 8081.' })); }
+      if (!res.headersSent) { res.writeHead(502, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: `Dashboard API is unavailable on port ${dashboardPort}. Start the dashboard and reopen Studio.` })); }
       else res.destroy();
     });
     req.on('aborted', () => upstream.destroy());
