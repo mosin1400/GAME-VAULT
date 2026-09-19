@@ -9,6 +9,8 @@ const theiaToggle = fs.readFileSync('theia/lib/frontend/gv-theme.js', 'utf8');
 
 assert.ok(profile.indexOf('profile-page.css') < profile.lastIndexOf('theme.css'), 'profile theme overrides must load after page CSS');
 assert.match(theme, /\.profile-page.*\.auth-tab/s, 'light theme must cover profile controls');
+assert.match(theme, /\.profile-page \[data-theme-toggle\].*color:#17243a/, 'light profile theme toggle must remain visible');
+assert.match(theme, /\.admin-nav.*\.nav-item:hover.*background:#dce9f6/s, 'light admin navigation hover must not turn black');
 assert.match(theme, /\.admin-metrics.*\.admin-panel/s, 'light theme must cover management cards');
 assert.match(launch, /gvTheme/, 'Theia launch page must pass the global theme to its separate origin');
 assert.match(theiaTheme, /gvThe(?:me|Theme)/, 'Theia must consume the launch theme bridge');

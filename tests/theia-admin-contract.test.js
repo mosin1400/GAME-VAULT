@@ -9,5 +9,5 @@ assert.match(server, /username\s*:\s*['"]admin['"]/, 'the single administrator a
 assert.match(server, /\/api\/theia\/free/, 'administrator must have a separate free Studio endpoint');
 assert.match(server, /theiaHost\(req\)/, 'Studio must use the explicit reachable loopback host');
 assert.match(server, /gvToken/, 'Studio opened from management must receive an authenticated Studio token');
-assert.doesNotMatch(profile, /api\/auth\/register/, 'the public profile page must not create a second account');
+assert.match(profile, /api\/auth\/register/, 'the public profile page must support normal account registration');
 console.log('Theia/admin contract passed');

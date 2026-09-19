@@ -9,8 +9,12 @@ for (const route of ['/api/auth/register', '/api/auth/login', '/api/me', '/api/p
   assert.match(server, new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), route + ' must exist');
 }
 assert.match(profile, /id="loginForm"/, 'profile login form must exist');
+assert.match(profile, /id="registerForm"/, 'profile registration form must exist');
 assert.match(profile, /id="profileForm"/, 'authenticated profile editor must exist');
 assert.match(profile, /id="profileMessage"/, 'profile save feedback must exist');
 assert.match(profileJs, /api\('\/api\/profile'/, 'profile editor must persist changes through the server');
+assert.match(profileJs, /api\('\/api\/auth\/register'/, 'registration must call the account API');
+assert.doesNotMatch(profileJs, /registerForm'\)\?\.remove/, 'registration form must remain usable');
+assert.doesNotMatch(server, /فقط حساب مدیر @admin/, 'the server must permit normal account registration');
 assert.match(server, /\/api\/metadata\/repair/, 'metadata repair API must exist');
 console.log('auth and metadata contract passed');

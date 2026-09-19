@@ -319,17 +319,34 @@ async function api(req, res, url) {
     res.writeHead(204);
     return res.end();
   }
-  if (req.method === "POST" && url.pathname === "/api/auth/register")
-    return send(res, 403, {
-      error: "فقط حساب مدیر @admin در این کتابخانه فعال است",
-    });
+  if (req.method === "POST" && url.pathname === "/api/auth/register") {
+    const data = await body(req),
+      username = String(data.username || "").trim().toLowerCase(),
+      name = String(data.name || "").trim().slice(0, 48),
+      password = String(data.password || ""),
+      avatar = String(data.avatar || "").trim().slice(0, 2);
+    if (!/^[a-z0-9_.-]{3,32}$/.test(username) || username === "admin") return send(res, 400, { error: "نام کاربری باید ۳ تا ۳۲ حرف انگلیسی، عدد یا . _ - باشد" });
+    if (name.length < 2) return send(res, 400, { error: "نام نمایشی باید حداقل ۲ حرف باشد" });
+    if (password.length < 6) return send(res, 400, { error: "رمز عبور باید حداقل ۶ حرف باشد" });
+    const list = await users();
+    if (list.some(user => String(user.username || "").toLowerCase() === username)) return send(res, 409, { error: "این نام کاربری قبلاً استفاده شده است" });
+    const account = { id: crypto.randomUUID(), username, name, avatar, role: "user", password: passwordRecord(password), createdAt: new Date().toISOString() };
+    list.push(account); await saveUsers(list);
+    const user = { id: account.id, username, name, avatar, role: "user" }, token = newSession(user);
+    return send(res, 201, { ok: true, user: publicUser(user) }, { ...jsonHeaders, "set-cookie": `gv_session=${token}; HttpOnly; SameSite=Strict; Path=/` });
+  }
   if (req.method === "POST" && url.pathname === "/api/auth/login") {
     const data = await body(req),
       username = String(data.username || "")
         .trim()
         .toLowerCase();
-    if (username !== "admin" || !isAdminPassword(data.password))
-      return send(res, 401, { error: "نام کاربری یا رمز نادرست است" });
+    if (username !== "admin") {
+      const account = (await users()).find(user => String(user.username || "").toLowerCase() === username);
+      if (!account?.password || !passwordMatches(String(data.password || ""), account.password)) return send(res, 401, { error: "نام کاربری یا رمز نادرست است" });
+      const user = { id: account.id, username: account.username, name: account.name, avatar: account.avatar || "", role: "user" }, token = newSession(user);
+      return send(res, 200, { ok: true, user: publicUser(user) }, { ...jsonHeaders, "set-cookie": `gv_session=${token}; HttpOnly; SameSite=Strict; Path=/` });
+    }
+    if (!isAdminPassword(data.password)) return send(res, 401, { error: "نام کاربری یا رمز نادرست است" });
     const profile = await readJson(ADMIN_PROFILE_FILE, {
         name: "ادمین",
         avatar: "A",
