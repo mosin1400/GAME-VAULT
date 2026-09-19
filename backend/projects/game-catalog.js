@@ -29,6 +29,11 @@ function createGameCatalog({ gamesRoot, readJson, validateMeta }) {
   }
 
   async function versions(game) {
+    const directRoot = path.join(gamesRoot, game);
+    const directMeta = await readJson(path.join(directRoot, 'game.json'), null).catch(() => null);
+    // A metadata file at the project root declares a direct project. It must
+    // remain direct even if an older startup left a versions/ folder behind.
+    if (directMeta) return [{ name: directMeta.version || 'v1.0.0', root: true, valid: !validateMeta(directMeta), meta: { ...directMeta, version: directMeta.version || 'v1.0.0' }, updatedAt: await lastModified(directRoot), error: validateMeta(directMeta) }];
     const base = path.join(gamesRoot, game, 'versions');
     try {
       const names = await fsp.readdir(base, { withFileTypes: true });
@@ -38,15 +43,11 @@ function createGameCatalog({ gamesRoot, readJson, validateMeta }) {
         return { name: entry.name, valid: !!meta, meta, updatedAt: await lastModified(root), error: meta ? validateMeta(meta) : 'game.json پیدا نشد' };
       }));
       if (list.length) return list.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
-      const rootMeta = await readJson(path.join(gamesRoot, game, 'game.json'), null);
-      return rootMeta ? [{ name: rootMeta.version || 'v1.0.0', root: true, valid: true, meta: { ...rootMeta, version: rootMeta.version || 'v1.0.0' }, updatedAt: await lastModified(path.join(gamesRoot, game)), error: validateMeta(rootMeta) }] : [];
+      return [];
     } catch {
       // Projects that were added directly under games/ are exposed as their
       // first version until they are migrated into versions/<id>.
-      const root = path.join(gamesRoot, game);
-      const meta = await readJson(path.join(root, 'game.json'), null);
-      if (!meta) return [];
-      return [{ name: meta.version || 'v1.0.0', valid: true, meta: { ...meta, version: meta.version || 'v1.0.0' }, updatedAt: await lastModified(root), error: validateMeta(meta) }];
+      return [];
     }
   }
 
@@ -65,8 +66,7 @@ function createGameCatalog({ gamesRoot, readJson, validateMeta }) {
     const list = await versions(game);
     const selected = requestedVersion ? list.find(item => item.valid && item.name === requestedVersion) : list.filter(item => item.valid).sort((a, b) => b.updatedAt - a.updatedAt)[0];
     if (!selected?.meta) return null;
-    const hasVersions = await fsp.stat(path.join(gamesRoot, game, 'versions')).then(() => true).catch(() => false);
-    const root = path.join(gamesRoot, game, hasVersions ? 'versions' : '', hasVersions ? selected.name : '');
+    const root = selected.root ? path.join(gamesRoot, game) : path.join(gamesRoot, game, 'versions', selected.name);
     const markdown = await fsp.readFile(path.join(root, 'README.md'), 'utf8').catch(() => '');
     return { meta: selected.meta, version: selected.name, markdown };
   }

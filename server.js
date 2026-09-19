@@ -89,6 +89,7 @@ async function synchronizeMetadataReadmes() {
   for (const entry of await fsp.readdir(GAMES, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     for (const version of await versions(entry.name)) {
+      if (version.root) continue;
       await metadataService.repair(projectRoot(entry.name, version.name), {
         game: entry.name,
         version: version.name,
