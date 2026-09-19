@@ -22,6 +22,18 @@ const { createAgentMemory } = require('../backend/ai/agent-memory');
   await memory.remove('demo', 'v1', assistant.id);
   assert.deepEqual((await memory.read('demo', 'v1')).map(item => item.content), ['اولین پاسخ', 'پیام دوم ویرایش‌شده'], 'removing one message must preserve the rest of the conversation');
   assert.deepEqual(await memory.read('other', 'v1'), [], 'each game/version must have isolated memory');
+
+  const first = await memory.createSession('sessions', 'v1');
+  await memory.append('sessions', 'v1', { role: 'user', content: 'گفتگوی قدیمی', attachment: { name: 'notes.md', type: 'text/markdown', size: 42 } }, first.id);
+  const second = await memory.createSession('sessions', 'v1');
+  await memory.append('sessions', 'v1', { role: 'user', content: 'گفتگوی جدید' }, second.id);
+  await memory.updateSession('sessions', 'v1', first.id, { title: 'یادداشت‌های پروژه', pinned: true });
+  await memory.updateSession('sessions', 'v1', second.id, { archived: true });
+  const sessions = await memory.listSessions('sessions', 'v1');
+  assert.deepEqual(sessions.map(session => session.id), [first.id], 'archived sessions must be hidden and pinned sessions must stay first');
+  assert.equal(sessions[0].title, 'یادداشت‌های پروژه', 'a renamed session must keep its explicit title');
+  const uploaded = await memory.read('sessions', 'v1', first.id);
+  assert.deepEqual(uploaded[0].attachment, { name: 'notes.md', type: 'text/markdown', size: 42 }, 'attachment metadata must persist without the file payload');
   await memory.clear('demo', 'v1');
   assert.deepEqual(await memory.read('demo', 'v1'), [], 'clearing a conversation must not affect other conversations');
   fs.rmSync(root, { recursive: true, force: true });

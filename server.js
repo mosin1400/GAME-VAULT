@@ -1215,6 +1215,11 @@ async function api(req, res, url) {
     projectRoot(data.game, data.version);
     if (req.method === 'GET') return send(res, 200, { sessions: await agentMemory.listSessions(data.game, data.version) });
     if (req.method === 'POST') return send(res, 201, await agentMemory.createSession(data.game, data.version));
+    if (req.method === 'PATCH') {
+      const changes = {};
+      for (const key of ['title', 'pinned', 'archived']) if (Object.hasOwn(data, key)) changes[key] = data[key];
+      return send(res, 200, await agentMemory.updateSession(data.game, data.version, data.sessionId, changes));
+    }
     if (req.method === 'DELETE') {
       await agentMemory.clear(data.game, data.version, data.sessionId);
       return send(res, 200, { ok: true });

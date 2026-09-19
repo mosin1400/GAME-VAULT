@@ -45,7 +45,13 @@ function createAgentHandler({ agentMemory, projectRoot, buildAgentContext, creat
       history = edited.slice(0, -1);
     }
     if (!message) throw new Error('پیام خالی است');
-    if (!data.regenerateOf && !data.replaceMessageId) await agentMemory.append(game, version, { role: 'user', content: message }, sessionId);
+    if (String(data.attachmentData || '').length > 2_800_000) throw new Error('Attachment exceeds the 2 MB limit');
+    const attachment = data.attachmentData ? {
+      name: String(data.attachmentName || 'attachment').slice(0, 180),
+      type: String(data.attachmentType || 'application/octet-stream').slice(0, 120),
+      size: Number(data.attachmentSize) || 0
+    } : undefined;
+    if (!data.regenerateOf && !data.replaceMessageId) await agentMemory.append(game, version, { role: 'user', content: message, attachment }, sessionId);
     const context = await buildAgentContext(root, { maximumFileBytes: 50000, maximumTotalBytes: 100000 });
     const tools = createAgentTools({ root }), pendingActions = [];
     const propose = (type, payload) => {
