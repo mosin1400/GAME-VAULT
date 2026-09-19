@@ -26,7 +26,10 @@ body {
   min-height:100vh
 }
 .admin-nav {
-  position:relative;
+  position:sticky;
+  top:0;
+  align-self:start;
+  height:100vh;
   overflow:hidden;
   padding:28px 17px;
   background:#0c1123;
@@ -969,4 +972,4 @@ body {
   width:100%;
   min-height:42px
 }
-.community-admin-list{display:grid;gap:12px}.admin-comment{padding:16px;border:1px solid #304d70;border-radius:12px;background:#101e30}.admin-comment small{color:#62e4ed}.admin-comment p{line-height:1.9}.admin-comment blockquote{margin:8px 0;padding:8px;border-right:3px solid #65e8df;background:#132c3e}.admin-comment form{display:flex;gap:8px}.admin-comment input{flex:1;padding:9px;border:1px solid #38587c;border-radius:8px;background:#0b1522;color:#fff}.admin-comment button{border:0;border-radius:8px;padding:8px 10px;background:#5ee6dc;color:#06121c}.admin-comment button[data-remove]{background:#492238;color:#ffd5dd}
+.community-admin-list{display:grid;gap:12px}.admin-comment{padding:16px;border:1px solid #304d70;border-radius:12px;background:#101e30}.comment-author{display:flex;align-items:center;gap:10px;color:#62e4ed;font-size:12px}.comment-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#5ee6dc,#526fff);color:#06121c;font-weight:900}.admin-comment .comment-message{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;min-height:63px;margin:12px 0;line-height:1.9}.admin-comment blockquote{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:8px 0;padding:8px;border-right:3px solid #65e8df;background:#132c3e}.admin-comment form{display:flex;gap:8px}.admin-comment input{flex:1;padding:9px;border:1px solid #38587c;border-radius:8px;background:#0b1522;color:#fff}.admin-comment button{border:0;border-radius:8px;padding:8px 10px;background:#5ee6dc;color:#06121c}.admin-comment button[data-remove]{background:#492238;color:#ffd5dd}
