@@ -61,3 +61,4 @@ html[data-theme="light"] .manage-card .manage-actions .delete{background:#fff2f3
 .manage-card .manage-actions [data-edit],.manage-card .manage-actions .delete{grid-column:1/-1}
 .detail-hero{align-items:stretch}.detail-cover{align-self:stretch}
 .game-card>.cover{flex-shrink:0}.game-card .card-actions>*{display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box}
+@media(max-width:620px){.detail-actions{display:grid;grid-template-columns:1fr}.detail-actions>*{width:100%;justify-content:center}.detail-meta{gap:8px;font-size:10px}.markdown-body{font-size:13px}.markdown-body th,.markdown-body td{padding:8px;white-space:nowrap}.public-version-picker{align-items:flex-start;flex-direction:column;gap:6px}}
