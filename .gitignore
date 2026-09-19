@@ -1,40 +1,85 @@
 ```
 # Dependencies
 node_modules/
-.pnpm-store/
-.yarn/
-.yarn-cache/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Environment variables
+.env*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
 
 # Build outputs
 dist/
 build/
-coverage/
-.nyc_output/
-.eslintcache
+target/
 
-# Environment variables
-.env
-.env.local
-.env.*
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+.venv/
 
 # IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
-# Logs
-*.log
+# OS generated
+.DS_Store
+Thumbs.db
 
-# Testing
-.jest/
+# Coverage reports
 coverage/
+htmlcov/
 
-# Vite
-!.vite/
-.vite/cache
+# Test reports
+test-results/
 
 # Package manager
-.pnp.*
+package-lock.json
+yarn.lock
+
+# Runtime data
+*.pid
+*.seed
+
+# Compression artifacts
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
 ```
