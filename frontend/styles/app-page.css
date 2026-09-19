@@ -1530,7 +1530,7 @@ button {
   }
 }
 /* Source: theme.css */
-body.light-mode {
+html[data-theme="light"] body {
   --bg:#eef5fb;
   --panel:#ffffff;
   --panel-2:#f2f7fc;
@@ -1539,30 +1539,30 @@ body.light-mode {
   --muted:#526b82;
   background:radial-gradient(circle at 80% 0,#d5f4ff 0,#f3f8fc 38%,#e9f0f7 100%)
 }
-body.light-mode .sidebar,body.light-mode .side-panel,body.light-mode .dash-panel,body.light-mode .metric-card,body.light-mode .detail-panel,body.light-mode .detail-hero {
+html[data-theme="light"] .sidebar,html[data-theme="light"] .side-panel,html[data-theme="light"] .dash-panel,html[data-theme="light"] .metric-card,html[data-theme="light"] .detail-panel,html[data-theme="light"] .detail-hero {
   background:#fff;
   color:#102033;
   border-color:#c9d9e6
 }
-body.light-mode .topbar,body.light-mode .footer {
+html[data-theme="light"] .topbar,html[data-theme="light"] .footer {
   border-color:#d4e0ea
 }
-body.light-mode .side-nav a,body.light-mode .breadcrumb,body.light-mode .welcome-copy,body.light-mode .game-description {
+html[data-theme="light"] .side-nav a,html[data-theme="light"] .breadcrumb,html[data-theme="light"] .welcome-copy,html[data-theme="light"] .game-description {
   color:#516a80
 }
-body.light-mode .game-card {
+html[data-theme="light"] .game-card {
   background:#fff;
   border-color:#c8d9e6;
   box-shadow:0 8px 25px #a9b9c633
 }
-body.light-mode .search-box,body.light-mode .library-mini-stats span {
+html[data-theme="light"] .search-box,html[data-theme="light"] .library-mini-stats span {
   background:#fff;
   border-color:#c8d9e6
 }
-body.light-mode .search-box input {
+html[data-theme="light"] .search-box input {
   color:#14283a
 }
-body.light-mode .detail-copy p {
+html[data-theme="light"] .detail-copy p {
   color:#4b657c
 }
 /* Source: editor.css */

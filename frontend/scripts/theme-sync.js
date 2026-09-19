@@ -3,7 +3,6 @@
   const apply = value => {
     const mode = value === 'light' ? 'light' : 'dark';
     document.documentElement.dataset.theme = mode;
-    document.body?.classList.toggle('light-mode', mode === 'light');
     document.querySelectorAll('[data-theme-toggle]').forEach(button => {
       button.setAttribute('aria-pressed', String(mode === 'light'));
       button.title = mode === 'light' ? 'حالت تاریک' : 'حالت روشن';
