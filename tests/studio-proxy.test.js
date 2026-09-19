@@ -1,7 +1,9 @@
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const { createStudioProxy } = require('../backend/http/studio-proxy');
+const { createStudioProxy, resolveDashboardPort } = require('../backend/http/studio-proxy');
 (async () => {
+  assert.equal(resolveDashboardPort({ 'x-gv-api-port': '8080' }), 8080, 'Studio must use the dashboard port passed in its launch URL');
+  assert.equal(resolveDashboardPort({ 'x-gv-api-port': 'not-a-port' }), 8080, 'an invalid caller-controlled port must fall back safely');
   const upstream = http.createServer(async (req, res) => { const chunks = []; for await (const chunk of req) chunks.push(chunk); const body = Buffer.concat(chunks).toString(); res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ method: req.method, path: req.url, token: req.headers['x-gv-studio-token'], body: body ? JSON.parse(body) : null })); });
   await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
   const handle = createStudioProxy({ port: upstream.address().port });
