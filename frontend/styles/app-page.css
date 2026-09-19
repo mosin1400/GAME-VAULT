@@ -436,10 +436,13 @@ button {
 }
 .cover {
   height:185px;
+  background-color:#123149;
+  background-image:linear-gradient(135deg,#163e58,#0b1929);
   background-size:cover;
   background-position:center;
   position:relative
 }
+.library-controls{display:flex;align-items:center;gap:10px}.sort-control{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;white-space:nowrap}.sort-control select{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);font:inherit}
 .cover:after {
   content:"";
   position:absolute;
@@ -877,6 +880,7 @@ button {
   .library-toolbar {
     display:block
   }
+  .library-controls{margin-top:12px;align-items:stretch;flex-direction:column}.sort-control{justify-content:space-between}.sort-control select{flex:1}.search-box{margin-top:0}
   .search-box {
     width:100%;
     margin-top:18px

@@ -2,6 +2,7 @@ const FAVORITES_KEY = 'game-vault-favorites';
 const RECENT_KEY = 'game-vault-recent';
 let games = [];
 let activeFilter = 'همه';
+let activeSort = 'newest';
 let activeView = 'dashboard';
 let selectedGame = null;
 let gamesRequestId = 0;
@@ -86,6 +87,9 @@ function currentGames() {
     list = ids.map((id) => games.find((game) => game.id === id)).filter(Boolean);
   }
   if (activeView === 'favorites') list = list.filter((game) => favorites().includes(game.id));
+  if (activeSort === 'rating') list.sort((a,b)=>Number(b.rating||0)-Number(a.rating||0));
+  else if (activeSort === 'name') list.sort((a,b)=>String(a.name).localeCompare(String(b.name),'fa'));
+  else list.sort((a,b)=>String(b.updatedAt||b.version||'').localeCompare(String(a.updatedAt||a.version||''),undefined,{numeric:true}));
   return list;
 }
 
@@ -149,6 +153,7 @@ async function login() {
 }
 
 $('#searchInput').addEventListener('input', renderCards);
+$('#gameSort').onchange = event => { activeSort = event.target.value; renderCards(); };
 document.querySelectorAll('.filter').forEach((button) => button.onclick = () => { document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active')); button.classList.add('active'); activeFilter = button.dataset.filter; renderCards(); });
 document.querySelectorAll('[data-view]').forEach((button) => button.onclick = (event) => { event.preventDefault(); const view = button.dataset.view; if (view === 'recent' || view === 'favorites') { navigateTo('games'); activeView = view; renderCards(); $('#crumbCurrent').textContent = view === 'recent' ? 'اخیراً اضافه‌شده' : 'منتخب من'; } else navigateTo(view); });
 $('#openEditor').onclick = async () => { try { const session = await api('/api/session'); location.href = session.user?.role === 'admin' ? '/manage.html' : '/profile.html?next=' + encodeURIComponent('/manage.html'); } catch { location.href = '/profile.html?next=' + encodeURIComponent('/manage.html'); } };
